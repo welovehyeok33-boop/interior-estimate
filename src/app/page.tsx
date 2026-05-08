@@ -222,6 +222,7 @@ export default function Home() {
               size="sm"
               radius="xl"
               style={{ borderColor: "rgba(255,255,255,0.5)", color: "white" }}
+              onClick={() => router.push("/login")}
             >
               로그인
             </Button>
