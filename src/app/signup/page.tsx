@@ -1,174 +1,99 @@
 "use client";
 
-import {
-  Box,
-  Container,
-  Card,
-  Title,
-  Text,
-  TextInput,
-  PasswordInput,
-  Button,
-  Stack,
-  Group,
-  Divider,
-  Anchor,
-  Checkbox,
-} from "@mantine/core";
-import { useForm } from "@mantine/form";
+import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const router = useRouter();
+  const [values, setValues] = useState({ name: "", phone: "", email: "", password: "", passwordConfirm: "", agree: false });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const form = useForm({
-    initialValues: {
-      name: "",
-      phone: "",
-      email: "",
-      password: "",
-      passwordConfirm: "",
-      agree: false,
-    },
-    validate: {
-      name: (v) => (v.trim().length >= 2 ? null : "이름을 입력해주세요"),
-      phone: (v) => (/^01[0-9]{8,9}$/.test(v.replace(/-/g, "")) ? null : "올바른 연락처를 입력해주세요"),
-      email: (v) => (/^\S+@\S+$/.test(v) ? null : "이메일 형식을 확인해주세요"),
-      password: (v) => (v.length >= 6 ? null : "비밀번호는 6자 이상이어야 합니다"),
-      passwordConfirm: (v, values) => (v === values.password ? null : "비밀번호가 일치하지 않습니다"),
-      agree: (v) => (v ? null : "이용약관에 동의해주세요"),
-    },
-  });
+  const set = (key: string, val: string | boolean) => setValues(v => ({ ...v, [key]: val }));
 
-  const handleSignup = form.onSubmit((values) => {
-    console.log("회원가입 시도:", values);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const err: Record<string, string> = {};
+    if (values.name.trim().length < 2) err.name = "이름을 입력해주세요";
+    if (!/^01[0-9]{8,9}$/.test(values.phone.replace(/-/g, ""))) err.phone = "올바른 연락처를 입력해주세요";
+    if (!/^\S+@\S+$/.test(values.email)) err.email = "이메일 형식을 확인해주세요";
+    if (values.password.length < 6) err.password = "비밀번호는 6자 이상이어야 합니다";
+    if (values.password !== values.passwordConfirm) err.passwordConfirm = "비밀번호가 일치하지 않습니다";
+    if (!values.agree) err.agree = "이용약관에 동의해주세요";
+    if (Object.keys(err).length > 0) { setErrors(err); return; }
     // TODO: Supabase 연동
     router.push("/");
-  });
+  };
+
+  const Field = ({ label, id, type = "text", placeholder }: { label: string; id: string; type?: string; placeholder: string }) => (
+    <div>
+      <label style={{ fontSize: 13, fontWeight: 600, color: "#333", display: "block", marginBottom: 6 }}>{label}</label>
+      <input
+        type={type}
+        value={values[id as keyof typeof values] as string}
+        onChange={e => set(id, e.target.value)}
+        placeholder={placeholder}
+        style={{ width: "100%", padding: "11px 14px", borderRadius: 8, border: `1px solid ${errors[id] ? "#ef4444" : "#e0e0e0"}`, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+      />
+      {errors[id] && <p style={{ fontSize: 12, color: "#ef4444", margin: "4px 0 0" }}>{errors[id]}</p>}
+    </div>
+  );
 
   return (
-    <Box
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #0a2a6e 0%, #1565c0 40%, #42a5f5 80%, #e3f2fd 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <Container size={440} w="100%">
-        {/* 로고 */}
-        <Group justify="center" mb={32} style={{ cursor: "pointer" }} onClick={() => router.push("/")}>
-          <Image src="/logo.png" alt="폼잇." width={40} height={40} style={{ borderRadius: 8 }} />
-          <Text fw={800} size="xl" c="white" style={{ letterSpacing: "-0.02em" }}>
-            폼잇.
-          </Text>
-        </Group>
+    <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        <div style={{ textAlign: "center", marginBottom: 32, cursor: "pointer" }} onClick={() => router.push("/")}>
+          <Image src="/logo.png" alt="폼잇." width={36} height={36} style={{ borderRadius: 8, marginBottom: 8 }} />
+          <div style={{ fontWeight: 800, fontSize: 18, color: "#111", letterSpacing: "-0.5px" }}>폼잇.</div>
+        </div>
 
-        <Card
-          padding="xl"
-          radius="xl"
-          style={{
-            background: "rgba(255,255,255,0.97)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-          }}
-        >
-          <Stack gap="xs" mb={24}>
-            <Title order={2} fw={800} c="#0d2b6b">
-              무료 회원가입
-            </Title>
-            <Text c="gray.6" size="sm">
-              이미 계정이 있으신가요?{" "}
-              <Anchor href="/login" c="blue" fw={600} size="sm">
-                로그인
-              </Anchor>
-            </Text>
-          </Stack>
+        <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 16, padding: "36px 32px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: "0 0 6px", letterSpacing: "-0.5px" }}>무료 회원가입</h1>
+          <p style={{ fontSize: 14, color: "#888", margin: "0 0 28px" }}>
+            이미 계정이 있으신가요?{" "}
+            <Link href="/login" style={{ color: "#111", fontWeight: 700, textDecoration: "none" }}>로그인</Link>
+          </p>
 
-          <form onSubmit={handleSignup}>
-            <Stack gap="md">
-              <TextInput
-                label="이름"
-                placeholder="홍길동"
-                radius="md"
-                size="md"
-                {...form.getInputProps("name")}
-              />
-              <TextInput
-                label="연락처"
-                placeholder="010-0000-0000"
-                radius="md"
-                size="md"
-                {...form.getInputProps("phone")}
-              />
-              <TextInput
-                label="이메일"
-                placeholder="example@email.com"
-                radius="md"
-                size="md"
-                {...form.getInputProps("email")}
-              />
-              <PasswordInput
-                label="비밀번호"
-                placeholder="6자 이상 입력"
-                radius="md"
-                size="md"
-                {...form.getInputProps("password")}
-              />
-              <PasswordInput
-                label="비밀번호 확인"
-                placeholder="비밀번호를 다시 입력하세요"
-                radius="md"
-                size="md"
-                {...form.getInputProps("passwordConfirm")}
-              />
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Field label="이름" id="name" placeholder="홍길동" />
+            <Field label="연락처" id="phone" placeholder="010-0000-0000" />
+            <Field label="이메일" id="email" type="email" placeholder="example@email.com" />
+            <Field label="비밀번호" id="password" type="password" placeholder="6자 이상 입력" />
+            <Field label="비밀번호 확인" id="passwordConfirm" type="password" placeholder="비밀번호를 다시 입력하세요" />
 
-              <Checkbox
-                label={
-                  <Text size="sm" c="gray.7">
-                    <Anchor href="#" size="sm" c="blue">이용약관</Anchor> 및{" "}
-                    <Anchor href="#" size="sm" c="blue">개인정보처리방침</Anchor>에 동의합니다
-                  </Text>
-                }
-                {...form.getInputProps("agree", { type: "checkbox" })}
-              />
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <input type="checkbox" id="agree" checked={values.agree} onChange={e => set("agree", e.target.checked)}
+                style={{ marginTop: 2, cursor: "pointer", flexShrink: 0 }} />
+              <label htmlFor="agree" style={{ fontSize: 13, color: "#555", cursor: "pointer", lineHeight: 1.5 }}>
+                <Link href="#" style={{ color: "#111", fontWeight: 700, textDecoration: "none" }}>이용약관</Link> 및{" "}
+                <Link href="#" style={{ color: "#111", fontWeight: 700, textDecoration: "none" }}>개인정보처리방침</Link>에 동의합니다
+              </label>
+            </div>
+            {errors.agree && <p style={{ fontSize: 12, color: "#ef4444", margin: "-8px 0 0" }}>{errors.agree}</p>}
 
-              <Button
-                type="submit"
-                variant="gradient"
-                gradient={{ from: "#1565c0", to: "#42a5f5" }}
-                radius="md"
-                size="md"
-                fullWidth
-                mt="xs"
-              >
-                회원가입
-              </Button>
+            <button type="submit" style={{ padding: "13px", borderRadius: 8, background: "#111", color: "#fff", fontWeight: 700, fontSize: 15, border: "none", cursor: "pointer", fontFamily: "inherit", marginTop: 4 }}>
+              회원가입
+            </button>
 
-              <Divider label="또는" labelPosition="center" c="gray.4" />
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ flex: 1, height: 1, background: "#f0f0f0" }} />
+              <span style={{ fontSize: 12, color: "#bbb" }}>또는</span>
+              <div style={{ flex: 1, height: 1, background: "#f0f0f0" }} />
+            </div>
 
-              <Button
-                variant="default"
-                radius="md"
-                size="md"
-                fullWidth
-                leftSection={
-                  <svg width="18" height="18" viewBox="0 0 18 18">
-                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                    <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
-                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
-                  </svg>
-                }
-              >
-                Google로 가입
-              </Button>
-            </Stack>
+            <button type="button" style={{ padding: "12px", borderRadius: 8, background: "#fff", border: "1px solid #e0e0e0", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit" }}>
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+              </svg>
+              Google로 가입
+            </button>
           </form>
-        </Card>
-      </Container>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
