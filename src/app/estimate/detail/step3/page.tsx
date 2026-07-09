@@ -51,36 +51,39 @@ function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boole
   return (
     <motion.button
       onClick={onClick}
-      whileTap={{ scale: 0.91 }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.88 }}
       animate={{
-        scale: selected ? 1.04 : 1,
-        y: selected ? -2 : 0,
+        y: selected ? -3 : 0,
+        boxShadow: selected
+          ? "0 6px 20px rgba(245,194,0,0.35)"
+          : "0 0px 0px rgba(245,194,0,0)",
       }}
-      transition={{ type: "spring", stiffness: 420, damping: 22 }}
+      transition={{ type: "spring", stiffness: 380, damping: 20 }}
       style={{
         position: "relative",
         padding: "14px 10px 12px",
         borderRadius: 12,
-        border: `${selected ? "2px" : "1.5px"} solid ${selected ? C.selectedBorder : C.border}`,
+        border: selected ? `2px solid ${C.selectedBorder}` : `1.5px solid ${C.border}`,
         background: selected ? C.selectedBg : C.card,
         cursor: "pointer", textAlign: "center",
-        transition: "border-color 0.15s, background 0.15s",
-        boxShadow: selected ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
       }}
     >
       {/* 체크 뱃지 */}
       <AnimatePresence>
         {selected && (
           <motion.div
-            initial={{ scale: 0, rotate: -30 }}
+            key="badge"
+            initial={{ scale: 0, rotate: -40 }}
             animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 30 }}
-            transition={{ type: "spring", stiffness: 500, damping: 18 }}
+            exit={{ scale: 0, rotate: 40 }}
+            transition={{ type: "spring", stiffness: 600, damping: 20 }}
             style={{
               position: "absolute", top: 6, right: 6,
               width: 18, height: 18, borderRadius: "50%",
               background: C.primary,
               display: "flex", alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
             }}
           >
             <IconCheck size={10} color="#111" strokeWidth={3.5} />
@@ -90,14 +93,17 @@ function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boole
 
       {/* 아이콘 */}
       <motion.div
-        animate={{ color: selected ? C.primary : "#CCCCCC", scale: selected ? 1.12 : 1 }}
-        transition={{ duration: 0.2 }}
-        style={{ marginBottom: 7, display: "flex", justifyContent: "center" }}
+        animate={{ scale: selected ? 1.15 : 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+        style={{
+          marginBottom: 7, display: "flex", justifyContent: "center",
+          color: selected ? C.primary : "#CCCCCC",
+        }}
       >
         {item.icon}
       </motion.div>
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: selected ? C.textDark : C.textMid, marginBottom: 2, transition: "color 0.15s" }}>
+      <div style={{ fontSize: 12, fontWeight: selected ? 700 : 500, color: selected ? C.textDark : C.textMid, marginBottom: 2 }}>
         {item.label}
       </div>
       <div style={{ fontSize: 10, color: C.textLight, lineHeight: 1.3 }}>{item.desc}</div>

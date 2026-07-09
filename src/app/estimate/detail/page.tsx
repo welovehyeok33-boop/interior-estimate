@@ -88,7 +88,7 @@ export default function DetailEstimatePage() {
                     background: sel ? C.selectedBg : C.card,
                     cursor: "pointer", textAlign: "center",
                     boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
-                    transition: "border-color 0.15s, background 0.15s",
+                    
                   }}>
                   <motion.div animate={{ color: sel ? C.primary : "#CCCCCC", scale: sel ? 1.1 : 1 }} transition={{ duration: 0.2 }}
                     style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}>
@@ -119,7 +119,7 @@ export default function DetailEstimatePage() {
                     background: sel ? C.selectedBg : C.card,
                     cursor: "pointer", textAlign: "center",
                     boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
-                    transition: "border-color 0.15s, background 0.15s",
+                    
                   }}>
                   <div style={{ fontWeight: 800, fontSize: 16, color: sel ? C.textDark : C.textMid, marginBottom: 4, transition: "color 0.15s" }}>{t.label}</div>
                   <div style={{ fontSize: 12, color: C.textLight }}>{t.desc}</div>
@@ -147,7 +147,7 @@ export default function DetailEstimatePage() {
                       cursor: "pointer", textAlign: "left",
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.2)` : "none",
-                      transition: "border-color 0.15s, background 0.15s",
+                      
                     }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
@@ -199,7 +199,7 @@ export default function DetailEstimatePage() {
                               background: sel ? C.selectedBg : C.card,
                               cursor: "pointer", textAlign: "center",
                               boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
-                              transition: "border-color 0.15s, background 0.15s",
+                              
                             }}>
                             <motion.div animate={{ scale: sel ? 1.15 : 1 }} transition={{ duration: 0.2 }}
                               style={{ fontSize: 22, marginBottom: 5 }}>{ct.icon}</motion.div>
@@ -230,7 +230,7 @@ export default function DetailEstimatePage() {
                                   background: sel ? "#F5C200" : C.card,
                                   cursor: "pointer", fontSize: 13, fontWeight: sel ? 700 : 500,
                                   color: sel ? "#111111" : C.textMid,
-                                  transition: "border-color 0.15s, background 0.15s",
+                                  
                                 }}>
                                 {sub}
                               </motion.button>
