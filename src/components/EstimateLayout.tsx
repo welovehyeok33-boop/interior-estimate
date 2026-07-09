@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 
 // ── 컬러 토큰 ──────────────────────────────────────────────
 export const C = {
-  bg: "#f5fafd",
+  bg: "#F7F7F5",
   card: "#ffffff",
-  border: "#deeef7",
-  headerFrom: "#0c4f7a",
-  headerTo: "#0f5f8a",
-  primary: "#0e7ab5",
-  primaryLight: "#29abe2",
-  gold: "#a8dff0",
-  textDark: "#0d2233",
-  textMid: "#2a5470",
-  textLight: "#89b4c8",
-  selectedBg: "#e6f6fd",
-  selectedBorder: "#29abe2",
+  border: "#E8E8E8",
+  headerFrom: "#111111",
+  headerTo: "#1A1A1A",
+  primary: "#F5C200",
+  primaryLight: "#FFD740",
+  gold: "#FFF3B0",
+  textDark: "#111111",
+  textMid: "#444444",
+  textLight: "#999999",
+  selectedBg: "#FFFBE8",
+  selectedBorder: "#F5C200",
 };
 
 // ── 비행 경로 (웜톤) ───────────────────────────────────────
@@ -50,7 +50,7 @@ export function FlightPath({ step, totalSteps }: { step: number; totalSteps: num
         {/* 완료 경로 */}
         <path
           d="M 10 60 Q 155 22 300 60"
-          fill="none" stroke="#29abe2" strokeWidth="2"
+          fill="none" stroke="#F5C200" strokeWidth="2"
           strokeDasharray={`${t * 330} 999`} strokeLinecap="round"
           style={{ transition: "stroke-dasharray 0.5s ease" }}
         />
@@ -59,11 +59,11 @@ export function FlightPath({ step, totalSteps }: { step: number; totalSteps: num
         {checkpoints.map((cp, i) => (
           <g key={i}>
             <circle cx={cp.x} cy={cp.y} r="3.5"
-              fill={cp.done ? C.primary : "white"}
-              stroke={cp.done ? C.primary : C.border} strokeWidth="1.5"
+              fill={cp.done ? "#F5C200" : "white"}
+              stroke={cp.done ? "#F5C200" : C.border} strokeWidth="1.5"
               style={{ transition: "all 0.3s ease" }} />
             <text x={cp.x} y={82} textAnchor="middle" fontSize="7.5"
-              fill={cp.done ? C.primary : C.textLight} fontWeight={cp.done ? "700" : "400"}>
+              fill={cp.done ? "#111111" : C.textLight} fontWeight={cp.done ? "700" : "400"}>
               {labels[i]}
             </text>
           </g>
@@ -71,30 +71,30 @@ export function FlightPath({ step, totalSteps }: { step: number; totalSteps: num
 
         {/* 도착점 */}
         <circle cx="300" cy="60" r="4"
-          fill={step >= totalSteps ? C.primary : "white"}
-          stroke={step >= totalSteps ? C.primary : C.border} strokeWidth="1.5" />
+          fill={step >= totalSteps ? "#F5C200" : "white"}
+          stroke={step >= totalSteps ? "#F5C200" : C.border} strokeWidth="1.5" />
         <text x="300" y="82" textAnchor="middle" fontSize="7.5"
-          fill={step >= totalSteps ? C.primary : C.textLight} fontWeight="700">
+          fill={step >= totalSteps ? "#111111" : C.textLight} fontWeight="700">
           {labels[totalSteps - 1]}
         </text>
 
-        {/* 비행기 (하늘색) */}
+        {/* 비행기 (옐로우/블랙) */}
         <g transform={`translate(${x}, ${y}) rotate(${angle})`}
           style={{ transition: "transform 0.5s ease" }}>
-          <ellipse cx="0" cy="0" rx="12" ry="3" fill="#29abe2" />
-          <ellipse cx="12" cy="0" rx="3.5" ry="1.8" fill="#4dc3f0" />
-          <ellipse cx="-12" cy="0" rx="2.5" ry="1.5" fill="#0e7ab5" />
-          <path d="M 2,0 L -4,-11 L -7,-10 L -3,0 Z" fill="#0e7ab5" />
-          <path d="M 2,0 L -4,11 L -7,10 L -3,0 Z" fill="#0e7ab5" />
-          <path d="M -9,0 L -13,-5 L -14,-4.5 L -10,0 Z" fill="#0c4f7a" />
-          <path d="M -9,0 L -13,5 L -14,4.5 L -10,0 Z" fill="#0c4f7a" />
-          <circle cx="5" cy="-1" r="0.9" fill="white" opacity="0.9" />
-          <circle cx="2" cy="-1" r="0.9" fill="white" opacity="0.9" />
+          <ellipse cx="0" cy="0" rx="12" ry="3" fill="#F5C200" />
+          <ellipse cx="12" cy="0" rx="3.5" ry="1.8" fill="#F5C200" />
+          <ellipse cx="-12" cy="0" rx="2.5" ry="1.5" fill="#F5C200" />
+          <path d="M 2,0 L -4,-11 L -7,-10 L -3,0 Z" fill="#111111" />
+          <path d="M 2,0 L -4,11 L -7,10 L -3,0 Z" fill="#111111" />
+          <path d="M -9,0 L -13,-5 L -14,-4.5 L -10,0 Z" fill="#333333" />
+          <path d="M -9,0 L -13,5 L -14,4.5 L -10,0 Z" fill="#333333" />
+          <circle cx="5" cy="-1" r="0.9" fill="#111111" opacity="0.9" />
+          <circle cx="2" cy="-1" r="0.9" fill="#111111" opacity="0.9" />
         </g>
 
         {/* 진행률 */}
         <text x={x} y={y - 14} textAnchor="middle" fontSize="9"
-          fill={C.primary} fontWeight="700"
+          fill="#111111" fontWeight="700"
           style={{ transition: "all 0.5s ease" }}>
           {Math.round(progress)}%
         </text>
@@ -108,14 +108,14 @@ export function EstimateHeader({ step }: { step: number }) {
   const router = useRouter();
   return (
     <div style={{
-      background: `linear-gradient(135deg, ${C.headerFrom}, ${C.headerTo})`,
+      background: "#111111",
       padding: "13px 0",
     }}>
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#f5ede0", textDecoration: "none", letterSpacing: "-0.02em" }}>
+        <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none", letterSpacing: "-0.02em" }}>
           폼잇.
         </Link>
-        <span style={{ fontSize: 12, color: "rgba(245,237,224,0.55)", fontWeight: 500 }}>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
           세부 견적 · {step}단계
         </span>
       </div>

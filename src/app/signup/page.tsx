@@ -41,14 +41,14 @@ export default function SignupPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={{ minHeight: "100vh", background: "#F7F7F5", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ textAlign: "center", marginBottom: 32, cursor: "pointer" }} onClick={() => router.push("/")}>
           <Image src="/logo.png" alt="폼잇." width={36} height={36} style={{ borderRadius: 8, marginBottom: 8 }} />
           <div style={{ fontWeight: 800, fontSize: 18, color: "#111", letterSpacing: "-0.5px" }}>폼잇.</div>
         </div>
 
-        <div style={{ background: "#fff", border: "1px solid #e8e8e8", borderRadius: 16, padding: "36px 32px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+        <div style={{ background: "#fff", border: "1px solid #E8E8E8", borderRadius: 16, padding: "36px 32px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: "0 0 6px", letterSpacing: "-0.5px" }}>무료 회원가입</h1>
           <p style={{ fontSize: 14, color: "#888", margin: "0 0 28px" }}>
             이미 계정이 있으신가요?{" "}

@@ -55,12 +55,12 @@ export default function DetailEstimatePage() {
     <div style={{ minHeight: "100vh", background: C.bg }}>
 
       {/* 헤더 */}
-      <div style={{ background: `linear-gradient(135deg, ${C.headerFrom}, ${C.headerTo})`, padding: "13px 0" }}>
+      <div style={{ background: "#111111", padding: "13px 0" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#f5ede0", textDecoration: "none" }}>
+          <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(245,237,224,0.5)" }}>세부 견적 · 1단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 1단계</span>
         </div>
       </div>
 
@@ -185,7 +185,7 @@ export default function DetailEstimatePage() {
 
                     {/* 세부 업종 아코디언 */}
                     {selectedInRow && selectedInRow.subs.length > 0 && (
-                      <div style={{ marginTop: 8, padding: "14px 14px", borderRadius: 10, background: "#eaf5fc", border: `1.5px solid ${C.border}` }}>
+                      <div style={{ marginTop: 8, padding: "14px 14px", borderRadius: 10, background: "#FFFBE8", border: `1.5px solid ${C.border}` }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.primary, marginBottom: 10, letterSpacing: "0.04em" }}>세부 업종</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                           {selectedInRow.subs.map(sub => {
@@ -194,11 +194,11 @@ export default function DetailEstimatePage() {
                               <button key={sub} onClick={() => setCommercialSub(sub)} style={{
                                 padding: "7px 14px",
                                 borderRadius: 20,
-                                border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.primary : C.border}`,
-                                background: sel ? C.primary : C.card,
+                                border: `${sel ? "2px" : "1.5px"} solid ${sel ? "#F5C200" : C.border}`,
+                                background: sel ? "#F5C200" : C.card,
                                 cursor: "pointer",
                                 fontSize: 13, fontWeight: sel ? 700 : 500,
-                                color: sel ? "white" : C.textMid,
+                                color: sel ? "#111111" : C.textMid,
                                 transition: "all 0.15s ease",
                               }}>
                                 {sub}
@@ -231,8 +231,8 @@ export default function DetailEstimatePage() {
               padding: "12px 28px",
               borderRadius: 30,
               border: "none",
-              background: canNext ? `linear-gradient(135deg, ${C.primaryLight}, ${C.primary})` : C.border,
-              color: canNext ? "white" : C.textLight,
+              background: canNext ? `linear-gradient(135deg, #FFD740, #F5C200)` : C.border,
+              color: canNext ? "#111111" : C.textLight,
               fontWeight: 700, fontSize: 15,
               cursor: canNext ? "pointer" : "not-allowed",
               transition: "all 0.2s ease",

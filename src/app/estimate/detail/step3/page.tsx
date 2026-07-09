@@ -96,12 +96,12 @@ export default function Step3Page() {
     <div style={{ minHeight: "100vh", background: C.bg }}>
 
       {/* 헤더 */}
-      <div style={{ background: `linear-gradient(135deg, ${C.headerFrom}, ${C.headerTo})`, padding: "13px 0" }}>
+      <div style={{ background: "#111111", padding: "13px 0" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#f5ede0", textDecoration: "none" }}>
+          <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(245,237,224,0.5)" }}>세부 견적 · 3단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 3단계</span>
         </div>
       </div>
 
@@ -170,8 +170,8 @@ export default function Step3Page() {
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "12px 28px", borderRadius: 30, border: "none",
-              background: canNext ? `linear-gradient(135deg, ${C.primaryLight}, ${C.primary})` : C.border,
-              color: canNext ? "white" : C.textLight,
+              background: canNext ? `linear-gradient(135deg, #FFD740, #F5C200)` : C.border,
+              color: canNext ? "#111111" : C.textLight,
               fontWeight: 700, fontSize: 15,
               cursor: canNext ? "pointer" : "not-allowed",
               transition: "all 0.2s ease",
