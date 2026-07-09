@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain } from "@tabler/icons-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
@@ -77,20 +78,25 @@ export default function DetailEstimatePage() {
             {REGIONS.map(r => {
               const sel = region === r.id;
               return (
-                <button key={r.id} onClick={() => setRegion(r.id)} style={{
-                  padding: "18px 8px 14px",
-                  borderRadius: 12,
-                  border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
-                  background: sel ? C.selectedBg : C.card,
-                  cursor: "pointer", textAlign: "center",
-                  transition: "all 0.15s ease",
-                }}>
-                  <div style={{ color: sel ? C.primary : "#c8b8a8", marginBottom: 8, display: "flex", justifyContent: "center" }}>
+                <motion.button key={r.id} onClick={() => setRegion(r.id)}
+                  whileTap={{ scale: 0.92 }}
+                  animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  style={{
+                    padding: "18px 8px 14px", borderRadius: 12,
+                    border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
+                    background: sel ? C.selectedBg : C.card,
+                    cursor: "pointer", textAlign: "center",
+                    boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
+                    transition: "border-color 0.15s, background 0.15s",
+                  }}>
+                  <motion.div animate={{ color: sel ? C.primary : "#CCCCCC", scale: sel ? 1.1 : 1 }} transition={{ duration: 0.2 }}
+                    style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}>
                     {r.icon}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: sel ? C.textDark : C.textMid }}>{r.label}</div>
+                  </motion.div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: sel ? C.textDark : C.textMid, transition: "color 0.15s" }}>{r.label}</div>
                   <div style={{ fontSize: 11, color: C.textLight, marginTop: 3 }}>{r.desc}</div>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -102,17 +108,22 @@ export default function DetailEstimatePage() {
             {TYPES.map(t => {
               const sel = type === t.id;
               return (
-                <button key={t.id} onClick={() => { setType(t.id); setCommercialType(null); setCommercialSub(null); }} style={{
-                  padding: "22px 16px",
-                  borderRadius: 12,
-                  border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
-                  background: sel ? C.selectedBg : C.card,
-                  cursor: "pointer", textAlign: "center",
-                  transition: "all 0.15s ease",
-                }}>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: sel ? C.textDark : C.textMid, marginBottom: 4 }}>{t.label}</div>
+                <motion.button key={t.id}
+                  onClick={() => { setType(t.id); setCommercialType(null); setCommercialSub(null); }}
+                  whileTap={{ scale: 0.93 }}
+                  animate={{ scale: sel ? 1.03 : 1, y: sel ? -2 : 0 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  style={{
+                    padding: "22px 16px", borderRadius: 12,
+                    border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
+                    background: sel ? C.selectedBg : C.card,
+                    cursor: "pointer", textAlign: "center",
+                    boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
+                    transition: "border-color 0.15s, background 0.15s",
+                  }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: sel ? C.textDark : C.textMid, marginBottom: 4, transition: "color 0.15s" }}>{t.label}</div>
                   <div style={{ fontSize: 12, color: C.textLight }}>{t.desc}</div>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -125,30 +136,39 @@ export default function DetailEstimatePage() {
               {RESIDENTIAL_GRADES.map(g => {
                 const sel = residentialGrade === g.id;
                 return (
-                  <button key={g.id} onClick={() => setResidentialGrade(g.id)} style={{
-                    padding: "16px 18px",
-                    borderRadius: 12,
-                    border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
-                    background: sel ? C.selectedBg : C.card,
-                    cursor: "pointer", textAlign: "left",
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    transition: "all 0.15s ease",
-                  }}>
+                  <motion.button key={g.id} onClick={() => setResidentialGrade(g.id)}
+                    whileTap={{ scale: 0.97 }}
+                    animate={{ x: sel ? 4 : 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    style={{
+                      padding: "16px 18px", borderRadius: 12,
+                      border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
+                      background: sel ? C.selectedBg : C.card,
+                      cursor: "pointer", textAlign: "left",
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.2)` : "none",
+                      transition: "border-color 0.15s, background 0.15s",
+                    }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                         <span style={{ fontWeight: 700, fontSize: 15, color: sel ? C.textDark : C.textMid }}>{g.label}</span>
                         {g.popular && (
-                          <span style={{ fontSize: 10, background: C.primary, color: "white", padding: "1px 7px", borderRadius: 10, fontWeight: 700 }}>인기</span>
+                          <span style={{ fontSize: 10, background: C.primary, color: "#111", padding: "1px 7px", borderRadius: 10, fontWeight: 700 }}>인기</span>
                         )}
                       </div>
                       <span style={{ fontSize: 12, color: C.textLight }}>{g.desc}</span>
                     </div>
-                    {sel && (
-                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>✓</span>
-                      </div>
-                    )}
-                  </button>
+                    <AnimatePresence>
+                      {sel && (
+                        <motion.div
+                          initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                          style={{ width: 22, height: 22, borderRadius: "50%", background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <IconCheck size={11} color="#111" strokeWidth={3.5} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
                 );
               })}
             </div>
@@ -168,45 +188,56 @@ export default function DetailEstimatePage() {
                       {rowItems.map(ct => {
                         const sel = commercialType === ct.id;
                         return (
-                          <button key={ct.id} onClick={() => { setCommercialType(ct.id); setCommercialSub(null); }} style={{
-                            padding: "14px 8px",
-                            borderRadius: 12,
-                            border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
-                            background: sel ? C.selectedBg : C.card,
-                            cursor: "pointer", textAlign: "center",
-                            transition: "all 0.15s ease",
-                          }}>
-                            <div style={{ fontSize: 22, marginBottom: 5 }}>{ct.icon}</div>
-                            <div style={{ fontSize: 12, fontWeight: sel ? 700 : 500, color: sel ? C.textDark : C.textMid }}>{ct.label}</div>
-                          </button>
+                          <motion.button key={ct.id}
+                            onClick={() => { setCommercialType(ct.id); setCommercialSub(null); }}
+                            whileTap={{ scale: 0.91 }}
+                            animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
+                            transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                            style={{
+                              padding: "14px 8px", borderRadius: 12,
+                              border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
+                              background: sel ? C.selectedBg : C.card,
+                              cursor: "pointer", textAlign: "center",
+                              boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
+                              transition: "border-color 0.15s, background 0.15s",
+                            }}>
+                            <motion.div animate={{ scale: sel ? 1.15 : 1 }} transition={{ duration: 0.2 }}
+                              style={{ fontSize: 22, marginBottom: 5 }}>{ct.icon}</motion.div>
+                            <div style={{ fontSize: 12, fontWeight: sel ? 700 : 500, color: sel ? C.textDark : C.textMid, transition: "color 0.15s" }}>{ct.label}</div>
+                          </motion.button>
                         );
                       })}
                     </div>
 
                     {/* 세부 업종 아코디언 */}
                     {selectedInRow && selectedInRow.subs.length > 0 && (
-                      <div style={{ marginTop: 8, padding: "14px 14px", borderRadius: 10, background: "#FFFBE8", border: `1.5px solid ${C.border}` }}>
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25 }}
+                        style={{ marginTop: 8, padding: "14px 14px", borderRadius: 10, background: "#FFFBE8", border: `1.5px solid ${C.border}` }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.primary, marginBottom: 10, letterSpacing: "0.04em" }}>세부 업종</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                           {selectedInRow.subs.map(sub => {
                             const sel = commercialSub === sub;
                             return (
-                              <button key={sub} onClick={() => setCommercialSub(sub)} style={{
-                                padding: "7px 14px",
-                                borderRadius: 20,
-                                border: `${sel ? "2px" : "1.5px"} solid ${sel ? "#F5C200" : C.border}`,
-                                background: sel ? "#F5C200" : C.card,
-                                cursor: "pointer",
-                                fontSize: 13, fontWeight: sel ? 700 : 500,
-                                color: sel ? "#111111" : C.textMid,
-                                transition: "all 0.15s ease",
-                              }}>
+                              <motion.button key={sub} onClick={() => setCommercialSub(sub)}
+                                whileTap={{ scale: 0.93 }}
+                                animate={{ scale: sel ? 1.05 : 1 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                                style={{
+                                  padding: "7px 14px", borderRadius: 20,
+                                  border: `${sel ? "2px" : "1.5px"} solid ${sel ? "#F5C200" : C.border}`,
+                                  background: sel ? "#F5C200" : C.card,
+                                  cursor: "pointer", fontSize: 13, fontWeight: sel ? 700 : 500,
+                                  color: sel ? "#111111" : C.textMid,
+                                  transition: "border-color 0.15s, background 0.15s",
+                                }}>
                                 {sub}
-                              </button>
+                              </motion.button>
                             );
                           })}
                         </div>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                 );

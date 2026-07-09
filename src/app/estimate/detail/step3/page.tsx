@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   IconArrowRight, IconCheck,
   IconHammer, IconBuildingFactory2, IconGridDots, IconPaint,
@@ -48,31 +49,59 @@ type WorkItem = { id: string; label: string; desc: string; icon: React.ReactNode
 
 function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{
-      position: "relative",
-      padding: "14px 10px 12px",
-      borderRadius: 12,
-      border: `${selected ? "2px" : "1.5px"} solid ${selected ? C.selectedBorder : C.border}`,
-      background: selected ? C.selectedBg : C.card,
-      cursor: "pointer", textAlign: "center",
-      transition: "all 0.15s ease",
-    }}>
-      {selected && (
-        <div style={{
-          position: "absolute", top: 7, right: 7,
-          width: 16, height: 16, borderRadius: "50%",
-          background: C.primary,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <IconCheck size={9} color="white" strokeWidth={3} />
-        </div>
-      )}
-      <div style={{ color: selected ? C.primary : "#c8b8a8", marginBottom: 7, display: "flex", justifyContent: "center" }}>
+    <motion.button
+      onClick={onClick}
+      whileTap={{ scale: 0.91 }}
+      animate={{
+        scale: selected ? 1.04 : 1,
+        y: selected ? -2 : 0,
+      }}
+      transition={{ type: "spring", stiffness: 420, damping: 22 }}
+      style={{
+        position: "relative",
+        padding: "14px 10px 12px",
+        borderRadius: 12,
+        border: `${selected ? "2px" : "1.5px"} solid ${selected ? C.selectedBorder : C.border}`,
+        background: selected ? C.selectedBg : C.card,
+        cursor: "pointer", textAlign: "center",
+        transition: "border-color 0.15s, background 0.15s",
+        boxShadow: selected ? `0 4px 16px rgba(245,194,0,0.25)` : "none",
+      }}
+    >
+      {/* 체크 뱃지 */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 30 }}
+            transition={{ type: "spring", stiffness: 500, damping: 18 }}
+            style={{
+              position: "absolute", top: 6, right: 6,
+              width: 18, height: 18, borderRadius: "50%",
+              background: C.primary,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <IconCheck size={10} color="#111" strokeWidth={3.5} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 아이콘 */}
+      <motion.div
+        animate={{ color: selected ? C.primary : "#CCCCCC", scale: selected ? 1.12 : 1 }}
+        transition={{ duration: 0.2 }}
+        style={{ marginBottom: 7, display: "flex", justifyContent: "center" }}
+      >
         {item.icon}
+      </motion.div>
+
+      <div style={{ fontSize: 12, fontWeight: 700, color: selected ? C.textDark : C.textMid, marginBottom: 2, transition: "color 0.15s" }}>
+        {item.label}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: selected ? C.textDark : C.textMid, marginBottom: 2 }}>{item.label}</div>
       <div style={{ fontSize: 10, color: C.textLight, lineHeight: 1.3 }}>{item.desc}</div>
-    </button>
+    </motion.button>
   );
 }
 
