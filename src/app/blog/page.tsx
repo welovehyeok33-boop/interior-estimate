@@ -11,7 +11,7 @@ const CATEGORIES: { id: Category; label: string; subs: string[] }[] = [
 
 export default function BlogPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "#F7F7F5" }}>
+    <div style={{ minHeight: "100vh", background: "#FFFDF0" }}>
       {/* 헤더 */}
       <div style={{ background: "#111111", padding: "14px 0" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

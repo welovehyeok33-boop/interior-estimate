@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 // ── 컬러 토큰 ──────────────────────────────────────────────
 export const C = {
-  bg: "#F7F7F5",
+  bg: "#FFFDF0",
   card: "#ffffff",
   border: "#E8E8E8",
   headerFrom: "#111111",
