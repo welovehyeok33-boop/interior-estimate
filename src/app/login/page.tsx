@@ -52,9 +52,9 @@ export default function LoginPage() {
       <Container size={420} w="100%">
         {/* 로고 */}
         <Group justify="center" mb={32} style={{ cursor: "pointer" }} onClick={() => router.push("/")}>
-          <Image src="/logo.png" alt="인테리어허브" width={40} height={40} style={{ borderRadius: 8 }} />
+          <Image src="/logo.png" alt="폼잇." width={40} height={40} style={{ borderRadius: 8 }} />
           <Text fw={800} size="xl" c="white" style={{ letterSpacing: "-0.02em" }}>
-            인테리어허브
+            폼잇.
           </Text>
         </Group>
 

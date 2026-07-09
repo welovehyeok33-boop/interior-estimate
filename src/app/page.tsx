@@ -1,415 +1,274 @@
 "use client";
 
-import {
-  Box,
-  Container,
-  Title,
-  Text,
-  SimpleGrid,
-  Card,
-  Badge,
-  Button,
-  Group,
-  Stack,
-  ThemeIcon,
-  List,
-} from "@mantine/core";
-import {
-  IconBolt,
-  IconChartBar,
-  IconArrowRight,
-  IconCheck,
-} from "@tabler/icons-react";
+import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-
-const SIMPLE_FEATURES = [
-  "평수 · 지역 · 자재등급만 입력",
-  "30초 내 견적 확인",
-  "전체 공사 기준 예상 금액",
-];
-
-const DETAIL_FEATURES = [
-  "공종별 개별 선택 (도배, 바닥, 욕실 등)",
-  "자재 등급 공종별 설정",
-  "항목별 상세 금액 내역",
-  "PDF 정교한 견적서 발급",
-];
-
-function PlaneSVG({ size = 48, opacity = 1 }: { size?: number; opacity?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      style={{ opacity }}
-    >
-      <path
-        d="M58 28L40 22L32 4L24 22L6 28L16 34L12 52L32 42L52 52L48 34L58 28Z"
-        fill="white"
-        fillOpacity="0.9"
-      />
-      <path
-        d="M32 4L40 22L58 28L48 34L52 52L32 42L12 52L16 34L6 28L24 22L32 4Z"
-        stroke="rgba(255,255,255,0.4)"
-        strokeWidth="1"
-      />
-    </svg>
-  );
-}
-
-// 실제 비행기 SVG
-function AirplaneSVG({ size = 60, color = "white", opacity = 0.9 }: { size?: number; color?: string; opacity?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ opacity }}>
-      <path
-        d="M90 45 L55 40 L45 10 L38 10 L44 40 L20 38 L16 28 L10 28 L12 45 L10 62 L16 62 L20 52 L44 50 L38 80 L45 80 L55 50 L90 45Z"
-        fill={color}
-      />
-    </svg>
-  );
-}
 
 export default function Home() {
-  const router = useRouter();
-
   return (
-    <Box style={{ minHeight: "100vh", background: "#f0f6ff" }}>
-      <style>{`
-        @keyframes fly1 {
-          0%   { transform: translateX(-120px) translateY(0px) rotate(5deg); opacity: 0; }
-          5%   { opacity: 1; }
-          95%  { opacity: 1; }
-          100% { transform: translateX(110vw) translateY(-60px) rotate(5deg); opacity: 0; }
-        }
-        @keyframes fly2 {
-          0%   { transform: translateX(-120px) translateY(0px) rotate(3deg); opacity: 0; }
-          5%   { opacity: 0.6; }
-          95%  { opacity: 0.6; }
-          100% { transform: translateX(110vw) translateY(30px) rotate(3deg); opacity: 0; }
-        }
-        @keyframes fly3 {
-          0%   { transform: translateX(-80px) translateY(0px) rotate(6deg); opacity: 0; }
-          5%   { opacity: 0.35; }
-          95%  { opacity: 0.35; }
-          100% { transform: translateX(110vw) translateY(-20px) rotate(6deg); opacity: 0; }
-        }
-        @keyframes trailFade {
-          0%   { width: 0; opacity: 0.6; }
-          100% { width: 80px; opacity: 0; }
-        }
-        @keyframes cloudDrift {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(30px); }
-        }
-      `}</style>
+    <div style={{ fontFamily: "'Pretendard Variable', Pretendard, sans-serif", color: "#111", background: "#fff" }}>
 
-      {/* 하늘 히어로 */}
-      <Box
-        style={{
-          background: "linear-gradient(180deg, #0a2a6e 0%, #1565c0 28%, #42a5f5 62%, #90caf9 82%, #e3f2fd 100%)",
-          paddingBottom: 100,
-          position: "relative",
-          overflow: "hidden",
-          minHeight: 520,
-        }}
-      >
-        {/* 구름 1 */}
-        <Box style={{ position: "absolute", top: "42%", left: "8%", animation: "cloudDrift 6s ease-in-out infinite alternate" }}>
-          <svg width="120" height="40" viewBox="0 0 120 40" fill="none">
-            <ellipse cx="60" cy="28" rx="55" ry="14" fill="rgba(255,255,255,0.18)" />
-            <ellipse cx="45" cy="22" rx="30" ry="16" fill="rgba(255,255,255,0.18)" />
-            <ellipse cx="75" cy="20" rx="25" ry="14" fill="rgba(255,255,255,0.15)" />
-          </svg>
-        </Box>
+      {/* NAV */}
+      <nav style={{
+        position: "sticky", top: 0, zIndex: 100,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderBottom: "1px solid #eee",
+      }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <Image src="/logo.png" alt="폼잇." width={26} height={26} style={{ borderRadius: 6 }} />
+            <span style={{ fontWeight: 800, fontSize: 16, color: "#111", letterSpacing: "-0.5px" }}>폼잇.</span>
+          </Link>
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <Link href="/blog" style={{ padding: "7px 16px", color: "#666", textDecoration: "none", fontSize: 14, fontWeight: 500, borderRadius: 8 }}>가이드</Link>
+            <Link href="/estimate/detail" style={{
+              padding: "9px 20px", borderRadius: 8,
+              background: "#111", color: "#fff",
+              textDecoration: "none", fontSize: 14, fontWeight: 600,
+              letterSpacing: "-0.2px",
+            }}>무료 견적 →</Link>
+          </div>
+        </div>
+      </nav>
 
-        {/* 구름 2 */}
-        <Box style={{ position: "absolute", top: "30%", right: "10%", animation: "cloudDrift 8s ease-in-out infinite alternate-reverse" }}>
-          <svg width="90" height="32" viewBox="0 0 90 32" fill="none">
-            <ellipse cx="45" cy="22" rx="40" ry="11" fill="rgba(255,255,255,0.14)" />
-            <ellipse cx="32" cy="17" rx="22" ry="13" fill="rgba(255,255,255,0.14)" />
-            <ellipse cx="60" cy="16" rx="18" ry="11" fill="rgba(255,255,255,0.12)" />
-          </svg>
-        </Box>
+      {/* HERO */}
+      <section style={{ background: "#FAFAF8", padding: "88px 32px 72px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", textAlign: "center" }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#888", letterSpacing: "0.5px", marginBottom: 20, textTransform: "uppercase" }}>
+            AI 인테리어 견적 플랫폼
+          </p>
+          <h1 style={{
+            fontSize: "clamp(44px, 6.5vw, 76px)",
+            fontWeight: 900,
+            lineHeight: 1.1,
+            letterSpacing: "-2.5px",
+            margin: "0 0 24px",
+            color: "#111",
+            wordBreak: "keep-all",
+          }}>
+            인테리어 견적,<br />이제 직접 알아보세요
+          </h1>
+          <p style={{ fontSize: 18, color: "#666", lineHeight: 1.75, margin: "0 auto 40px", maxWidth: 480, letterSpacing: "-0.3px", wordBreak: "keep-all" }}>
+            업체 부르기 전에 먼저 확인하세요.<br />100개 업체 단가 기반, 30초면 됩니다.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+            <Link href="/estimate/detail" style={{
+              padding: "16px 36px", borderRadius: 12,
+              background: "#111", color: "#fff",
+              textDecoration: "none", fontSize: 16, fontWeight: 700,
+              letterSpacing: "-0.3px",
+            }}>세부 견적 받기</Link>
+            <Link href="/estimate/simple" style={{
+              padding: "16px 30px", borderRadius: 12,
+              background: "#fff", color: "#111",
+              border: "1.5px solid #ddd",
+              textDecoration: "none", fontSize: 16, fontWeight: 600,
+              letterSpacing: "-0.3px",
+            }}>간단 견적 (1분)</Link>
+          </div>
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}>
+            {[["22가지", "공종 데이터"], ["100곳+", "업체 단가"], ["30초", "견적 계산"], ["무료", "PDF 발급"]].map(([n, d]) => (
+              <div key={n} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#111", letterSpacing: "-0.5px" }}>{n}</div>
+                <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* 구름 3 */}
-        <Box style={{ position: "absolute", top: "55%", left: "55%", animation: "cloudDrift 7s ease-in-out infinite alternate" }}>
-          <svg width="70" height="26" viewBox="0 0 70 26" fill="none">
-            <ellipse cx="35" cy="18" rx="30" ry="9" fill="rgba(255,255,255,0.12)" />
-            <ellipse cx="25" cy="14" rx="18" ry="10" fill="rgba(255,255,255,0.12)" />
-            <ellipse cx="48" cy="13" rx="15" ry="9" fill="rgba(255,255,255,0.10)" />
-          </svg>
-        </Box>
+      {/* 견적 미리보기 */}
+      <section style={{ background: "#fff", padding: "80px 32px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#aaa", letterSpacing: "1px", textAlign: "center", marginBottom: 12, textTransform: "uppercase" }}>견적 예시</p>
+          <h2 style={{ fontSize: "clamp(26px, 3.5vw, 38px)", fontWeight: 800, color: "#111", textAlign: "center", margin: "0 0 40px", letterSpacing: "-1px", lineHeight: 1.2 }}>
+            이렇게 항목마다 보여드려요
+          </h2>
 
-        {/* 별 */}
-        {[
-          { top: "7%", left: "10%", size: 2 },
-          { top: "13%", left: "32%", size: 1.5 },
-          { top: "5%", left: "60%", size: 2 },
-          { top: "18%", left: "78%", size: 1.5 },
-          { top: "9%", left: "90%", size: 2 },
-        ].map((s, i) => (
-          <Box key={i} style={{ position: "absolute", top: s.top, left: s.left, width: s.size, height: s.size, borderRadius: "50%", background: "rgba(255,255,255,0.8)" }} />
-        ))}
+          <div style={{ border: "1px solid #e8e8e8", borderRadius: 16, overflow: "hidden" }}>
+            {/* 헤더 */}
+            <div style={{ background: "#111", padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>서울 강남구 · 33평 · 중급 자재</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>세부 견적서</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>총 예상 금액</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-1px" }}>1,720만원</div>
+              </div>
+            </div>
+            {/* 항목 */}
+            <div>
+              {[
+                { name: "철거 및 폐기물 처리", price: "180만원", bar: 10 },
+                { name: "도배 (합지 기준)", price: "210만원", bar: 12 },
+                { name: "강마루 바닥재", price: "360만원", bar: 21 },
+                { name: "욕실 타일 (2칸)", price: "420만원", bar: 24 },
+                { name: "주방 싱크대", price: "380만원", bar: 22 },
+                { name: "전기 및 조명", price: "170만원", bar: 10 },
+              ].map((row, i, arr) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 16,
+                  padding: "16px 28px",
+                  borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none",
+                  background: i % 2 === 0 ? "#fff" : "#fafafa",
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, color: "#333", marginBottom: 6 }}>{row.name}</div>
+                    <div style={{ height: 4, background: "#f0f0f0", borderRadius: 2 }}>
+                      <div style={{ height: 4, width: `${row.bar * 4}%`, background: "#111", borderRadius: 2 }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#111", minWidth: 70, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{row.price}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: "16px 28px", background: "#FAFAF8", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#bbb" }}>자재 등급·공종 선택에 따라 ±15% 차이</span>
+              <Link href="/estimate/detail" style={{
+                padding: "8px 16px", borderRadius: 8,
+                background: "#111", color: "#fff",
+                textDecoration: "none", fontSize: 13, fontWeight: 700,
+              }}>내 견적 받기 →</Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        {/* 비행기 1 — 크고 선명, 중단 */}
-        <Box
-          style={{
-            position: "absolute",
-            top: "32%",
-            left: 0,
-            animation: "fly1 18s linear infinite",
-            animationDelay: "0s",
-            zIndex: 5,
-          }}
-        >
-          <AirplaneSVG size={64} color="white" opacity={0.95} />
-        </Box>
+      {/* 두 가지 방법 */}
+      <section style={{ background: "#FAFAF8", padding: "80px 32px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <h2 style={{ fontSize: "clamp(26px, 3.5vw, 38px)", fontWeight: 800, color: "#111", margin: "0 0 40px", letterSpacing: "-1px" }}>
+            두 가지 방법이 있어요
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <div style={{ background: "#111", borderRadius: 16, padding: "36px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 260 }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "1.5px", marginBottom: 14 }}>DETAIL · 정확하게</p>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: "#fff", margin: "0 0 14px", letterSpacing: "-0.8px" }}>세부 견적</h3>
+                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>
+                  22개 공종 중 원하는 것만 골라서 항목별 금액을 확인해요. PDF로 저장해서 업체 미팅 때 활용하세요.
+                </p>
+              </div>
+              <Link href="/estimate/detail" style={{
+                marginTop: 32, display: "inline-block",
+                padding: "12px 24px", borderRadius: 9,
+                background: "#fff", color: "#111",
+                textDecoration: "none", fontWeight: 700, fontSize: 14,
+                letterSpacing: "-0.2px", alignSelf: "flex-start",
+              }}>시작하기 →</Link>
+            </div>
+            <div style={{ background: "#fff", border: "1.5px solid #e8e8e8", borderRadius: 16, padding: "36px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 260 }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: "1.5px", marginBottom: 14 }}>SIMPLE · 빠르게</p>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: "0 0 14px", letterSpacing: "-0.8px" }}>간단 견적</h3>
+                <p style={{ fontSize: 14, color: "#888", lineHeight: 1.7, margin: 0, wordBreak: "keep-all" }}>
+                  평수와 지역만 입력하면 1분 안에 전체 예상 금액을 바로 확인할 수 있어요.
+                </p>
+              </div>
+              <Link href="/estimate/simple" style={{
+                marginTop: 32, display: "inline-block",
+                padding: "12px 24px", borderRadius: 9,
+                background: "#111", color: "#fff",
+                textDecoration: "none", fontWeight: 700, fontSize: 14,
+                letterSpacing: "-0.2px", alignSelf: "flex-start",
+              }}>시작하기 →</Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        {/* 비행기 2 — 중간, 상단 */}
-        <Box
-          style={{
-            position: "absolute",
-            top: "14%",
-            left: 0,
-            animation: "fly2 24s linear infinite",
-            animationDelay: "6s",
-            zIndex: 5,
-          }}
-        >
-          <AirplaneSVG size={44} color="white" opacity={0.6} />
-        </Box>
+      {/* FAQ */}
+      <section style={{ background: "#fff", padding: "80px 32px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <h2 style={{ fontSize: "clamp(26px, 3.5vw, 38px)", fontWeight: 800, color: "#111", margin: "0 0 40px", letterSpacing: "-1px" }}>
+            자주 묻는 질문
+          </h2>
+          {[
+            { q: "업체마다 견적이 왜 다 달라요?", a: "단가 기준이 업체마다 달라서예요. 폼잇.은 100개 이상 업체 단가 평균으로 계산해서 적정 시장가를 확인하는 기준으로 쓰기 좋아요." },
+            { q: "32평 풀옵션이면 대략 얼마예요?", a: "중급 자재 기준 1,400~2,800만원 사이예요. 공종과 자재 등급에 따라 달라지니 세부 견적으로 직접 확인해보세요." },
+            { q: "정확하지 않아도 괜찮나요?", a: "±15% 오차 범위가 있어요. 업체 계약 전 '이 금액이 적정한가' 판단하는 용도로 쓰기에 충분해요." },
+            { q: "지역에 따라 얼마나 차이 나요?", a: "서울 강남권은 기준 단가보다 약 20% 높고, 경기권은 비슷하거나 5~10% 낮아요. 지역 선택 시 자동 반영돼요." },
+          ].map((item, i, arr) => (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "2fr 3fr", gap: 40,
+              padding: "28px 0",
+              borderBottom: i < arr.length - 1 ? "1px solid #f0f0f0" : "none",
+            }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "#111", margin: 0, lineHeight: 1.5, letterSpacing: "-0.3px", wordBreak: "keep-all" }}>{item.q}</p>
+              <p style={{ fontSize: 15, color: "#666", margin: 0, lineHeight: 1.8, wordBreak: "keep-all" }}>{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-        {/* 비행기 3 — 작고 희미, 하단 */}
-        <Box
-          style={{
-            position: "absolute",
-            top: "52%",
-            left: 0,
-            animation: "fly3 30s linear infinite",
-            animationDelay: "12s",
-            zIndex: 5,
-          }}
-        >
-          <AirplaneSVG size={32} color="white" opacity={0.35} />
-        </Box>
+      {/* CTA */}
+      <section style={{ background: "#111", padding: "88px 32px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 32 }}>
+          <div>
+            <h2 style={{ fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 900, color: "#fff", margin: "0 0 12px", letterSpacing: "-1.5px", lineHeight: 1.15, wordBreak: "keep-all" }}>
+              지금 바로 확인해보세요
+            </h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.4)", margin: 0 }}>가입 없이 · 30초 · 완전 무료</p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/estimate/detail" style={{
+              padding: "15px 32px", borderRadius: 10,
+              background: "#fff", color: "#111",
+              textDecoration: "none", fontSize: 15, fontWeight: 700,
+              letterSpacing: "-0.3px",
+            }}>세부 견적 받기</Link>
+            <Link href="/estimate/simple" style={{
+              padding: "15px 28px", borderRadius: 10,
+              background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              textDecoration: "none", fontSize: 15, fontWeight: 600,
+              letterSpacing: "-0.3px",
+            }}>간단 견적</Link>
+          </div>
+        </div>
+      </section>
 
-        {/* 하단 페이드 */}
-        <Box
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 130,
-            background: "linear-gradient(180deg, transparent 0%, #f0f6ff 100%)",
-            zIndex: 6,
-          }}
-        />
+      {/* 블로그 */}
+      <section style={{ background: "#FAFAF8", padding: "80px 32px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
+            <h3 style={{ fontSize: 24, fontWeight: 800, color: "#111", margin: 0, letterSpacing: "-0.5px" }}>인테리어 가이드</h3>
+            <Link href="/blog" style={{ fontSize: 14, color: "#666", textDecoration: "none", fontWeight: 600 }}>전체 보기 →</Link>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+            {[
+              { title: "32평 인테리어, 현실적인 비용은?", tag: "견적 상식", desc: "풀옵션 기준 1,400~2,800만원 — 자재 등급에 따라 이렇게 달라져요." },
+              { title: "도배 합지 vs 실크, 뭐가 나을까요?", tag: "자재 가이드", desc: "가격 차이는 크고, 내구성은 생각보다 비슷해요." },
+              { title: "욕실 타일 업체 고르는 요령", tag: "업체 선택", desc: "면적 단가가 비슷해도 시공 방식이 달라서 결과가 많이 달라요." },
+            ].map(post => (
+              <Link key={post.title} href="/blog" style={{ textDecoration: "none", display: "block", background: "#fff", borderRadius: 12, border: "1px solid #ebebeb", padding: "24px 22px" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#bbb", letterSpacing: "0.5px", display: "block", marginBottom: 10, textTransform: "uppercase" }}>{post.tag}</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#111", lineHeight: 1.5, display: "block", marginBottom: 8, letterSpacing: "-0.3px" }}>{post.title}</span>
+                <span style={{ fontSize: 13, color: "#999", lineHeight: 1.6, display: "block" }}>{post.desc}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        {/* 헤더 */}
-        <Container size="lg" py="md" style={{ position: "relative", zIndex: 10 }}>
-          <Group justify="space-between">
-            <Group gap={8} align="center">
-              <Image src="/logo.png" alt="인테리어허브 로고" width={36} height={36} style={{ borderRadius: 8 }} />
-              <Text fw={800} size="xl" c="white" style={{ letterSpacing: "-0.02em" }}>
-                인테리어허브
-              </Text>
-            </Group>
-            <Button
-              variant="outline"
-              size="sm"
-              radius="xl"
-              style={{ borderColor: "rgba(255,255,255,0.5)", color: "white" }}
-              onClick={() => router.push("/login")}
-            >
-              로그인
-            </Button>
-          </Group>
-        </Container>
+      {/* FOOTER */}
+      <footer style={{ background: "#fff", borderTop: "1px solid #ebebeb", padding: "32px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <Image src="/logo.png" alt="폼잇." width={20} height={20} style={{ borderRadius: 5 }} />
+            <span style={{ fontWeight: 800, color: "#111", fontSize: 14, letterSpacing: "-0.3px" }}>폼잇.</span>
+          </div>
+          <span style={{ fontSize: 12, color: "#ddd" }}>© 2026 폼잇. AI 기반 자동 견적 플랫폼</span>
+          <div style={{ display: "flex", gap: 20 }}>
+            {[{ label: "세부견적", href: "/estimate/detail" }, { label: "간단견적", href: "/estimate/simple" }, { label: "가이드", href: "/blog" }].map(l => (
+              <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#aaa", textDecoration: "none" }}>{l.label}</Link>
+            ))}
+          </div>
+        </div>
+      </footer>
 
-        {/* 히어로 텍스트 */}
-        <Container size="lg" pt={60} pb={40} style={{ position: "relative", zIndex: 10 }}>
-          <Stack align="center" gap="lg">
-            <Badge
-              size="lg"
-              radius="xl"
-              style={{
-                background: "rgba(255,255,255,0.18)",
-                backdropFilter: "blur(10px)",
-                color: "white",
-                border: "1px solid rgba(255,255,255,0.35)",
-                letterSpacing: "0.06em",
-                fontWeight: 600,
-              }}
-            >
-              ✈︎ &nbsp; AI 기반 자동 견적 서비스
-            </Badge>
-
-            <Title
-              order={1}
-              ta="center"
-              c="white"
-              style={{
-                fontSize: "clamp(1.8rem, 4.5vw, 3.4rem)",
-                fontWeight: 800,
-                lineHeight: 1.25,
-                letterSpacing: "-0.02em",
-                textShadow: "0 2px 24px rgba(0,0,0,0.18)",
-              }}
-            >
-              현직 인테리어 전문가 +{" "}
-              <Text
-                component="span"
-                style={{
-                  fontSize: "inherit",
-                  fontWeight: "inherit",
-                  background: "linear-gradient(90deg, #ffd54f, #ffb300)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                100여개 이상 업체의 데이터
-              </Text>
-              로 만든
-              <br />
-              국내 최초 AI 자동 견적
-            </Title>
-
-            <Text
-              ta="center"
-              c="rgba(255,255,255,0.85)"
-              size="lg"
-              maw={500}
-              style={{ lineHeight: 1.7 }}
-            >
-              복잡하고 불투명했던 인테리어 견적.<br />
-              조건만 입력하면 전문가 수준의 견적서를 무료로 받아보세요.
-            </Text>
-          </Stack>
-        </Container>
-      </Box>
-
-      {/* 카드 섹션 */}
-      <Container size="md" style={{ marginTop: -48, position: "relative", zIndex: 20 }} pb={80}>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
-
-          {/* 간단 견적 */}
-          <Card
-            padding="xl"
-            style={{
-              background: "white",
-              border: "1.5px solid #e3eeff",
-              boxShadow: "0 8px 40px rgba(21,101,192,0.10)",
-              cursor: "pointer",
-              transition: "all 0.25s ease",
-            }}
-            onClick={() => router.push("/estimate/simple")}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-6px)";
-              e.currentTarget.style.boxShadow = "0 20px 60px rgba(21,101,192,0.18)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 8px 40px rgba(21,101,192,0.10)";
-            }}
-          >
-            <Stack gap="lg">
-              <ThemeIcon size={56} radius="xl" variant="gradient" gradient={{ from: "#1565c0", to: "#42a5f5" }}>
-                <IconBolt size={28} />
-              </ThemeIcon>
-
-              <Stack gap={6}>
-                <Group gap="xs" align="center">
-                  <Title order={3} c="#0d2b6b" fw={800}>AI 간단 견적</Title>
-                  <Badge color="blue" variant="light" size="sm" radius="xl">30초</Badge>
-                </Group>
-                <Text c="gray.6" size="sm">빠르게 전체 공사 예상 금액 확인</Text>
-              </Stack>
-
-              <List spacing={10} icon={
-                <ThemeIcon color="blue" size={20} radius="xl" variant="light">
-                  <IconCheck size={12} />
-                </ThemeIcon>
-              }>
-                {SIMPLE_FEATURES.map((f) => (
-                  <List.Item key={f}><Text c="gray.7" size="sm">{f}</Text></List.Item>
-                ))}
-              </List>
-
-              <Button
-                variant="gradient"
-                gradient={{ from: "#1565c0", to: "#42a5f5" }}
-                rightSection={<IconArrowRight size={16} />}
-                radius="xl"
-                size="md"
-              >
-                간단 견적 시작하기
-              </Button>
-            </Stack>
-          </Card>
-
-          {/* 세부 견적 */}
-          <Card
-            padding="xl"
-            style={{
-              background: "white",
-              border: "1.5px solid #ede8ff",
-              boxShadow: "0 8px 40px rgba(99,60,180,0.10)",
-              cursor: "pointer",
-              transition: "all 0.25s ease",
-            }}
-            onClick={() => router.push("/estimate/detail")}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-6px)";
-              e.currentTarget.style.boxShadow = "0 20px 60px rgba(99,60,180,0.18)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 8px 40px rgba(99,60,180,0.10)";
-            }}
-          >
-            <Stack gap="lg">
-              <ThemeIcon size={56} radius="xl" variant="gradient" gradient={{ from: "#5c35b5", to: "#9575cd" }}>
-                <IconChartBar size={28} />
-              </ThemeIcon>
-
-              <Stack gap={6}>
-                <Group gap="xs" align="center">
-                  <Title order={3} c="#2d1b69" fw={800}>AI 세부 견적</Title>
-                  <Badge color="violet" variant="light" size="sm" radius="xl">정교함</Badge>
-                </Group>
-                <Text c="gray.6" size="sm">공종별 상세 견적 + PDF 견적서 발급</Text>
-              </Stack>
-
-              <List spacing={10} icon={
-                <ThemeIcon color="violet" size={20} radius="xl" variant="light">
-                  <IconCheck size={12} />
-                </ThemeIcon>
-              }>
-                {DETAIL_FEATURES.map((f) => (
-                  <List.Item key={f}><Text c="gray.7" size="sm">{f}</Text></List.Item>
-                ))}
-              </List>
-
-              <Button
-                variant="gradient"
-                gradient={{ from: "#5c35b5", to: "#9575cd" }}
-                rightSection={<IconArrowRight size={16} />}
-                radius="xl"
-                size="md"
-              >
-                세부 견적 시작하기
-              </Button>
-            </Stack>
-          </Card>
-        </SimpleGrid>
-
-        <Text ta="center" c="gray.5" size="sm" mt={40}>
-          PDF 견적서 발급은 무료 회원가입 후 이용 가능합니다
-        </Text>
-      </Container>
-    </Box>
+    </div>
   );
 }

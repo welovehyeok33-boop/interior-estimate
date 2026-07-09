@@ -1,75 +1,21 @@
 import type { Metadata } from "next";
-import { ColorSchemeScript, MantineProvider } from "@mantine/core";
-import { Notifications } from "@mantine/notifications";
-import { ModalsProvider } from "@mantine/modals";
-import "@mantine/core/styles.css";
-import "@mantine/notifications/styles.css";
-import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI 기반 자동 견적 플랫폼",
-  description: "인테리어 AI 자동 견적 서비스",
+  title: "폼잇. — AI 자동 견적",
+  description: "현직 인테리어 전문가 + 100개 업체 데이터 기반 AI 자동 견적 플랫폼",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko">
       <head>
-        <ColorSchemeScript />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
       </head>
-      <body>
-        <MantineProvider
-          theme={{
-            primaryColor: "dark",
-            fontFamily: "Pretendard, -apple-system, BlinkMacSystemFont, sans-serif",
-            colors: {
-              brand: [
-                "#f0f4ff",
-                "#dce4f5",
-                "#b9c7e8",
-                "#94a8db",
-                "#758ed0",
-                "#5f7ec9",
-                "#5375c7",
-                "#4363b1",
-                "#3a589f",
-                "#2e4b8e",
-              ],
-            },
-            components: {
-              Button: {
-                defaultProps: {
-                  radius: "md",
-                },
-              },
-              Card: {
-                defaultProps: {
-                  radius: "lg",
-                  shadow: "sm",
-                },
-              },
-              TextInput: {
-                defaultProps: {
-                  radius: "md",
-                },
-              },
-              Select: {
-                defaultProps: {
-                  radius: "md",
-                },
-              },
-            },
-          }}
-        >
-          <ModalsProvider>
-            <Notifications position="top-right" />
-            {children}
-          </ModalsProvider>
-        </MantineProvider>
+      <body style={{ margin: 0, fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif" }}>
+        {children}
       </body>
     </html>
   );
