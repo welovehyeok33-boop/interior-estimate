@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "폼잇. — AI 자동 견적",
   description: "현직 인테리어 전문가 + 100개 업체 데이터 기반 AI 자동 견적 플랫폼",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

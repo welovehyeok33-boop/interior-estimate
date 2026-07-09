@@ -47,8 +47,8 @@ export default function Home() {
       }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <Image src="/logo.png" alt="폼잇." width={26} height={26} style={{ borderRadius: 6 }} />
-            <span style={{ fontWeight: 900, fontSize: 16, color: K, letterSpacing: "-0.5px" }}>폼잇.</span>
+            <Image src="/logo.png" alt="폼잇." width={36} height={31} style={{ objectFit: "contain" }} />
+            
           </Link>
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             <Link href="/blog" style={{ padding: "7px 16px", color: "#888", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>가이드</Link>
@@ -352,8 +352,8 @@ export default function Home() {
       <footer style={{ background: "#fff", borderTop: "1px solid #EBEBEB", padding: "32px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <Image src="/logo.png" alt="폼잇." width={20} height={20} style={{ borderRadius: 5 }} />
-            <span style={{ fontWeight: 900, color: K, fontSize: 14 }}>폼잇.</span>
+            <Image src="/logo.png" alt="폼잇." width={28} height={24} style={{ objectFit: "contain" }} />
+            
           </div>
           <span style={{ fontSize: 12, color: "#DDD" }}>© 2026 폼잇. AI 기반 자동 견적 플랫폼</span>
           <div style={{ display: "flex", gap: 20 }}>

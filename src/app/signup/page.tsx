@@ -44,7 +44,7 @@ export default function SignupPage() {
     <div style={{ minHeight: "100vh", background: "#FFFDF0", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ textAlign: "center", marginBottom: 32, cursor: "pointer" }} onClick={() => router.push("/")}>
-          <Image src="/logo.png" alt="폼잇." width={36} height={36} style={{ borderRadius: 8, marginBottom: 8 }} />
+          <Image src="/logo.png" alt="폼잇." width={52} height={45} style={{ objectFit: "contain", marginBottom: 8 }} />
           <div style={{ fontWeight: 800, fontSize: 18, color: "#111", letterSpacing: "-0.5px" }}>폼잇.</div>
         </div>
 
