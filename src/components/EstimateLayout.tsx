@@ -20,84 +20,123 @@ export const C = {
   selectedBorder: "#F5C200",
 };
 
-// ── 비행 경로 (웜톤) ───────────────────────────────────────
+// ── 줄자 진행 표시기 ──────────────────────────────────────
 export function FlightPath({ step, totalSteps }: { step: number; totalSteps: number }) {
-  const progress = (step / totalSteps) * 100;
-  const t = progress / 100;
+  const TAPE_START = 44;   // 테이프 시작 X (하우징 오른쪽)
+  const TAPE_END   = 308;  // 테이프 끝 X
+  const TAPE_LEN   = TAPE_END - TAPE_START;
+  const CY         = 32;   // 중심 Y
+  const TH         = 20;   // 테이프 높이
+  const HS         = 38;   // 하우징 크기
 
-  const bx = (tt: number) =>
-    (1 - tt) * (1 - tt) * 10 + 2 * (1 - tt) * tt * 155 + tt * tt * 300;
-  const by = (tt: number) =>
-    (1 - tt) * (1 - tt) * 60 + 2 * (1 - tt) * tt * 22 + tt * tt * 60;
-
-  const x = bx(t), y = by(t);
-  const dx = 2 * (1 - t) * (155 - 10) + 2 * t * (300 - 155);
-  const dy = 2 * (1 - t) * (22 - 60) + 2 * t * (60 - 22);
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-  const checkpoints = Array.from({ length: totalSteps - 1 }, (_, i) => {
-    const ct = (i + 1) / totalSteps;
-    return { x: bx(ct), y: by(ct), done: i + 1 <= step };
-  });
+  const progress    = step / totalSteps;
+  const filledW     = progress * TAPE_LEN;
 
   const labels = ["지역·유형", "면적", "공종", "자재", "완성"];
 
+  // 체크포인트 위치
+  const cps = Array.from({ length: totalSteps }, (_, i) => ({
+    x: TAPE_START + ((i + 1) / totalSteps) * TAPE_LEN,
+    label: labels[i],
+    done: i + 1 <= step,
+  }));
+
+  // 눈금선 생성 (작은·중간·큰)
+  const ticks: { x: number; h: number; bold: boolean }[] = [];
+  const COUNT = 52;
+  for (let i = 1; i < COUNT; i++) {
+    const x = TAPE_START + (i / COUNT) * TAPE_LEN;
+    const isBig    = i % 13 === 0;
+    const isMedium = i % 4 === 0 && !isBig;
+    const h = isBig ? TH * 0.75 : isMedium ? TH * 0.5 : TH * 0.28;
+    ticks.push({ x, h, bold: isBig });
+  }
+
+  // 현재 끝 위치 (줄자 끝 탭)
+  const endX = TAPE_START + filledW;
+
   return (
-    <div style={{ padding: "0 8px" }}>
-      <svg viewBox="0 0 320 95" style={{ width: "100%", height: 110, overflow: "visible" }}>
-        {/* 점선 경로 */}
-        <path d="M 10 60 Q 155 22 300 60" fill="none" stroke={C.border} strokeWidth="1.5" strokeDasharray="5 4" />
-        {/* 완료 경로 */}
-        <path
-          d="M 10 60 Q 155 22 300 60"
-          fill="none" stroke="#F5C200" strokeWidth="2"
-          strokeDasharray={`${t * 330} 999`} strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 0.5s ease" }}
+    <div style={{ padding: "0 4px" }}>
+      <svg viewBox="0 0 320 76" style={{ width: "100%", height: 88, overflow: "visible" }}>
+
+        {/* ── 빈 트랙 (회색) ── */}
+        <rect x={TAPE_START} y={CY - TH / 2} width={TAPE_LEN} height={TH} rx="3" fill="#E8E8E8" />
+
+        {/* ── 채워진 테이프 (노란) ── */}
+        <rect
+          x={TAPE_START} y={CY - TH / 2}
+          width={filledW} height={TH}
+          rx="3" fill="#F5C200"
+          style={{ transition: "width 0.5s cubic-bezier(0.22,1,0.36,1)" }}
         />
 
-        {/* 체크포인트 */}
-        {checkpoints.map((cp, i) => (
+        {/* ── 눈금선 ── */}
+        {ticks.map((t, i) => {
+          const filled = t.x <= endX;
+          return (
+            <line key={i}
+              x1={t.x} y1={CY - t.h / 2}
+              x2={t.x} y2={CY + t.h / 2}
+              stroke={filled ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)"}
+              strokeWidth={t.bold ? 1.2 : 0.7}
+            />
+          );
+        })}
+
+        {/* ── 줄자 끝 탭 (현재 위치) ── */}
+        {step < totalSteps && (
+          <g style={{ transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)" }}
+             transform={`translate(${endX}, 0)`}>
+            {/* 탭 몸체 */}
+            <rect x={-1} y={CY - TH / 2 - 4} width={8} height={TH + 8} rx="2" fill="#111111" />
+            {/* 탭 고리 */}
+            <rect x={2} y={CY - TH / 2 - 7} width={2} height={5} rx="1" fill="#555" />
+            {/* 진행률 말풍선 */}
+            <rect x={-18} y={CY - TH / 2 - 22} width={30} height={15} rx="4" fill="#111111" />
+            <polygon points={`${-2},${CY - TH / 2 - 7} 3,${CY - TH / 2 - 7} 0,${CY - TH / 2 - 3}`} fill="#111111" />
+            <text x={-3} y={CY - TH / 2 - 11} textAnchor="middle" fontSize="8" fill="#F5C200" fontWeight="800"
+              style={{ transition: "all 0.5s ease" }}>
+              {Math.round(progress * 100)}%
+            </text>
+          </g>
+        )}
+
+        {/* ── 체크포인트 ── */}
+        {cps.map((cp, i) => (
           <g key={i}>
-            <circle cx={cp.x} cy={cp.y} r="3.5"
-              fill={cp.done ? "#F5C200" : "white"}
-              stroke={cp.done ? "#F5C200" : C.border} strokeWidth="1.5"
-              style={{ transition: "all 0.3s ease" }} />
-            <text x={cp.x} y={82} textAnchor="middle" fontSize="7.5"
-              fill={cp.done ? "#111111" : C.textLight} fontWeight={cp.done ? "700" : "400"}>
-              {labels[i]}
+            {/* 완료 표시 원 */}
+            <circle cx={cp.x} cy={CY} r="7"
+              fill={cp.done ? "#111111" : "white"}
+              stroke={cp.done ? "#111111" : "#CCCCCC"}
+              strokeWidth="1.5"
+              style={{ transition: "all 0.3s ease" }}
+            />
+            {cp.done && (
+              <text x={cp.x} y={CY + 3.5} textAnchor="middle" fontSize="8" fill="#F5C200" fontWeight="900">✓</text>
+            )}
+            {/* 라벨 */}
+            <text x={cp.x} y={CY + TH / 2 + 14} textAnchor="middle" fontSize="7.5"
+              fill={cp.done ? "#111111" : "#BBBBBB"}
+              fontWeight={cp.done ? "700" : "400"}
+              style={{ transition: "fill 0.3s ease" }}>
+              {cp.label}
             </text>
           </g>
         ))}
 
-        {/* 도착점 */}
-        <circle cx="300" cy="60" r="4"
-          fill={step >= totalSteps ? "#F5C200" : "white"}
-          stroke={step >= totalSteps ? "#F5C200" : C.border} strokeWidth="1.5" />
-        <text x="300" y="82" textAnchor="middle" fontSize="7.5"
-          fill={step >= totalSteps ? "#111111" : C.textLight} fontWeight="700">
-          {labels[totalSteps - 1]}
+        {/* ── 하우징 (줄자 본체) ── */}
+        <rect x="0" y={CY - HS / 2} width={HS} height={HS} rx="10" fill="#111111" />
+        {/* 노란 다이얼 */}
+        <circle cx={HS / 2} cy={CY} r={HS * 0.32} fill="#F5C200" />
+        {/* 중심 나사 */}
+        <circle cx={HS / 2} cy={CY} r={HS * 0.1} fill="#111111" />
+        {/* 테이프 슬롯 */}
+        <rect x={HS - 5} y={CY - TH / 2} width={7} height={TH} rx="1" fill="#F5C200" />
+        {/* 하우징 상단 텍스트 */}
+        <text x={HS / 2} y={CY - HS * 0.32 - 3} textAnchor="middle" fontSize="5.5" fill="rgba(255,255,255,0.4)" fontWeight="600">
+          FORMA
         </text>
 
-        {/* 비행기 (옐로우/블랙) */}
-        <g transform={`translate(${x}, ${y}) rotate(${angle})`}
-          style={{ transition: "transform 0.5s ease" }}>
-          <ellipse cx="0" cy="0" rx="12" ry="3" fill="#F5C200" />
-          <ellipse cx="12" cy="0" rx="3.5" ry="1.8" fill="#F5C200" />
-          <ellipse cx="-12" cy="0" rx="2.5" ry="1.5" fill="#F5C200" />
-          <path d="M 2,0 L -4,-11 L -7,-10 L -3,0 Z" fill="#111111" />
-          <path d="M 2,0 L -4,11 L -7,10 L -3,0 Z" fill="#111111" />
-          <path d="M -9,0 L -13,-5 L -14,-4.5 L -10,0 Z" fill="#333333" />
-          <path d="M -9,0 L -13,5 L -14,4.5 L -10,0 Z" fill="#333333" />
-          <circle cx="5" cy="-1" r="0.9" fill="#111111" opacity="0.9" />
-          <circle cx="2" cy="-1" r="0.9" fill="#111111" opacity="0.9" />
-        </g>
-
-        {/* 진행률 */}
-        <text x={x} y={y - 14} textAnchor="middle" fontSize="9"
-          fill="#111111" fontWeight="700"
-          style={{ transition: "all 0.5s ease" }}>
-          {Math.round(progress)}%
-        </text>
       </svg>
     </div>
   );
