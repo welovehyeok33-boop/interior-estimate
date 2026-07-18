@@ -93,21 +93,23 @@ export default function Home() {
             <FadeUp delay={0.18}>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 48, alignItems: "center" }}>
                 <Link href="/estimate/detail" style={{
-                  padding: "16px 34px", borderRadius: 12,
-                  background: K, color: "#fff",
-                  textDecoration: "none", fontSize: 16, fontWeight: 800, letterSpacing: "-0.3px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  height: 54, boxSizing: "border-box",
-                }}>AI 자동 견적</Link>
-                <Link href="/estimate/scan" style={{
-                  padding: "16px 30px", borderRadius: 12,
+                  padding: "16px 38px", borderRadius: 12,
                   background: Y, color: K,
-                  textDecoration: "none", fontSize: 16, fontWeight: 800, letterSpacing: "-0.3px",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  height: 54, boxSizing: "border-box",
+                  textDecoration: "none", fontSize: 17, fontWeight: 800, letterSpacing: "-0.3px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  height: 56, boxSizing: "border-box",
+                  boxShadow: `0 4px 20px rgba(245,194,0,0.45)`,
+                }}>AI 자동 견적 →</Link>
+                <Link href="/estimate/scan" style={{
+                  padding: "16px 24px", borderRadius: 12,
+                  background: "rgba(0,0,0,0.06)", color: "#555",
+                  border: "1.5px solid #DDD",
+                  textDecoration: "none", fontSize: 14, fontWeight: 600, letterSpacing: "-0.3px",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  height: 56, boxSizing: "border-box",
                 }}>
                   📷 견적 스캔
-                  <span style={{ fontSize: 10, background: K, color: Y, padding: "2px 8px", borderRadius: 20, fontWeight: 900, lineHeight: 1 }}>NEW</span>
+                  <span style={{ fontSize: 9, background: "#E0E0E0", color: "#888", padding: "2px 7px", borderRadius: 20, fontWeight: 700, lineHeight: 1 }}>출시예정</span>
                 </Link>
               </div>
             </FadeUp>
@@ -161,109 +163,101 @@ export default function Home() {
             </div>
           </FadeUp>
 
-          <FadeStagger style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <FadeStagger style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16 }}>
 
-            {/* 서비스 1: AI 자동 견적 */}
+            {/* 서비스 1: AI 자동 견적 — 메인 */}
             <motion.div variants={fadeUp} style={{
-              background: Y, borderRadius: 24, padding: "44px 40px",
-              display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 420,
+              background: Y, borderRadius: 24, padding: "48px 44px",
+              display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 460,
               position: "relative", overflow: "hidden",
             }}>
-              <div style={{
-                position: "absolute", top: -40, right: -40,
-                width: 180, height: 180, borderRadius: "50%",
-                background: "rgba(0,0,0,0.06)", pointerEvents: "none",
-              }} />
+              <div style={{ position: "absolute", top: -50, right: -50, width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.05)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: -30, left: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(0,0,0,0.04)", pointerEvents: "none" }} />
               <div>
-                <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(0,0,0,0.35)", letterSpacing: "1.5px", display: "block", marginBottom: 20 }}>
+                <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(0,0,0,0.3)", letterSpacing: "1.5px", display: "block", marginBottom: 22 }}>
                   01 · AI 자동 견적
                 </span>
-                <h3 style={{ fontSize: 30, fontWeight: 900, color: K, margin: "0 0 16px", letterSpacing: "-1.2px", lineHeight: 1.15 }}>
+                <h3 style={{ fontSize: 34, fontWeight: 900, color: K, margin: "0 0 18px", letterSpacing: "-1.5px", lineHeight: 1.12 }}>
                   공사 전에<br />먼저 알아보세요
                 </h3>
-                <p style={{ fontSize: 14, color: "rgba(0,0,0,0.6)", lineHeight: 1.85, margin: "0 0 32px", wordBreak: "keep-all" }}>
+                <p style={{ fontSize: 15, color: "rgba(0,0,0,0.6)", lineHeight: 1.85, margin: "0 0 32px", wordBreak: "keep-all" }}>
                   공종 선택 → 면적 입력 → 자재 등급 선택.<br />
-                  30초면 항목별 예상 금액이 나오고<br />PDF로 받아 업체 미팅 때 활용할 수 있어요.
+                  30초면 항목별 예상 금액이 나오고<br />PDF로 받아 업체 미팅 때 활용하세요.
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                   {[
                     "22개 공종 중 필요한 것만 선택",
                     "지역 · 자재 등급별 단가 자동 반영",
                     "항목별 견적 PDF 무료 발급",
                   ].map(t => (
                     <div key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: "50%", background: K, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <span style={{ fontSize: 9, color: Y, fontWeight: 900 }}>✓</span>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: K, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: Y, fontWeight: 900 }}>✓</span>
                       </div>
-                      <span style={{ fontSize: 13, color: K, fontWeight: 600 }}>{t}</span>
+                      <span style={{ fontSize: 14, color: K, fontWeight: 600 }}>{t}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <Link href="/estimate/detail" style={{
-                marginTop: 36, display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "13px 26px", borderRadius: 10,
+                marginTop: 40, display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "15px 32px", borderRadius: 12,
                 background: K, color: "#fff",
-                textDecoration: "none", fontWeight: 800, fontSize: 14,
+                textDecoration: "none", fontWeight: 800, fontSize: 15,
                 alignSelf: "flex-start",
               }}>
                 지금 견적 받기 →
               </Link>
             </motion.div>
 
-            {/* 서비스 2: AI 견적 스캔 */}
+            {/* 서비스 2: AI 견적 스캔 — 출시 예정 */}
             <motion.div variants={fadeUp} style={{
-              background: "#1C1C1C", border: `1px solid #2E2E2E`,
-              borderRadius: 24, padding: "44px 40px",
-              display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 420,
+              background: "#1C1C1C", border: `1px solid #2A2A2A`,
+              borderRadius: 24, padding: "40px 32px",
+              display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 460,
               position: "relative", overflow: "hidden",
+              opacity: 0.85,
             }}>
-              <div style={{
-                position: "absolute", top: -40, right: -40,
-                width: 180, height: 180, borderRadius: "50%",
-                background: `rgba(245,194,0,0.07)`, pointerEvents: "none",
-              }} />
+              <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(245,194,0,0.05)", pointerEvents: "none" }} />
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.3)", letterSpacing: "1.5px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.25)", letterSpacing: "1.5px" }}>
                     02 · AI 견적 스캔
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: K, background: Y, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.5px" }}>
-                    NEW
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#888", background: "#2A2A2A", padding: "2px 8px", borderRadius: 20, letterSpacing: "0.3px" }}>
+                    출시 예정
                   </span>
                 </div>
-                <h3 style={{ fontSize: 30, fontWeight: 900, color: "#fff", margin: "0 0 16px", letterSpacing: "-1.2px", lineHeight: 1.15 }}>
+                <h3 style={{ fontSize: 26, fontWeight: 900, color: "rgba(255,255,255,0.75)", margin: "0 0 14px", letterSpacing: "-1px", lineHeight: 1.2 }}>
                   받은 견적서,<br />적정한지 확인하세요
                 </h3>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.85, margin: "0 0 32px", wordBreak: "keep-all" }}>
-                  업체에서 받은 견적서를 사진으로 찍어 올리면<br />
-                  AI가 항목별로 비싼지 적정한지 바로 판단해요.<br />
-                  엑셀, PDF, 손사진 어떤 형태든 분석 가능해요.
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.85, margin: "0 0 28px", wordBreak: "keep-all" }}>
+                  사진 한 장으로 AI가 항목별로 적정한지 판단해요. 엑셀, PDF, 손사진 모두 가능.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {[
-                    "사진 · PDF · 엑셀 어떤 형태든 OK",
-                    "공종별 시세와 1:1 비교 분석",
-                    "어느 항목이 왜 비싼지 설명",
+                    "사진 · PDF · 엑셀 어떤 형태든",
+                    "공종별 시세와 비교 분석",
+                    "비싼 항목 이유 설명",
                   ].map(t => (
                     <div key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 18, height: 18, borderRadius: "50%", background: Y, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <span style={{ fontSize: 9, color: K, fontWeight: 900 }}>✓</span>
+                      <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2E2E2E", border: "1px solid #3A3A3A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: 8, color: "#555", fontWeight: 900 }}>✓</span>
                       </div>
-                      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>{t}</span>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>{t}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <Link href="/estimate/scan" style={{
+              <div style={{
                 marginTop: 36, display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "13px 26px", borderRadius: 10,
-                background: Y, color: K,
-                textDecoration: "none", fontWeight: 800, fontSize: 14,
-                alignSelf: "flex-start",
+                padding: "12px 22px", borderRadius: 10,
+                background: "#252525", border: "1px solid #333",
+                color: "#555", fontWeight: 700, fontSize: 13,
+                alignSelf: "flex-start", cursor: "default",
               }}>
-                견적서 분석하기 →
-              </Link>
+                🔒 준비 중
+              </div>
             </motion.div>
 
           </FadeStagger>
@@ -417,28 +411,31 @@ export default function Home() {
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.35)", margin: "0 0 40px" }}>가입 없이 · 30초 · 완전 무료</p>
           </FadeUp>
           <FadeUp delay={0.1}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 540 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 460 }}>
               <Link href="/estimate/detail" style={{
-                padding: "22px 28px", borderRadius: 16,
+                padding: "22px 36px", borderRadius: 16,
                 background: Y, color: K,
-                textDecoration: "none", fontWeight: 800, fontSize: 17,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                letterSpacing: "-0.3px", textAlign: "center",
-                boxSizing: "border-box", minHeight: 90,
+                textDecoration: "none", fontWeight: 900, fontSize: 18,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                letterSpacing: "-0.5px",
+                boxShadow: "0 6px 28px rgba(245,194,0,0.5)",
               }}>
-                AI 자동 견적
-                <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 5, display: "block" }}>공종별 금액 산출 + PDF</span>
+                <div>
+                  <div>AI 자동 견적 받기</div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 4 }}>공종별 금액 산출 · 항목 분류 · PDF 무료 발급</div>
+                </div>
+                <span style={{ fontSize: 22, marginLeft: 16 }}>→</span>
               </Link>
               <Link href="/estimate/scan" style={{
-                padding: "22px 28px", borderRadius: 16,
-                background: "#1C1C1C", color: "#fff", border: "1px solid #333",
-                textDecoration: "none", fontWeight: 800, fontSize: 17,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                letterSpacing: "-0.3px", textAlign: "center",
-                boxSizing: "border-box", minHeight: 90,
+                padding: "14px 24px", borderRadius: 12,
+                background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                textDecoration: "none", fontWeight: 600, fontSize: 14,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                letterSpacing: "-0.2px",
               }}>
-                AI 견적 스캔
-                <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.35)", marginTop: 5, display: "block" }}>받은 견적서 적정성 분석</span>
+                <span>📷 AI 견적 스캔 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>— 출시 예정</span></span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>→</span>
               </Link>
             </div>
           </FadeUp>
