@@ -91,20 +91,23 @@ export default function Home() {
               </p>
             </FadeUp>
             <FadeUp delay={0.18}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 48 }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 48, alignItems: "center" }}>
                 <Link href="/estimate/detail" style={{
-                  padding: "14px 28px", borderRadius: 10,
+                  padding: "16px 34px", borderRadius: 12,
                   background: K, color: "#fff",
-                  textDecoration: "none", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px",
+                  textDecoration: "none", fontSize: 16, fontWeight: 800, letterSpacing: "-0.3px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  height: 54, boxSizing: "border-box",
                 }}>AI 자동 견적</Link>
                 <Link href="/estimate/scan" style={{
-                  padding: "14px 24px", borderRadius: 10,
+                  padding: "16px 30px", borderRadius: 12,
                   background: Y, color: K,
-                  textDecoration: "none", fontSize: 15, fontWeight: 800, letterSpacing: "-0.3px",
-                  display: "flex", alignItems: "center", gap: 6,
+                  textDecoration: "none", fontSize: 16, fontWeight: 800, letterSpacing: "-0.3px",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  height: 54, boxSizing: "border-box",
                 }}>
                   📷 견적 스캔
-                  <span style={{ fontSize: 10, background: K, color: Y, padding: "2px 7px", borderRadius: 20, fontWeight: 900 }}>NEW</span>
+                  <span style={{ fontSize: 10, background: K, color: Y, padding: "2px 8px", borderRadius: 20, fontWeight: 900, lineHeight: 1 }}>NEW</span>
                 </Link>
               </div>
             </FadeUp>
@@ -414,24 +417,28 @@ export default function Home() {
             <p style={{ fontSize: 16, color: "rgba(255,255,255,0.35)", margin: "0 0 40px" }}>가입 없이 · 30초 · 완전 무료</p>
           </FadeUp>
           <FadeUp delay={0.1}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, maxWidth: 520 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 540 }}>
               <Link href="/estimate/detail" style={{
-                padding: "20px 24px", borderRadius: 14,
+                padding: "22px 28px", borderRadius: 16,
                 background: Y, color: K,
-                textDecoration: "none", fontWeight: 800, fontSize: 16,
-                display: "block", textAlign: "center", letterSpacing: "-0.3px",
+                textDecoration: "none", fontWeight: 800, fontSize: 17,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                letterSpacing: "-0.3px", textAlign: "center",
+                boxSizing: "border-box", minHeight: 90,
               }}>
                 AI 자동 견적
-                <div style={{ fontSize: 11, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 4 }}>공종별 금액 산출 + PDF</div>
+                <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 5, display: "block" }}>공종별 금액 산출 + PDF</span>
               </Link>
               <Link href="/estimate/scan" style={{
-                padding: "20px 24px", borderRadius: 14,
+                padding: "22px 28px", borderRadius: 16,
                 background: "#1C1C1C", color: "#fff", border: "1px solid #333",
-                textDecoration: "none", fontWeight: 800, fontSize: 16,
-                display: "block", textAlign: "center", letterSpacing: "-0.3px",
+                textDecoration: "none", fontWeight: 800, fontSize: 17,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                letterSpacing: "-0.3px", textAlign: "center",
+                boxSizing: "border-box", minHeight: 90,
               }}>
                 AI 견적 스캔
-                <div style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>받은 견적서 적정성 분석</div>
+                <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.35)", marginTop: 5, display: "block" }}>받은 견적서 적정성 분석</span>
               </Link>
             </div>
           </FadeUp>
