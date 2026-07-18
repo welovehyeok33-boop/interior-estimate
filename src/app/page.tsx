@@ -142,27 +142,26 @@ export default function Home() {
             </FadeStagger>
           </div>
 
-          {/* 폰 목업 — 데스크탑만 */}
-          {!m && (
-            <FadeUp delay={0.25} style={{ display: "flex", justifyContent: "center" }}>
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                style={{
-                  width: 260, background: "#1A1A1A", borderRadius: 40, padding: "14px 10px",
-                  boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.06)",
-                }}
-              >
-                <div style={{ width: 80, height: 22, background: "#1A1A1A", borderRadius: 12, margin: "0 auto 10px", border: "2px solid #2A2A2A", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#2A2A2A" }} />
-                  <div style={{ width: 30, height: 5, borderRadius: 3, background: "#2A2A2A" }} />
-                </div>
-                <div style={{ background: "#fff", borderRadius: 28, overflow: "hidden", minHeight: 500 }}>
-                  <PhoneDemo />
-                </div>
-              </motion.div>
-            </FadeUp>
-          )}
+          {/* 폰 목업 */}
+          <FadeUp delay={0.25} style={{ display: "flex", justifyContent: "center", marginTop: m ? 40 : 0 }}>
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              style={{
+                width: m ? 210 : 260,
+                background: "#1A1A1A", borderRadius: m ? 32 : 40, padding: m ? "10px 8px" : "14px 10px",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.06)",
+              }}
+            >
+              <div style={{ width: m ? 64 : 80, height: m ? 18 : 22, background: "#1A1A1A", borderRadius: 12, margin: "0 auto 8px", border: "2px solid #2A2A2A", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                <div style={{ width: m ? 6 : 8, height: m ? 6 : 8, borderRadius: "50%", background: "#2A2A2A" }} />
+                <div style={{ width: m ? 24 : 30, height: 5, borderRadius: 3, background: "#2A2A2A" }} />
+              </div>
+              <div style={{ background: "#fff", borderRadius: m ? 22 : 28, overflow: "hidden", minHeight: m ? 400 : 500 }}>
+                <PhoneDemo />
+              </div>
+            </motion.div>
+          </FadeUp>
         </div>
       </section>
 
