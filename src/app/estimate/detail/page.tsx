@@ -34,7 +34,7 @@ const COMMERCIAL_TYPES = [
   { id: "accommodation", label: "숙박",       icon: "🛏",  subs: ["고시원", "호스텔", "모텔/호텔", "에어비앤비"] },
   { id: "fitness",       label: "피트니스",   icon: "🎯",  subs: ["헬스장", "필라테스/요가", "골프연습장", "PC방", "노래방"] },
   { id: "beauty",        label: "뷰티",       icon: "💅",  subs: ["뷰티샵"] },
-  { id: "retail",        label: "리테일",     icon: "🛍",  subs: ["편의점", "의류/잡화점"] },
+  { id: "retail",        label: "판매점",     icon: "🛍",  subs: ["편의점", "의류/잡화점", "무인매장", "그외 (휴대폰·안경·꽃집 등)"] },
   { id: "etc",           label: "기타",       icon: "📋",  subs: [] },
 ];
 
