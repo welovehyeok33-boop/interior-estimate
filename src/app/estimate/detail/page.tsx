@@ -27,13 +27,13 @@ const RESIDENTIAL_GRADES = [
 ];
 
 const COMMERCIAL_TYPES = [
-  { id: "food",          label: "외식",       icon: "🍽",  subs: ["식당", "카페"] },
+  { id: "food",          label: "외식",       icon: "🍽",  subs: ["식당", "카페", "술집"] },
   { id: "office",        label: "오피스",     icon: "💼",  subs: ["일반 오피스", "공유오피스", "1인 오피스"] },
   { id: "education",     label: "교육",       icon: "📚",  subs: ["학원", "스터디카페", "유치원/학교"] },
   { id: "medical",       label: "의료",       icon: "🏥",  subs: ["병원", "동물병원", "약국"] },
   { id: "accommodation", label: "숙박",       icon: "🛏",  subs: ["고시원", "호스텔", "모텔/호텔", "에어비앤비"] },
-  { id: "fitness",       label: "피트니스",   icon: "🎯",  subs: ["헬스장", "필라테스/요가", "골프연습장", "PC방", "노래방"] },
-  { id: "beauty",        label: "뷰티",       icon: "💅",  subs: ["뷰티샵"] },
+  { id: "fitness",       label: "피트니스",   icon: "🎯",  subs: ["헬스장", "필라테스/요가", "PT샵", "골프연습장", "PC방", "노래방"] },
+  { id: "beauty",        label: "뷰티",       icon: "💅",  subs: ["뷰티샵", "미용실"] },
   { id: "retail",        label: "판매점",     icon: "🛍",  subs: ["편의점", "의류/잡화점", "무인매장", "그외 (휴대폰·안경·꽃집 등)"] },
   { id: "etc",           label: "기타",       icon: "📋",  subs: [] },
 ];
