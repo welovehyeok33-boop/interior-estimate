@@ -85,7 +85,7 @@ export default function Home() {
           alignItems: "center",
         }}>
           {/* 텍스트 */}
-          <div>
+          <div style={{ textAlign: m ? "center" : "left" }}>
             <FadeUp>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
@@ -110,7 +110,7 @@ export default function Home() {
               </p>
             </FadeUp>
             <FadeUp delay={0.18}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: m ? 36 : 48, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: m ? 36 : 48, alignItems: "center", justifyContent: m ? "center" : "flex-start" }}>
                 <Link href="/estimate/detail" style={{
                   padding: m ? "14px 28px" : "16px 38px", borderRadius: 12,
                   background: Y, color: K,
@@ -132,7 +132,7 @@ export default function Home() {
                 </Link>
               </div>
             </FadeUp>
-            <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap" }}>
+            <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap", justifyContent: m ? "center" : "flex-start" }}>
               {[["22가지", "공종 데이터"], ["100곳+", "업체 단가"], ["30초", "견적 계산"], ["무료", "PDF 발급"]].map(([n, d]) => (
                 <motion.div key={n} variants={fadeUp}>
                   <div style={{ fontSize: m ? 18 : 22, fontWeight: 900, color: K, letterSpacing: "-0.5px" }}>{n}</div>
