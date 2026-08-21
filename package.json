@@ -16,6 +16,7 @@
     "@mantine/hooks": "^9.1.1",
     "@mantine/modals": "^9.1.1",
     "@mantine/notifications": "^9.1.1",
+    "@supabase/supabase-js": "^2.110.7",
     "@tabler/icons-react": "^3.43.0",
     "framer-motion": "^12.42.2",
     "next": "16.2.5",

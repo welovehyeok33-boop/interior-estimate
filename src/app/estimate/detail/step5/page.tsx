@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
@@ -11,6 +11,7 @@ import {
 } from "@tabler/icons-react";
 import { loadEstimate, clearEstimate } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
+import { supabase } from "@/lib/supabase";
 import type { EstimateState } from "@/lib/estimateStore";
 
 // ── 견적 계산 (엔진 연결 전 임시 로직) ─────────────────────
@@ -95,8 +96,23 @@ export default function Step5Page() {
   const handleSendEmail = async () => {
     if (!email.includes("@")) return;
     setSending(true);
-    // TODO: Resend API 연동
-    await new Promise(r => setTimeout(r, 1200));
+    try {
+      await supabase.from("leads").insert({
+        email,
+        region: data.region ?? null,
+        building_type: data.buildingType ?? null,
+        residential_grade: data.residentialGrade ?? null,
+        commercial_type: data.commercialType ?? null,
+        commercial_sub: data.commercialSub ?? null,
+        area: data.area ?? null,
+        works: data.selectedWorks ?? [],
+        material_grade: data.materialGrade ?? null,
+        estimated_total: result.totalMid,
+        status: "new",
+      });
+    } catch (err) {
+      console.error("Supabase insert error:", err);
+    }
     setSending(false);
     setEmailSent(true);
   };
