@@ -41,8 +41,14 @@
 src/
 ├── app/
 │   ├── page.tsx                    # 홈 화면 (두 가지 핵심 서비스)
+│   ├── page.v1.tsx                 # 홈 화면 백업 (이전 버전)
 │   ├── admin/page.tsx              # 내부 어드민 (비번: pomit2026)
 │   ├── partner/leads/page.tsx      # 협력업체 리드 열람 페이지
+│   ├── landing/page.tsx            # 무료 상담 랜딩 페이지 (신규)
+│   ├── consult/page.tsx            # 무료 상담 1단계 (지역/업종)
+│   ├── consult/step2/page.tsx      # 무료 상담 2단계 (평수)
+│   ├── consult/step3/page.tsx      # 무료 상담 3단계 (경험/시기/종류/예산/메모)
+│   ├── consult/step4/page.tsx      # 무료 상담 4단계 (이름/전화번호 → 완료)
 │   ├── estimate/
 │   │   ├── detail/page.tsx         # 세부 견적 1단계 (지역/업종/등급)
 │   │   ├── detail/step2/page.tsx   # 2단계 (평수 입력)
@@ -53,7 +59,8 @@ src/
 ├── components/
 │   └── EstimateLayout.tsx          # FlightPath, C (색상 상수)
 └── lib/
-    ├── estimateStore.ts            # localStorage 멀티스텝 폼 상태
+    ├── estimateStore.ts            # localStorage - 견적 폼 상태
+    ├── consultStore.ts             # localStorage - 상담 폼 상태
     └── supabase.ts                 # Supabase 클라이언트
 ```
 
@@ -64,23 +71,50 @@ C.bg, C.card, C.border, C.primary (#F5C200 노란색)
 C.selectedBg, C.selectedBorder, C.textDark, C.textMid, C.textLight
 ```
 
-## Supabase leads 테이블
+## Supabase 테이블
+
+### leads (AI 자동 견적 이메일 수집)
 ```sql
 id, created_at, email, region, building_type,
 residential_grade, commercial_type, commercial_sub,
 area, works(text[]), material_grade, estimated_total,
 status ('new' | 'qualified' | 'contracted')
 ```
-- RLS 비활성화 상태 (외부 insert 허용)
+- RLS 비활성화
 - status = 'qualified' 인 리드만 파트너 페이지에 노출
+
+### consultations (무료 상담 신청)
+```sql
+id, created_at, region, building_type, area,
+experience ('yes'|'no'), schedule ('1month'|'3months'|'6months'|'undecided'),
+work_scope ('full'|'partial'), budget ('~1000'|'1000~3000'|'3000~5000'|'5000+'|'unknown'),
+memo, name, phone,
+status ('new' | 'contacted' | 'contracted')
+```
+- RLS 비활성화
+- 생성 SQL:
+```sql
+create table consultations (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamptz default now(),
+  region text, building_type text, area numeric,
+  experience text, schedule text, work_scope text,
+  budget text, memo text, name text, phone text,
+  status text default 'new'
+);
+alter table consultations disable row level security;
+```
 
 ## 현재 구현 상태
 - [x] 홈 화면 — AI 자동 견적(메인) + AI 견적 스캔(Coming Soon)
-- [x] 세부 견적 5단계 플로우
+- [x] 세부 견적 5단계 플로우 (임시 견적 엔진)
 - [x] Supabase 리드 수집 (step5 이메일 입력 시 저장)
 - [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: pomit2026
 - [x] 파트너 페이지 — qualified 리드 열람 (결제 연동 미완성)
 - [x] 모바일 반응형
+- [x] 랜딩 페이지 (/landing) — 무료 상담 신청 유도
+- [x] 무료 상담 4단계 폼 (/consult) — 전화번호 수집 → consultations 테이블 저장
+- [ ] consultations 테이블 어드민 연결 (상담 신청 목록 관리)
 - [ ] 파트너 로그인 (Supabase Auth 예정)
 - [ ] PDF 발송 (Resend, 견적 엔진 완성 후)
 - [ ] 견적 엔진 교체 (준혁 씨 엑셀 단가표 → Supabase → 연결)
