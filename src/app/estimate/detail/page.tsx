@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck } from "@tabler/icons-react";
+import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
@@ -171,6 +171,7 @@ export default function DetailEstimatePage() {
                   </motion.button>
                 );
               })}
+
             </div>
           </Section>
         )}
@@ -242,6 +243,63 @@ export default function DetailEstimatePage() {
                   </div>
                 );
               })}
+
+              {(() => {
+                const sel = commercialType === "unknown";
+                return (
+                  <motion.button
+                    onClick={() => { setCommercialType("unknown"); setCommercialSub(null); }}
+                    whileTap={{ scale: 0.97 }}
+                    animate={{ x: sel ? 4 : 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    aria-pressed={sel}
+                    style={{
+                      marginTop: 2,
+                      padding: "14px 16px",
+                      borderRadius: 12,
+                      border: `${sel ? "2px" : "1.5px"} solid ${sel ? C.selectedBorder : C.border}`,
+                      background: sel ? C.selectedBg : C.card,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      boxShadow: sel ? `0 4px 16px rgba(245,194,0,0.2)` : "none",
+                    }}
+                  >
+                    <div style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      background: sel ? C.primary : C.bg,
+                      color: sel ? C.textDark : C.textLight,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}>
+                      <IconHelpCircle size={20} strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: sel ? C.textDark : C.textMid, marginBottom: 3 }}>
+                        아직 잘 모르겠어요
+                      </div>
+                      <div style={{ fontSize: 11, lineHeight: 1.45, color: C.textLight }}>
+                        가장 가까운 업종이 없어도 괜찮아요. 다음 단계에서 필요한 공사를 선택해주세요.
+                      </div>
+                    </div>
+                    <AnimatePresence>
+                      {sel && (
+                        <motion.div
+                          initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
+                          style={{ width: 22, height: 22, borderRadius: "50%", background: C.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "auto" }}>
+                          <IconCheck size={11} color="#111" strokeWidth={3.5} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                );
+              })()}
             </div>
           </Section>
         )}
