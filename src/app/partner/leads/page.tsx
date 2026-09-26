@@ -207,9 +207,11 @@ export default function PartnerLeadsPage() {
                       border: `1px solid ${P.border}`,
                       maxWidth: "100%", boxSizing: "border-box", overflowWrap: "anywhere", minWidth: 0,
                     }}>
-                      {lead.building_type === "commercial" ? <IconBuildingStore size={10} /> : <IconHome size={10} />}
-                      {TYPE_LABEL[lead.building_type ?? ""] || "-"}
-                      {lead.commercial_sub ? ` · ${lead.commercial_sub}` : ""}
+                      {lead.building_type === "commercial" ? <IconBuildingStore size={10} style={{ flexShrink: 0 }} /> : <IconHome size={10} style={{ flexShrink: 0 }} />}
+                      <span style={{ minWidth: 0, overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>
+                        {TYPE_LABEL[lead.building_type ?? ""] || "-"}
+                        {lead.commercial_sub ? ` · ${lead.commercial_sub}` : ""}
+                      </span>
                     </span>
                     {/* 자재 등급 */}
                     {lead.material_grade && (

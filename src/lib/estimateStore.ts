@@ -7,7 +7,8 @@ export type EstimateState = {
   buildingType: string;    // "residential" | "commercial"
   residentialGrade: string;
   commercialType: string;
-  commercialSub: string;   // 세부 업종. commercialType="unknown"이면 선택 입력한 공간 설명 (최대 200자)
+  commercialSub: string;   // 선택한 세부 업종 (구버전 unknown 상태에서는 공간 설명이 들어 있을 수 있음)
+  spaceDescription: string; // 모든 주거/상가에 공통인 선택형 공간 설명 (최대 200자)
   // 2단계
   area: number;
   // 3단계

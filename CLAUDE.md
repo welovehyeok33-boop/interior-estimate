@@ -82,6 +82,7 @@ status ('new' | 'qualified' | 'contracted')
 ```
 - RLS 비활성화
 - status = 'qualified' 인 리드만 파트너 페이지에 노출
+- 공간 설명은 폼의 `spaceDescription`(최대 200자)으로 세부업종 `commercialSub`와 분리한다. 스키마 변경 없이 제출 시에만 `commercial_sub`에 `식당 · 공간 설명: ...` 또는 `공간 설명: ...` 형태로 전달한다. 빈 설명은 기존 업종명 유지, 구버전 unknown의 `commercialSub` 메모는 호환 처리. 관리자/파트너는 기존 문자열 표시 경로 사용. 실제 DB 저장/길이 제약은 운영 반영 전 검증 필요.
 - 견적 폼은 `region` 코드와 `regionDetail` 설명을 분리해 유지한다. 리드 저장 시 `region`에는 기존 코드 또는 `local:부산 해운대구` 형식을 사용하고 `estimateRegion.ts`로 표시한다. 기존 코드 기반 계산은 유지. 실제 DB의 상세 지역 저장 허용 여부는 운영 반영 전 확인 필요.
 
 ### consultations (무료 상담 신청)
@@ -117,6 +118,7 @@ alter table consultations disable row level security;
 - [x] 무료 상담 4단계 폼 (/consult) — 전화번호 수집 → consultations 테이블 저장
 - [x] 세부 견적 상가 업종 — `아직 잘 모르겠어요` 선택 후 세부 업종 없이 진행 가능
 - [x] `아직 잘 모르겠어요` — 공간/업종 설명 선택 입력 (최대 200자), 기존 commercial_sub 컬럼으로 전달. 빈칸도 진행 가능.
+- [x] 공간 설명란을 주거 전체 등급/상가 전체 업종·세부업종으로 확대. 선택한 항목 아래 공통 입력란 하나만 표시하고 옵션 변경 시 설명 유지. 결과 화면에도 설명 표시.
 - [x] `지방` — 시·군·구 선택 입력 (최대 50자), 결과/관리자/파트너 지역 표시. 빈칸도 진행 가능하며 상세 주소는 요청하지 않음.
 - [ ] consultations 테이블 어드민 연결 (상담 신청 목록 관리)
 - [ ] 파트너 로그인 (Supabase Auth 예정)

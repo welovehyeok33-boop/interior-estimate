@@ -13,6 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { loadEstimate, clearEstimate } from "@/lib/estimateStore";
 import { formatEstimateRegion, serializeLeadRegion } from "@/lib/estimateRegion";
+import { getSpaceDescription, serializeLeadSpaceDetails } from "@/lib/estimateSpace";
 import { FlightPath, C } from "@/components/EstimateLayout";
 import { supabase } from "@/lib/supabase";
 import type { EstimateState } from "@/lib/estimateStore";
@@ -95,6 +96,7 @@ export default function Step5Page() {
   }, []);
 
   const result = calcEstimate(data);
+  const spaceDescription = getSpaceDescription(data);
 
   const handleSendEmail = async () => {
     if (sending || !email.includes("@")) return;
@@ -107,7 +109,7 @@ export default function Step5Page() {
         building_type: data.buildingType ?? null,
         residential_grade: data.residentialGrade ?? null,
         commercial_type: data.commercialType ?? null,
-        commercial_sub: data.commercialSub ?? null,
+        commercial_sub: serializeLeadSpaceDetails(data),
         area: data.area ?? null,
         works: data.selectedWorks ?? [],
         material_grade: data.materialGrade ?? null,
@@ -234,6 +236,13 @@ export default function Step5Page() {
             </div>
           </div>
         </motion.div>
+
+        {spaceDescription && (
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, marginBottom: 6 }}>입력하신 공간 설명</div>
+            <div style={{ fontSize: 13, color: C.textDark, lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{spaceDescription}</div>
+          </div>
+        )}
 
         {/* 공종별 내역 토글 */}
         <motion.div
