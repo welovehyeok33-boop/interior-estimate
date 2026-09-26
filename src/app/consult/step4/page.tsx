@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { IconPhone, IconUser, IconCheck } from "@tabler/icons-react";
-import { loadConsult, clearConsult } from "@/lib/consultStore";
+import { loadConsult, clearConsult, formatConsultBudget, formatConsultSchedule, type ConsultState } from "@/lib/consultStore";
+import { clearEstimate } from "@/lib/estimateStore";
 import { supabase } from "@/lib/supabase";
-import { C } from "@/components/EstimateLayout";
+import { C, FlightPath } from "@/components/EstimateLayout";
+import { formatEstimateRegion, serializeLeadRegion } from "@/lib/estimateRegion";
+
+const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
+const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 
 export default function ConsultStep4() {
   const router = useRouter();
@@ -16,6 +21,14 @@ export default function ConsultStep4() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+  const [summary, setSummary] = useState<Partial<ConsultState>>({});
+
+  useEffect(() => {
+    // localStorage is restored after hydration so the server and initial client markup match.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSummary(loadConsult());
+  }, []);
 
   const phoneClean = phone.replace(/[^0-9]/g, "");
   const canNext = name.trim().length > 0 && phoneClean.length >= 10 && agreed;
@@ -23,25 +36,32 @@ export default function ConsultStep4() {
   const handleSubmit = async () => {
     if (!canNext) return;
     setSending(true);
+    setSubmitError(false);
     const data = loadConsult();
     try {
-      await supabase.from("consultations").insert({
-        region: data.region ?? null,
+      const { error } = await supabase.from("consultations").insert({
+        region: serializeLeadRegion(data.region, data.regionDetail),
         building_type: data.buildingType ?? null,
         area: data.area ?? null,
         experience: data.experience ?? null,
         schedule: data.schedule ?? null,
         work_scope: data.workScope ?? null,
         budget: data.budget ?? null,
-        memo: data.memo ?? null,
+        memo: [
+          data.spaceDescription ? `공간 설명: ${data.spaceDescription}` : "",
+          data.memo ?? "",
+        ].filter(Boolean).join("\n") || null,
         name: name.trim(),
         phone: phoneClean,
         status: "new",
       });
+      if (error) throw error;
       clearConsult();
+      clearEstimate();
       setDone(true);
     } catch (err) {
       console.error(err);
+      setSubmitError(true);
     }
     setSending(false);
   };
@@ -101,14 +121,22 @@ export default function ConsultStep4() {
 
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "32px 20px 80px" }}>
 
-        {/* 진행바 */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
-          {[1,2,3,4].map(i => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: "#F5C200" }} />
-          ))}
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 24 }}>
+          <FlightPath step={4} totalSteps={4} stepLabels={CONSULT_STEP_LABELS} />
         </div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <div style={{ padding: "16px 17px", borderRadius: 14, background: C.selectedBg, border: `1.5px solid ${C.selectedBorder}`, marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 10 }}>
+              <strong style={{ fontSize: 13, color: C.textDark }}>신청 내용 요약</strong>
+              <button type="button" onClick={() => router.push("/consult")} style={{ border: 0, background: "none", color: C.textMid, fontSize: 12, textDecoration: "underline", cursor: "pointer" }}>수정하기</button>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.75, color: C.textMid, overflowWrap: "anywhere" }}>
+              <div>{formatEstimateRegion(summary.region, summary.regionDetail)} · {TYPE_LABEL[summary.buildingType ?? ""] || "공간 미정"} · {summary.area ? `${summary.area}평` : "면적 미정"}</div>
+              <div>{formatConsultSchedule(summary.schedule)} · 희망 예산 {formatConsultBudget(summary.budget)}</div>
+            </div>
+          </div>
+
           <div style={{ fontSize: 22, fontWeight: 900, color: C.textDark, marginBottom: 6, letterSpacing: "-0.5px" }}>
             거의 다 됐어요!
           </div>
@@ -186,6 +214,7 @@ export default function ConsultStep4() {
             </div>
           </div>
 
+          {submitError && <p role="alert" style={{ color: "#B42318", fontSize: 13, margin: "0 0 14px" }}>신청을 저장하지 못했어요. 입력 내용은 유지되니 잠시 후 다시 시도해 주세요.</p>}
           <div style={{ display: "flex", gap: 10 }}>
             <button onClick={() => router.back()} style={{
               padding: "14px 20px", borderRadius: 30,
@@ -212,7 +241,7 @@ export default function ConsultStep4() {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: C.textLight }}>
-            🔒 개인정보는 안전하게 보호됩니다
+            입력하신 정보는 상담 신청 접수에 사용됩니다
           </div>
         </motion.div>
       </div>

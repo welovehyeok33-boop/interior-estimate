@@ -14,6 +14,7 @@ import {
   IconStack2, IconBolt as IconScrewBolt, IconDots,
 } from "@tabler/icons-react";
 import { saveEstimate, loadEstimate } from "@/lib/estimateStore";
+import { saveConsult } from "@/lib/consultStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 // ── 공종 데이터 ────────────────────────────────────────────
@@ -44,6 +45,8 @@ const FUNCTION_WORKS = [
   { id: "철물",      label: "철물",      desc: "경첩·손잡이·레일",     icon: <IconScrewBolt size={22} strokeWidth={1.5} /> },
   { id: "그외",      label: "그 외",     desc: "기타 공종",            icon: <IconDots size={22} strokeWidth={1.5} /> },
 ];
+
+const CONSULT_STEP_LABELS = ["지역·유형", "면적", "공종", "신청"] as const;
 
 type WorkItem = { id: string; label: string; desc: string; icon: React.ReactNode };
 
@@ -111,13 +114,15 @@ function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boole
   );
 }
 
-export default function Step3Page() {
+export function SharedEstimateStep3({ mode = "engine" }: { mode?: "consult" | "engine" }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = loadEstimate();
     if (saved.selectedWorks && saved.selectedWorks.length > 0) {
+      // localStorage is intentionally restored after hydration to keep server/client markup identical.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelected(saved.selectedWorks);
     }
   }, []);
@@ -136,7 +141,7 @@ export default function Step3Page() {
           <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 3단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{mode === "consult" ? "무료 견적 신청" : "세부 견적"} · 3단계</span>
         </div>
       </div>
 
@@ -144,7 +149,7 @@ export default function Step3Page() {
 
         {/* 진행 경로 */}
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 24 }}>
-          <FlightPath step={3} totalSteps={5} />
+          <FlightPath step={3} totalSteps={mode === "consult" ? 4 : 5} stepLabels={mode === "consult" ? CONSULT_STEP_LABELS : undefined} />
         </div>
 
         {/* 안내 메시지 */}
@@ -201,7 +206,11 @@ export default function Step3Page() {
           </button>
           <button
             disabled={!canNext}
-            onClick={() => { saveEstimate({ selectedWorks: selected }); router.push("/estimate/detail/step4"); }}
+            onClick={() => {
+              saveEstimate({ selectedWorks: selected });
+              if (mode === "consult") saveConsult({ selectedWorks: selected });
+              router.push(mode === "consult" ? "/consult/step4" : "/estimate/detail/step4");
+            }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "12px 28px", borderRadius: 30, border: "none",
@@ -219,6 +228,10 @@ export default function Step3Page() {
       </div>
     </div>
   );
+}
+
+export default function Step3Page() {
+  return <SharedEstimateStep3 />;
 }
 
 function WorkGroup({ label, desc, works, selected, onToggle }: {

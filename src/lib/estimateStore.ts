@@ -3,10 +3,12 @@
 export type EstimateState = {
   // 1단계
   region: string;          // "seoul" | "metro" | "local"
+  regionDetail: string;    // 지방 선택 시 시·군·구 (선택 입력, 최대 50자)
   buildingType: string;    // "residential" | "commercial"
   residentialGrade: string;
   commercialType: string;
-  commercialSub: string;
+  commercialSub: string;   // 선택한 세부 업종 (구버전 unknown 상태에서는 공간 설명이 들어 있을 수 있음)
+  spaceDescription: string; // 모든 주거/상가에 공통인 선택형 공간 설명 (최대 200자)
   // 2단계
   area: number;
   // 3단계

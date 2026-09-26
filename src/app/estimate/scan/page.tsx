@@ -81,7 +81,7 @@ export default function ScanPage() {
 
           {/* CTA */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Link href="/estimate/detail" style={{
+            <Link href="/estimate" style={{
               display: "block", padding: "14px",
               borderRadius: 12, background: `linear-gradient(135deg, #FFD740, #F5C200)`,
               color: "#111", fontWeight: 800, fontSize: 15,

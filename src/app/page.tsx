@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { C } from "@/components/EstimateLayout";
+import HomePhoneDemo from "@/components/HomePhoneDemo";
 
 // ── 컬러 팔레트 ────────────────────────────────────────────
-const Y  = "#F5C200";
-const YL = "#FFFBE8";
-const YM = "#FFF3B0";
-const K  = "#111111";
-const GY = "#F7F7F5";
+const Y  = C.primary;
+const YL = C.selectedBg;
+const K  = C.home.ink;
+const GY = C.home.stone;
+// 외부 폰트 요청 없이 제목 일부에만 기기 기본 명조체를 사용한다.
+const EDITORIAL_FONT = "'Iowan Old Style', 'AppleMyungjo', 'Batang', 'Noto Serif CJK KR', serif";
 
 // ── 반응형 훅 ──────────────────────────────────────────────
 function useIsMobile(bp = 768) {
@@ -50,14 +53,14 @@ export default function Home() {
   const m = useIsMobile();   // m = isMobile
 
   return (
-    <div style={{ fontFamily: "'Pretendard Variable', Pretendard, sans-serif", color: K, background: "#fff" }}>
+    <div style={{ fontFamily: "'Pretendard Variable', Pretendard, sans-serif", color: K, background: C.home.paper }}>
 
       {/* ── NAV ── */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
-        background: "rgba(255,255,255,0.95)",
+        background: C.home.nav,
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-        borderBottom: "1px solid #EBEBEB",
+        borderBottom: `1px solid ${C.home.line}`,
       }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: m ? "0 20px" : "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
@@ -66,7 +69,7 @@ export default function Home() {
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {!m && <Link href="/estimate/scan" style={{ padding: "7px 14px", color: "#555", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>견적 스캔</Link>}
             {!m && <Link href="/blog" style={{ padding: "7px 14px", color: "#888", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>가이드</Link>}
-            <Link href="/estimate/detail" style={{
+            <Link href="/estimate" style={{
               padding: m ? "8px 16px" : "9px 20px", borderRadius: 8,
               background: Y, color: K,
               textDecoration: "none", fontSize: m ? 13 : 14, fontWeight: 800,
@@ -76,7 +79,7 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ background: YL, padding: m ? "52px 20px 56px" : "80px 32px 72px", borderBottom: `3px solid ${Y}`, overflow: "hidden" }}>
+      <section style={{ background: C.home.ivory, padding: m ? "56px 20px 60px" : "88px 32px 80px", borderBottom: `1px solid ${C.home.accentLine}`, overflow: "hidden" }}>
         <div style={{
           maxWidth: 1080, margin: "0 auto",
           display: "grid",
@@ -89,40 +92,40 @@ export default function Home() {
             <FadeUp>
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 12, fontWeight: 700, color: "#7A6400",
-                background: YM, padding: "5px 14px", borderRadius: 20, marginBottom: m ? 20 : 28,
+                fontSize: 12, fontWeight: 600, color: C.home.bronze, letterSpacing: "0.04em",
+                background: C.home.paper, border: `1px solid ${C.home.line}`, padding: "6px 14px", borderRadius: 20, marginBottom: m ? 22 : 28,
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: Y, display: "inline-block" }} />
                 AI 인테리어 견적 플랫폼
               </span>
               <h1 style={{
                 fontSize: m ? "clamp(34px, 9vw, 48px)" : "clamp(36px, 4.2vw, 58px)",
-                fontWeight: 900, lineHeight: 1.1,
-                letterSpacing: "-2.5px", margin: m ? "0 0 18px" : "0 0 24px",
+                fontWeight: 800, lineHeight: 1.22,
+                letterSpacing: "-1.8px", margin: m ? "0 0 22px" : "0 0 28px",
                 color: K, wordBreak: "keep-all",
               }}>
-                견적, 이제<br />직접 알아보고<br />직접 판단하세요
+                <span style={{ fontFamily: EDITORIAL_FONT, fontSize: "0.94em", fontWeight: 500, letterSpacing: "-0.04em" }}>견적, 이제</span><br />직접 알아보고<br />직접 판단하세요
               </h1>
             </FadeUp>
             <FadeUp delay={0.1}>
-              <p style={{ fontSize: m ? 15 : 16, color: "#555", lineHeight: 1.8, margin: m ? "0 0 28px" : "0 0 36px", letterSpacing: "-0.3px", wordBreak: "keep-all" }}>
+              <p style={{ fontSize: m ? 15 : 16, color: C.home.muted, lineHeight: 1.9, margin: m ? "0 0 28px" : "0 0 36px", letterSpacing: "-0.2px", wordBreak: "keep-all" }}>
                 AI가 자동으로 계산해드리고,<br />받은 견적서가 적정한지도 바로 분석해드려요.
               </p>
             </FadeUp>
             <FadeUp delay={0.18}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: m ? 36 : 48, alignItems: "center", justifyContent: m ? "center" : "flex-start" }}>
-                <Link href="/estimate/detail" style={{
-                  padding: m ? "14px 28px" : "16px 38px", borderRadius: 12,
+                <Link href="/estimate" style={{
+                  padding: m ? "14px 28px" : "16px 38px", borderRadius: 9,
                   background: Y, color: K,
                   textDecoration: "none", fontSize: m ? 15 : 17, fontWeight: 800, letterSpacing: "-0.3px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   height: m ? 50 : 56, boxSizing: "border-box",
-                  boxShadow: "0 4px 20px rgba(245,194,0,0.45)",
+                  boxShadow: `0 4px 12px ${C.home.shadow}`,
                 }}>AI 자동 견적 →</Link>
                 <Link href="/estimate/scan" style={{
-                  padding: m ? "14px 18px" : "16px 24px", borderRadius: 12,
-                  background: "rgba(0,0,0,0.05)", color: "#666",
-                  border: "1.5px solid #DDD",
+                  padding: m ? "14px 18px" : "16px 24px", borderRadius: 9,
+                  background: C.home.paper, color: C.home.muted,
+                  border: `1px solid ${C.home.line}`,
                   textDecoration: "none", fontSize: m ? 13 : 14, fontWeight: 600,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   height: m ? 50 : 56, boxSizing: "border-box",
@@ -132,35 +135,19 @@ export default function Home() {
                 </Link>
               </div>
             </FadeUp>
-            <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap", justifyContent: m ? "center" : "flex-start" }}>
+            <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap", justifyContent: m ? "center" : "flex-start", borderTop: `1px solid ${C.home.line}`, paddingTop: 22 }}>
               {[["22가지", "공종 데이터"], ["100곳+", "업체 단가"], ["30초", "견적 계산"], ["무료", "PDF 발급"]].map(([n, d]) => (
                 <motion.div key={n} variants={fadeUp}>
-                  <div style={{ fontSize: m ? 18 : 22, fontWeight: 900, color: K, letterSpacing: "-0.5px" }}>{n}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>{d}</div>
+                  <div style={{ fontSize: m ? 18 : 22, fontWeight: 800, color: K, letterSpacing: "-0.4px" }}>{n}</div>
+                  <div style={{ fontSize: 11, color: C.home.muted, marginTop: 5 }}>{d}</div>
                 </motion.div>
               ))}
             </FadeStagger>
           </div>
 
-          {/* 폰 목업 */}
-          <FadeUp delay={0.25} style={{ display: "flex", justifyContent: "center", marginTop: m ? 40 : 0 }}>
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              style={{
-                width: m ? 210 : 260,
-                background: "#1A1A1A", borderRadius: m ? 32 : 40, padding: m ? "10px 8px" : "14px 10px",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.06)",
-              }}
-            >
-              <div style={{ width: m ? 64 : 80, height: m ? 18 : 22, background: "#1A1A1A", borderRadius: 12, margin: "0 auto 8px", border: "2px solid #2A2A2A", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <div style={{ width: m ? 6 : 8, height: m ? 6 : 8, borderRadius: "50%", background: "#2A2A2A" }} />
-                <div style={{ width: m ? 24 : 30, height: 5, borderRadius: 3, background: "#2A2A2A" }} />
-              </div>
-              <div style={{ background: "#fff", borderRadius: m ? 22 : 28, overflow: "hidden", minHeight: m ? 400 : 500 }}>
-                <PhoneDemo />
-              </div>
-            </motion.div>
+          {/* 폰 목업 — 독립된 시연으로 실제 견적 입력 상태와 분리한다. */}
+          <FadeUp delay={0.25} style={{ display: "flex", justifyContent: "center", minWidth: 0, marginTop: m ? 40 : 0 }}>
+            <HomePhoneDemo />
           </FadeUp>
         </div>
       </section>
@@ -170,10 +157,10 @@ export default function Home() {
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <FadeUp>
             <div style={{ marginBottom: m ? 32 : 48 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: "1.5px", display: "block", marginBottom: 12, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.home.mutedOnDark, letterSpacing: "1.5px", display: "block", marginBottom: 16, textTransform: "uppercase" }}>
                 두 가지 핵심 서비스
               </span>
-              <h2 style={{ fontSize: m ? "clamp(24px,7vw,36px)" : "clamp(28px,3.5vw,44px)", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-1.5px", lineHeight: 1.15, wordBreak: "keep-all" }}>
+              <h2 style={{ fontSize: m ? "clamp(24px,7vw,36px)" : "clamp(28px,3.5vw,44px)", fontWeight: 800, color: C.home.onDark, margin: 0, letterSpacing: "-1.1px", lineHeight: 1.3, wordBreak: "keep-all" }}>
                 AI가 견적 문제를<br />처음부터 끝까지 해결합니다
               </h2>
             </div>
@@ -183,14 +170,14 @@ export default function Home() {
 
             {/* 서비스 1: AI 자동 견적 */}
             <motion.div variants={fadeUp} style={{
-              background: Y, borderRadius: 20, padding: m ? "36px 28px" : "48px 44px",
+              background: C.home.service, border: `1px solid ${C.home.accentLine}`, borderRadius: 14, padding: m ? "36px 28px" : "48px 44px",
               display: "flex", flexDirection: "column", justifyContent: "space-between",
               minHeight: m ? "auto" : 460, position: "relative", overflow: "hidden",
             }}>
               <div style={{ position: "absolute", top: -50, right: -50, width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.05)", pointerEvents: "none" }} />
               <div>
-                <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(0,0,0,0.3)", letterSpacing: "1.5px", display: "block", marginBottom: 18 }}>01 · AI 자동 견적</span>
-                <h3 style={{ fontSize: m ? 24 : 34, fontWeight: 900, color: K, margin: m ? "0 0 14px" : "0 0 18px", letterSpacing: "-1.2px", lineHeight: 1.15 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.textMid, letterSpacing: "1.5px", display: "block", marginBottom: 20 }}>01 · AI 자동 견적</span>
+                <h3 style={{ fontSize: m ? 24 : 34, fontWeight: 800, color: K, margin: m ? "0 0 16px" : "0 0 20px", letterSpacing: "-0.8px", lineHeight: 1.3 }}>
                   공사 전에<br />먼저 알아보세요
                 </h3>
                 <p style={{ fontSize: m ? 14 : 15, color: "rgba(0,0,0,0.6)", lineHeight: 1.85, margin: m ? "0 0 24px" : "0 0 32px", wordBreak: "keep-all" }}>
@@ -208,7 +195,7 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <Link href="/estimate/detail" style={{
+              <Link href="/estimate" style={{
                 marginTop: m ? 28 : 40,
                 display: "inline-flex", alignItems: "center", gap: 8,
                 padding: m ? "13px 24px" : "15px 32px", borderRadius: 12,
@@ -222,21 +209,21 @@ export default function Home() {
 
             {/* 서비스 2: AI 견적 스캔 — 출시 예정 */}
             <motion.div variants={fadeUp} style={{
-              background: "#1C1C1C", border: "1px solid #2A2A2A",
-              borderRadius: 20, padding: m ? "32px 28px" : "40px 32px",
+              background: C.home.darkCard, border: `1px solid ${C.home.darkLine}`,
+              borderRadius: 14, padding: m ? "32px 28px" : "40px 32px",
               display: "flex", flexDirection: "column", justifyContent: "space-between",
-              minHeight: m ? "auto" : 460, position: "relative", overflow: "hidden", opacity: 0.85,
+              minHeight: m ? "auto" : 460, position: "relative", overflow: "hidden",
             }}>
               <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(245,194,0,0.05)", pointerEvents: "none" }} />
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.25)", letterSpacing: "1.5px" }}>02 · AI 견적 스캔</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.home.mutedOnDark, letterSpacing: "1.5px" }}>02 · AI 견적 스캔</span>
                   <span style={{ fontSize: 9, fontWeight: 700, color: "#888", background: "#2A2A2A", padding: "2px 8px", borderRadius: 20 }}>출시 예정</span>
                 </div>
-                <h3 style={{ fontSize: m ? 22 : 26, fontWeight: 900, color: "rgba(255,255,255,0.75)", margin: m ? "0 0 12px" : "0 0 14px", letterSpacing: "-1px", lineHeight: 1.2 }}>
+                <h3 style={{ fontSize: m ? 22 : 26, fontWeight: 800, color: C.home.onDark, margin: m ? "0 0 14px" : "0 0 18px", letterSpacing: "-0.8px", lineHeight: 1.3 }}>
                   받은 견적서,<br />적정한지 확인하세요
                 </h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.85, margin: m ? "0 0 20px" : "0 0 28px", wordBreak: "keep-all" }}>
+                <p style={{ fontSize: 13, color: C.home.mutedOnDark, lineHeight: 1.85, margin: m ? "0 0 20px" : "0 0 28px", wordBreak: "keep-all" }}>
                   사진 한 장으로 AI가 항목별로 적정한지 판단해요. 엑셀, PDF, 손사진 모두 가능.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -245,7 +232,7 @@ export default function Home() {
                       <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2E2E2E", border: "1px solid #3A3A3A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <span style={{ fontSize: 8, color: "#555", fontWeight: 900 }}>✓</span>
                       </div>
-                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontWeight: 500 }}>{t}</span>
+                      <span style={{ fontSize: 12, color: C.home.mutedOnDark, fontWeight: 500 }}>{t}</span>
                     </div>
                   ))}
                 </div>
@@ -265,16 +252,16 @@ export default function Home() {
       </section>
 
       {/* ── 견적 미리보기 ── */}
-      <section style={{ background: "#fff", padding: m ? "64px 20px" : "88px 32px" }}>
+      <section style={{ background: C.home.paper, padding: m ? "68px 20px" : "96px 32px" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           <FadeUp>
-            <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#aaa", letterSpacing: "1px", textAlign: "center", marginBottom: 10, textTransform: "uppercase" }}>견적 예시</span>
-            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.5vw,40px)", fontWeight: 900, color: K, textAlign: "center", margin: "0 0 32px", letterSpacing: "-1.2px", lineHeight: 1.15 }}>
+            <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.home.bronze, letterSpacing: "1.5px", textAlign: "center", marginBottom: 14, textTransform: "uppercase" }}>견적 예시</span>
+            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.5vw,40px)", fontWeight: 800, color: K, textAlign: "center", margin: "0 0 36px", letterSpacing: "-0.9px", lineHeight: 1.3 }}>
               이렇게 항목마다 보여드려요
             </h2>
           </FadeUp>
           <FadeUp delay={0.1}>
-            <div style={{ border: `2px solid ${Y}`, borderRadius: 20, overflow: "hidden", boxShadow: `0 8px 40px ${Y}30` }}>
+            <div style={{ border: `1px solid ${C.home.line}`, borderRadius: 14, overflow: "hidden", boxShadow: `0 8px 28px ${C.home.shadow}` }}>
               <div style={{ background: K, padding: m ? "18px 20px" : "22px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>서울 강남구 · 33평 · 중급 자재</div>
@@ -311,8 +298,8 @@ export default function Home() {
                 ))}
               </FadeStagger>
               <div style={{ padding: m ? "14px 20px" : "16px 28px", background: YL, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                <span style={{ fontSize: 12, color: "#aaa" }}>자재 등급·공종 선택에 따라 ±15% 차이</span>
-                <Link href="/estimate/detail" style={{
+                <span style={{ fontSize: 12, color: C.home.muted }}>자재 등급·공종 선택에 따라 ±15% 차이</span>
+                <Link href="/estimate" style={{
                   padding: "8px 16px", borderRadius: 8, background: Y, color: K,
                   textDecoration: "none", fontSize: 13, fontWeight: 800,
                 }}>내 견적 받기 →</Link>
@@ -332,9 +319,9 @@ export default function Home() {
           alignItems: "center",
         }}>
           <FadeUp>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", letterSpacing: "1.5px", display: "block", marginBottom: 14, textTransform: "uppercase" }}>AI 견적 스캔</span>
-            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.2vw,42px)", fontWeight: 900, color: K, margin: "0 0 18px", letterSpacing: "-1.5px", lineHeight: 1.15, wordBreak: "keep-all" }}>
-              "이 견적서,<br />바가지 아닌가요?"
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.home.bronze, letterSpacing: "1.5px", display: "block", marginBottom: 16, textTransform: "uppercase" }}>AI 견적 스캔</span>
+            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.2vw,42px)", fontWeight: 800, color: K, margin: "0 0 22px", letterSpacing: "-1px", lineHeight: 1.3, wordBreak: "keep-all" }}>
+              &quot;이 견적서,<br />바가지 아닌가요?&quot;
             </h2>
             <p style={{ fontSize: m ? 14 : 15, color: "#555", lineHeight: 1.85, margin: "0 0 28px", wordBreak: "keep-all" }}>
               업체에서 받은 견적서를 사진 한 장으로 올리면<br />
@@ -370,10 +357,10 @@ export default function Home() {
       </section>
 
       {/* ── FAQ ── */}
-      <section style={{ background: "#fff", padding: m ? "64px 20px" : "88px 32px" }}>
+      <section style={{ background: C.home.paper, padding: m ? "68px 20px" : "96px 32px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <FadeUp>
-            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.5vw,40px)", fontWeight: 900, color: K, margin: "0 0 32px", letterSpacing: "-1.2px" }}>
+            <h2 style={{ fontSize: m ? "clamp(22px,7vw,32px)" : "clamp(26px,3.5vw,40px)", fontWeight: 800, color: K, margin: "0 0 36px", letterSpacing: "-0.9px" }}>
               자주 묻는 질문
             </h2>
           </FadeUp>
@@ -389,7 +376,7 @@ export default function Home() {
                 gridTemplateColumns: m ? "1fr" : "2fr 3fr",
                 gap: m ? 10 : 40,
                 padding: m ? "24px 0" : "30px 0",
-                borderBottom: i < arr.length - 1 ? "1px solid #F0F0F0" : "none",
+                borderBottom: i < arr.length - 1 ? `1px solid ${C.home.line}` : "none",
               }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span style={{
@@ -410,20 +397,20 @@ export default function Home() {
       <section style={{ background: K, padding: m ? "64px 20px" : "96px 32px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <FadeUp style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: m ? "clamp(28px,8vw,44px)" : "clamp(32px,4.5vw,56px)", fontWeight: 900, color: "#fff", margin: "0 0 10px", letterSpacing: "-2px", lineHeight: 1.1, wordBreak: "keep-all" }}>
+            <h2 style={{ fontSize: m ? "clamp(28px,8vw,44px)" : "clamp(32px,4.5vw,56px)", fontWeight: 800, color: C.home.onDark, margin: "0 0 16px", letterSpacing: "-1.3px", lineHeight: 1.25, wordBreak: "keep-all" }}>
               지금 바로 시작하세요
             </h2>
-            <p style={{ fontSize: m ? 14 : 16, color: "rgba(255,255,255,0.35)", margin: "0 0 36px" }}>가입 없이 · 30초 · 완전 무료</p>
+            <p style={{ fontSize: m ? 14 : 16, color: C.home.mutedOnDark, margin: "0 0 36px" }}>가입 없이 · 30초 · 완전 무료</p>
           </FadeUp>
           <FadeUp delay={0.1}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: m ? "100%" : 460 }}>
-              <Link href="/estimate/detail" style={{
-                padding: m ? "18px 24px" : "22px 36px", borderRadius: 16,
+              <Link href="/estimate" style={{
+                padding: m ? "18px 24px" : "22px 36px", borderRadius: 10,
                 background: Y, color: K,
                 textDecoration: "none", fontWeight: 900, fontSize: m ? 16 : 18,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 letterSpacing: "-0.5px",
-                boxShadow: "0 6px 28px rgba(245,194,0,0.5)",
+                boxShadow: `0 6px 20px ${C.home.shadow}`,
               }}>
                 <div>
                   <div>AI 자동 견적 받기</div>
@@ -451,7 +438,7 @@ export default function Home() {
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
           <FadeUp>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 28 }}>
-              <h3 style={{ fontSize: m ? 20 : 24, fontWeight: 900, color: K, margin: 0, letterSpacing: "-0.8px" }}>인테리어 가이드</h3>
+              <h3 style={{ fontSize: m ? 20 : 24, fontWeight: 800, color: K, margin: 0, letterSpacing: "-0.6px" }}>인테리어 가이드</h3>
               <Link href="/blog" style={{ fontSize: 14, color: "#666", textDecoration: "none", fontWeight: 600 }}>전체 보기 →</Link>
             </div>
           </FadeUp>
@@ -462,10 +449,10 @@ export default function Home() {
               { title: "욕실 타일 업체 고르는 요령",       tag: "업체 선택",  desc: "면적 단가가 비슷해도 시공 방식이 달라서 결과가 많이 달라요." },
             ].map(post => (
               <motion.div key={post.title} variants={fadeUp}>
-                <Link href="/blog" style={{ textDecoration: "none", display: "block", background: "#fff", borderRadius: 16, border: "1px solid #E8E8E8", padding: "24px 22px" }}>
+                <Link href="/blog" style={{ textDecoration: "none", display: "block", background: C.home.paper, borderRadius: 10, border: `1px solid ${C.home.line}`, padding: "26px 24px" }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: K, background: Y, padding: "3px 10px", borderRadius: 6, display: "inline-block", marginBottom: 12 }}>{post.tag}</span>
                   <span style={{ fontSize: 15, fontWeight: 700, color: K, lineHeight: 1.55, display: "block", marginBottom: 8, letterSpacing: "-0.3px" }}>{post.title}</span>
-                  <span style={{ fontSize: 13, color: "#999", lineHeight: 1.7, display: "block" }}>{post.desc}</span>
+                  <span style={{ fontSize: 13, color: C.home.muted, lineHeight: 1.8, display: "block" }}>{post.desc}</span>
                 </Link>
               </motion.div>
             ))}
@@ -474,7 +461,7 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: "#fff", borderTop: "1px solid #EBEBEB", padding: m ? "28px 20px" : "32px" }}>
+      <footer style={{ background: C.home.paper, borderTop: `1px solid ${C.home.line}`, padding: m ? "28px 20px" : "32px" }}>
         <div style={{
           maxWidth: 1080, margin: "0 auto",
           display: "flex",
@@ -483,10 +470,10 @@ export default function Home() {
           gap: m ? 16 : 12,
         }}>
           <Image src="/logo.png" alt="폼잇." width={28} height={24} style={{ objectFit: "contain" }} />
-          <span style={{ fontSize: 12, color: "#CCC", order: m ? 3 : 0 }}>© 2026 폼잇. AI 기반 견적 플랫폼</span>
+          <span style={{ fontSize: 12, color: C.home.muted, order: m ? 3 : 0 }}>© 2026 폼잇. AI 기반 견적 플랫폼</span>
           <div style={{ display: "flex", gap: 20 }}>
-            {[{ label: "AI 자동 견적", href: "/estimate/detail" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }].map(l => (
-              <Link key={l.href} href={l.href} style={{ fontSize: 13, color: "#aaa", textDecoration: "none" }}>{l.label}</Link>
+            {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }].map(l => (
+              <Link key={l.href} href={l.href} style={{ fontSize: 13, color: C.home.muted, textDecoration: "none" }}>{l.label}</Link>
             ))}
           </div>
         </div>
@@ -496,192 +483,11 @@ export default function Home() {
   );
 }
 
-// ── 폰 목업 데모 ─────────────────────────────────────────────
-type DemoScreen = "auto_select" | "auto_result" | "scan_upload" | "scan_analyze" | "scan_result";
-
-const AUTO_WORKS = [
-  { name: "철거 · 폐기물",  price: "180만원" },
-  { name: "도배",           price: "210만원" },
-  { name: "강마루 바닥재",  price: "360만원" },
-  { name: "욕실 타일",      price: "420만원" },
-  { name: "주방 싱크대",    price: "380만원" },
-];
-
-const SCAN_ITEMS = [
-  { name: "철거 · 폐기물", given: "250만", range: "170~210만", status: "high" as const },
-  { name: "도배",          given: "205만", range: "190~220만", status: "ok"   as const },
-  { name: "강마루",        given: "290만", range: "320~390만", status: "low"  as const },
-  { name: "욕실 타일",     given: "480만", range: "380~430만", status: "high" as const },
-  { name: "전기 · 조명",  given: "170만", range: "155~195만", status: "ok"   as const },
-];
-
 const STATUS_CONFIG = {
   high: { label: "비싸요",   color: "#EF4444", bg: "#FEF2F2" },
   ok:   { label: "적정",     color: "#10B981", bg: "#F0FDF4" },
   low:  { label: "저렴해요", color: "#3B82F6", bg: "#EFF6FF" },
 };
-
-function PhoneDemo() {
-  const [screen, setScreen]   = useState<DemoScreen>("auto_select");
-  const [checked, setChecked] = useState(0);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    if (screen === "auto_select") {
-      if (checked < AUTO_WORKS.length) t = setTimeout(() => setChecked(c => c + 1), 620);
-      else t = setTimeout(() => setScreen("auto_result"), 1000);
-    } else if (screen === "auto_result") {
-      t = setTimeout(() => { setScreen("scan_upload"); setChecked(0); }, 3500);
-    } else if (screen === "scan_upload") {
-      t = setTimeout(() => { setScreen("scan_analyze"); setProgress(0); }, 1400);
-    } else if (screen === "scan_analyze") {
-      if (progress < 100) t = setTimeout(() => setProgress(p => Math.min(100, p + 8)), 60);
-      else t = setTimeout(() => setScreen("scan_result"), 400);
-    } else if (screen === "scan_result") {
-      t = setTimeout(() => { setScreen("auto_select"); setChecked(0); setProgress(0); }, 4500);
-    }
-    return () => clearTimeout(t);
-  }, [screen, checked, progress]);
-
-  const modeLabel = screen.startsWith("auto") ? "AI 자동 견적" : "AI 견적 스캔";
-  const modeDot   = screen.startsWith("auto") ? Y : "#60A5FA";
-
-  return (
-    <>
-      <div style={{ background: K, padding: "14px 16px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 20, height: 20, borderRadius: 5, background: Y, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: K }}>폼</span>
-        </div>
-        <motion.span key={modeLabel} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-          style={{ fontSize: 11, fontWeight: 800, color: "#fff" }}>
-          {modeLabel}
-        </motion.span>
-        <motion.div animate={{ background: modeDot }} transition={{ duration: 0.4 }}
-          style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%" }} />
-      </div>
-
-      <AnimatePresence mode="wait">
-
-        {screen === "auto_select" && (
-          <motion.div key="auto_select" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-            <div style={{ padding: "12px 16px 6px" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 2 }}>공종을 선택하세요</div>
-              <div style={{ fontSize: 9, color: "#bbb" }}>원하는 항목만 골라 견적을 받아요</div>
-            </div>
-            <div style={{ padding: "4px 0" }}>
-              {AUTO_WORKS.map((w, i) => {
-                const isChecked = i < checked;
-                return (
-                  <motion.div key={w.name} animate={{ background: isChecked ? YL : "#fff" }} transition={{ duration: 0.25 }}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: "1px solid #F5F5F5" }}>
-                    <motion.div animate={{ background: isChecked ? Y : "#fff", borderColor: isChecked ? Y : "#DDD", scale: isChecked ? [1, 1.2, 1] : 1 }}
-                      transition={{ duration: 0.25 }}
-                      style={{ width: 16, height: 16, borderRadius: 4, border: "1.5px solid #DDD", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {isChecked && <span style={{ fontSize: 9, color: K, fontWeight: 900 }}>✓</span>}
-                    </motion.div>
-                    <span style={{ fontSize: 12, color: isChecked ? K : "#888", fontWeight: isChecked ? 700 : 400 }}>{w.name}</span>
-                    {isChecked && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 800, color: K }}>{w.price}</motion.span>}
-                  </motion.div>
-                );
-              })}
-            </div>
-            <div style={{ padding: "10px 16px" }}>
-              <motion.div animate={{ background: checked === AUTO_WORKS.length ? Y : "#E8E8E8" }}
-                style={{ borderRadius: 10, padding: "11px", textAlign: "center", fontSize: 12, fontWeight: 800, color: K }}>
-                {checked === AUTO_WORKS.length ? "견적 결과 보기 →" : `${checked}개 선택됨`}
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-
-        {screen === "auto_result" && (
-          <motion.div key="auto_result" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-            <div style={{ background: YL, padding: "14px 16px", borderBottom: `2px solid ${Y}` }}>
-              <div style={{ fontSize: 10, color: "#888", marginBottom: 3 }}>총 예상 금액</div>
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
-                style={{ fontSize: 22, fontWeight: 900, color: K, letterSpacing: "-1px" }}>1,550만원</motion.div>
-            </div>
-            <div style={{ padding: "6px 0" }}>
-              {AUTO_WORKS.map((w, i) => (
-                <motion.div key={w.name} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }}
-                  style={{ padding: "9px 16px", borderBottom: "1px solid #F5F5F5", display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 11, color: "#444" }}>{w.name}</span>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: K }}>{w.price}</span>
-                </motion.div>
-              ))}
-            </div>
-            <div style={{ padding: "10px 16px" }}>
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-                style={{ background: Y, borderRadius: 10, padding: "11px", textAlign: "center", fontSize: 12, fontWeight: 800, color: K }}>
-                PDF로 저장하기
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-
-        {screen === "scan_upload" && (
-          <motion.div key="scan_upload" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-            <div style={{ padding: "16px 16px 8px" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 2 }}>견적서를 올려주세요</div>
-              <div style={{ fontSize: 9, color: "#bbb" }}>사진 · PDF · 엑셀 모두 가능해요</div>
-            </div>
-            <div style={{ padding: "12px 16px" }}>
-              <motion.div animate={{ borderColor: [Y, "#DDD", Y] }} transition={{ duration: 1.2, repeat: Infinity }}
-                style={{ border: "2px dashed #DDD", borderRadius: 14, padding: "32px 16px", textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>📷</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#555" }}>견적서 사진 업로드</div>
-                <div style={{ fontSize: 9, color: "#aaa", marginTop: 4 }}>터치해서 선택하거나 카메라로 찍어요</div>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-
-        {screen === "scan_analyze" && (
-          <motion.div key="scan_analyze" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-            style={{ padding: "40px 16px", textAlign: "center" }}>
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-              style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${Y}`, borderTopColor: "transparent", margin: "0 auto 16px" }} />
-            <div style={{ fontSize: 12, fontWeight: 700, color: K, marginBottom: 6 }}>AI 분석 중...</div>
-            <div style={{ fontSize: 9, color: "#aaa", marginBottom: 20 }}>공종 인식 · 단가 비교 중</div>
-            <div style={{ background: "#F0F0F0", borderRadius: 4, height: 6, overflow: "hidden", margin: "0 16px" }}>
-              <motion.div style={{ height: 6, background: Y, borderRadius: 4 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.1 }} />
-            </div>
-            <div style={{ fontSize: 9, color: "#bbb", marginTop: 6 }}>{progress}%</div>
-          </motion.div>
-        )}
-
-        {screen === "scan_result" && (
-          <motion.div key="scan_result" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-            <div style={{ padding: "10px 16px 6px", borderBottom: "1px solid #F0F0F0" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#888" }}>분석 결과</div>
-              <div style={{ fontSize: 9, color: "#EF4444", fontWeight: 600, marginTop: 2 }}>2개 항목 주의 필요</div>
-            </div>
-            <div style={{ padding: "4px 0" }}>
-              {SCAN_ITEMS.map((item, i) => {
-                const cfg = STATUS_CONFIG[item.status];
-                return (
-                  <motion.div key={item.name} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.08 * i }}
-                    style={{ padding: "9px 14px", borderBottom: "1px solid #F5F5F5" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: K }}>{item.name}</span>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: cfg.color, background: cfg.bg, padding: "1px 7px", borderRadius: 10 }}>{cfg.label}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#aaa" }}>
-                      <span>업체: <b style={{ color: "#555" }}>{item.given}</b></span>
-                      <span>시세: {item.range}</span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-      </AnimatePresence>
-    </>
-  );
-}
 
 // ── 견적 스캔 프리뷰 카드 ──────────────────────────────────
 function ScanPreviewCard() {
@@ -694,7 +500,7 @@ function ScanPreviewCard() {
   ];
 
   return (
-    <div style={{ borderRadius: 20, overflow: "hidden", border: "1.5px solid #E8E8E8", boxShadow: "0 12px 40px rgba(0,0,0,0.09)" }}>
+    <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.home.line}`, boxShadow: `0 8px 28px ${C.home.shadow}` }}>
       <div style={{ background: K, padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>AI 견적 스캔 결과</div>

@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { formatEstimateRegion } from "@/lib/estimateRegion";
 import {
   IconMapPin, IconRuler, IconTool, IconLock, IconStar,
   IconBuildingStore, IconHome, IconEye, IconArrowRight,
@@ -42,7 +43,6 @@ type Lead = {
 };
 
 // ── 레이블 맵 ───────────────────────────────────────────────
-const REGION_LABEL: Record<string, string> = { seoul: "서울", metro: "수도권", local: "지방" };
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드", budget: "실속형", highend: "하이앤드" };
 const GRADE_COLOR: Record<string, string> = { economy: "#6B7280", budget: "#6B7280", standard: "#111111", highend: "#92400E", premium: "#92400E" };
@@ -186,16 +186,17 @@ export default function PartnerLeadsPage() {
 
                 <div style={{ padding: "18px 18px 0" }}>
                   {/* 뱃지 행 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 14 }}>
                     {/* 지역 */}
                     <span style={{
                       display: "inline-flex", alignItems: "center", gap: 4,
                       fontSize: 11, fontWeight: 700,
                       background: "#111", color: "#FFF",
                       padding: "3px 10px", borderRadius: 20,
+                      maxWidth: "100%", boxSizing: "border-box", minWidth: 0,
                     }}>
-                      <IconMapPin size={10} />
-                      {REGION_LABEL[lead.region ?? ""] || "-"}
+                      <IconMapPin size={10} style={{ flexShrink: 0 }} />
+                      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{formatEstimateRegion(lead.region)}</span>
                     </span>
                     {/* 유형 */}
                     <span style={{
@@ -204,10 +205,13 @@ export default function PartnerLeadsPage() {
                       background: P.bg, color: P.mid,
                       padding: "3px 10px", borderRadius: 20,
                       border: `1px solid ${P.border}`,
+                      maxWidth: "100%", boxSizing: "border-box", overflowWrap: "anywhere", minWidth: 0,
                     }}>
-                      {lead.building_type === "commercial" ? <IconBuildingStore size={10} /> : <IconHome size={10} />}
-                      {TYPE_LABEL[lead.building_type ?? ""] || "-"}
-                      {lead.commercial_sub ? ` · ${lead.commercial_sub}` : ""}
+                      {lead.building_type === "commercial" ? <IconBuildingStore size={10} style={{ flexShrink: 0 }} /> : <IconHome size={10} style={{ flexShrink: 0 }} />}
+                      <span style={{ minWidth: 0, overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>
+                        {TYPE_LABEL[lead.building_type ?? ""] || "-"}
+                        {lead.commercial_sub ? ` · ${lead.commercial_sub}` : ""}
+                      </span>
                     </span>
                     {/* 자재 등급 */}
                     {lead.material_grade && (
@@ -327,9 +331,9 @@ export default function PartnerLeadsPage() {
                 marginBottom: 20,
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
+                  <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
                     <div style={{ fontSize: 11, color: P.light, marginBottom: 4 }}>
-                      {REGION_LABEL[selected.region ?? ""] || "-"} · {TYPE_LABEL[selected.building_type ?? ""] || "-"}
+                      {formatEstimateRegion(selected.region)} · {TYPE_LABEL[selected.building_type ?? ""] || "-"}
                       {selected.commercial_sub ? ` · ${selected.commercial_sub}` : ""}
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 900, color: P.text }}>

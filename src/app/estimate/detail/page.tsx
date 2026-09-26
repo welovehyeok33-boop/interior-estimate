@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
+import { saveConsult } from "@/lib/consultStore";
+import { REGION_DETAIL_MAX_LENGTH } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
+import { SpaceDescriptionInput } from "@/components/SpaceDescriptionInput";
 
 // ── 데이터 ────────────────────────────────────────────────
 const REGIONS = [
@@ -38,19 +41,34 @@ const COMMERCIAL_TYPES = [
   { id: "etc",           label: "기타",       icon: "📋",  subs: [] },
 ];
 
-export default function DetailEstimatePage() {
+const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
+
+export function SharedEstimateStep1({ mode = "engine" }: { mode?: "consult" | "engine" }) {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
+  const [regionDetail, setRegionDetail] = useState("");
   const [type, setType] = useState<string | null>(null);
   const [commercialType, setCommercialType] = useState<string | null>(null);
   const [commercialSub, setCommercialSub] = useState<string | null>(null);
   const [residentialGrade, setResidentialGrade] = useState<string | null>(null);
+  const [spaceDescription, setSpaceDescription] = useState("");
 
   const selectedCommercial = COMMERCIAL_TYPES.find(c => c.id === commercialType);
   const hasSubs = selectedCommercial && selectedCommercial.subs.length > 0;
   const canNext = type === "residential"
     ? !!region && !!residentialGrade
     : !!region && !!commercialType && (!hasSubs || !!commercialSub);
+  const descriptionInput = (
+    <SpaceDescriptionInput
+      value={spaceDescription}
+      onChange={setSpaceDescription}
+      placeholder={type === "residential"
+        ? "예: 거주 중인 아파트이고, 주방과 욕실을 밝게 바꾸고 싶어요."
+        : commercialType === "unknown"
+          ? "예: 공방 겸 소품샵, 반려동물 동반 카페처럼 복합적인 공간이에요."
+          : `${commercialSub ?? selectedCommercial?.label ?? "상가"}의 용도나 원하는 분위기, 필요한 공사를 간단히 적어주세요.`}
+    />
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
@@ -61,15 +79,19 @@ export default function DetailEstimatePage() {
           <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 1단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{mode === "consult" ? "무료 견적 신청" : "세부 견적"} · 1단계</span>
         </div>
       </div>
 
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "28px 20px 80px" }}>
 
+        <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", minHeight: 36, marginBottom: 12, fontSize: 13, color: C.textMid, textDecoration: "none" }}>
+          ← 견적 방식 다시 선택
+        </Link>
+
         {/* 진행 경로 */}
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 20 }}>
-          <FlightPath step={1} totalSteps={5} />
+          <FlightPath step={1} totalSteps={mode === "consult" ? 4 : 5} stepLabels={mode === "consult" ? CONSULT_STEP_LABELS : undefined} />
         </div>
 
         {/* 지역 선택 */}
@@ -79,6 +101,9 @@ export default function DetailEstimatePage() {
               const sel = region === r.id;
               return (
                 <motion.button key={r.id} onClick={() => setRegion(r.id)}
+                  aria-pressed={sel}
+                  aria-expanded={r.id === "local" ? sel : undefined}
+                  aria-controls={r.id === "local" && sel ? "local-region-details" : undefined}
                   whileTap={{ scale: 0.92 }}
                   animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
                   transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -100,6 +125,26 @@ export default function DetailEstimatePage() {
               );
             })}
           </div>
+          {region === "local" && (
+            <div id="local-region-details" style={{ marginTop: 12, padding: 16, borderRadius: 12, background: C.selectedBg, border: `1px solid ${C.border}` }}>
+              <label htmlFor="local-region-name" style={{ display: "block", fontSize: 13, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>
+                어느 지역인가요? (선택)
+              </label>
+              <input
+                id="local-region-name"
+                type="text"
+                value={regionDetail}
+                onChange={event => setRegionDetail(event.target.value)}
+                placeholder="예: 부산 해운대구, 대전 유성구, 전남 순천시"
+                maxLength={REGION_DETAIL_MAX_LENGTH}
+                aria-describedby="local-region-help"
+                style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.card, color: C.textDark, fontFamily: "inherit", fontSize: 16, lineHeight: 1.6 }}
+              />
+              <p id="local-region-help" style={{ margin: "8px 0 0", fontSize: 11, color: C.textMid, lineHeight: 1.5 }}>
+                상세 주소 없이 시·군·구까지만 적어주세요. 아직 미정이면 비워둬도 괜찮아요.
+              </p>
+            </div>
+          )}
         </Section>
 
         {/* 공간 유형 */}
@@ -109,7 +154,7 @@ export default function DetailEstimatePage() {
               const sel = type === t.id;
               return (
                 <motion.button key={t.id}
-                  onClick={() => { setType(t.id); setCommercialType(null); setCommercialSub(null); }}
+                  onClick={() => { if (!sel) { setType(t.id); setCommercialType(null); setCommercialSub(null); } }}
                   whileTap={{ scale: 0.93 }}
                   animate={{ scale: sel ? 1.03 : 1, y: sel ? -2 : 0 }}
                   transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -173,6 +218,7 @@ export default function DetailEstimatePage() {
               })}
 
             </div>
+            {descriptionInput}
           </Section>
         )}
 
@@ -190,7 +236,7 @@ export default function DetailEstimatePage() {
                         const sel = commercialType === ct.id;
                         return (
                           <motion.button key={ct.id}
-                            onClick={() => { setCommercialType(ct.id); setCommercialSub(null); }}
+                            onClick={() => { if (!sel) { setCommercialType(ct.id); setCommercialSub(null); } }}
                             whileTap={{ scale: 0.91 }}
                             animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
                             transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -240,6 +286,7 @@ export default function DetailEstimatePage() {
                         </div>
                       </motion.div>
                     )}
+                    {selectedInRow && descriptionInput}
                   </div>
                 );
               })}
@@ -248,11 +295,13 @@ export default function DetailEstimatePage() {
                 const sel = commercialType === "unknown";
                 return (
                   <motion.button
-                    onClick={() => { setCommercialType("unknown"); setCommercialSub(null); }}
+                    onClick={() => { if (!sel) { setCommercialType("unknown"); setCommercialSub(null); } }}
                     whileTap={{ scale: 0.97 }}
                     animate={{ x: sel ? 4 : 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     aria-pressed={sel}
+                    aria-expanded={sel}
+                    aria-controls={sel ? "space-description-details" : undefined}
                     style={{
                       marginTop: 2,
                       padding: "14px 16px",
@@ -285,7 +334,7 @@ export default function DetailEstimatePage() {
                         아직 잘 모르겠어요
                       </div>
                       <div style={{ fontSize: 11, lineHeight: 1.45, color: C.textLight }}>
-                        가장 가까운 업종이 없어도 괜찮아요. 다음 단계에서 필요한 공사를 선택해주세요.
+                        가장 가까운 업종이 없어도 괜찮아요. 생각 중인 공간을 자유롭게 적어주세요.
                       </div>
                     </div>
                     <AnimatePresence>
@@ -300,6 +349,7 @@ export default function DetailEstimatePage() {
                   </motion.button>
                 );
               })()}
+              {(!commercialType || commercialType === "unknown") && descriptionInput}
             </div>
           </Section>
         )}
@@ -312,8 +362,20 @@ export default function DetailEstimatePage() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ region: region ?? undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub ?? undefined, area: undefined, selectedWorks: [] });
-              router.push("/estimate/detail/step2");
+              const commonData = {
+                region: region ?? undefined,
+                regionDetail: region === "local" ? regionDetail.trim() || undefined : undefined,
+                buildingType: type ?? undefined,
+                residentialGrade: type === "residential" ? residentialGrade ?? undefined : undefined,
+                commercialType: type === "commercial" ? commercialType ?? undefined : undefined,
+                commercialSub: type === "commercial" ? commercialSub ?? undefined : undefined,
+                spaceDescription: spaceDescription.trim(),
+                area: undefined,
+                selectedWorks: [],
+              };
+              saveEstimate(commonData);
+              if (mode === "consult") saveConsult(commonData);
+              router.push(mode === "consult" ? "/consult/step2" : "/estimate/detail/step2");
             }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
@@ -334,6 +396,10 @@ export default function DetailEstimatePage() {
       </div>
     </div>
   );
+}
+
+export default function DetailEstimatePage() {
+  return <SharedEstimateStep1 />;
 }
 
 // ── 섹션 래퍼 ──────────────────────────────────────────────

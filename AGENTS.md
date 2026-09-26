@@ -39,17 +39,17 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 ```
 /                   → 홈 (두 서비스 카드)
 /landing            → 무료 상담 랜딩 페이지
-/consult            → 상담 1단계 (지역/업종)
-/consult/step2      → 상담 2단계 (평수)
-/consult/step3      → 상담 3단계 (경험/시기/종류/예산/메모)
-/consult/step4      → 상담 4단계 (이름/전화 → 완료)
+/consult            → 유입용 1단계 (상세 견적과 공통: 지역/공간·업종)
+/consult/step2      → 유입용 2단계 (상세 견적과 공통: 평수)
+/consult/step3      → 유입용 3단계 (공사 시기/희망 예산)
+/consult/step4      → 유입용 4단계 (이름/전화 → 완료)
 /estimate/detail    → 견적 1단계 (지역/업종/등급)
 /estimate/detail/step2 → 견적 2단계 (평수)
 /estimate/detail/step3 → 견적 3단계 (공종)
 /estimate/detail/step4 → 견적 4단계 (자재 등급)
 /estimate/detail/step5 → 견적 5단계 (결과 + 이메일)
 /estimate/scan      → AI 견적 스캔 (Coming Soon)
-/admin              → 어드민 (비번: pomit2026)
+/admin              → 어드민 (비번: 1732)
 /partner/leads      → 협력업체 리드 열람
 ```
 

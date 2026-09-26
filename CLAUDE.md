@@ -42,7 +42,7 @@ src/
 ├── app/
 │   ├── page.tsx                    # 홈 화면 (두 가지 핵심 서비스)
 │   ├── page.v1.tsx                 # 홈 화면 백업 (이전 버전)
-│   ├── admin/page.tsx              # 내부 어드민 (비번: pomit2026)
+│   ├── admin/page.tsx              # 내부 어드민 (비번: 1732)
 │   ├── partner/leads/page.tsx      # 협력업체 리드 열람 페이지
 │   ├── landing/page.tsx            # 무료 상담 랜딩 페이지 (신규)
 │   ├── consult/page.tsx            # 무료 상담 1단계 (지역/업종)
@@ -70,6 +70,7 @@ src/
 C.bg, C.card, C.border, C.primary (#F5C200 노란색)
 C.selectedBg, C.selectedBorder, C.textDark, C.textMid, C.textLight
 ```
+- 홈 전용 `C.home`: 아이보리/웜 차콜/브론즈 테두리 마감. 기존 `C` 토큰은 유지하므로 견적·상담 화면에는 영향 없음. 홈 제목 첫 줄만 시스템 명조체 폴백 사용, 본문과 CTA는 기존 Pretendard 유지.
 
 ## Supabase 테이블
 
@@ -82,6 +83,8 @@ status ('new' | 'qualified' | 'contracted')
 ```
 - RLS 비활성화
 - status = 'qualified' 인 리드만 파트너 페이지에 노출
+- 공간 설명은 폼의 `spaceDescription`(최대 200자)으로 세부업종 `commercialSub`와 분리한다. 스키마 변경 없이 제출 시에만 `commercial_sub`에 `식당 · 공간 설명: ...` 또는 `공간 설명: ...` 형태로 전달한다. 빈 설명은 기존 업종명 유지, 구버전 unknown의 `commercialSub` 메모는 호환 처리. 관리자/파트너는 기존 문자열 표시 경로 사용. 실제 DB 저장/길이 제약은 운영 반영 전 검증 필요.
+- 견적 폼은 `region` 코드와 `regionDetail` 설명을 분리해 유지한다. 리드 저장 시 `region`에는 기존 코드 또는 `local:부산 해운대구` 형식을 사용하고 `estimateRegion.ts`로 표시한다. 기존 코드 기반 계산은 유지. 실제 DB의 상세 지역 저장 허용 여부는 운영 반영 전 확인 필요.
 
 ### consultations (무료 상담 신청)
 ```sql
@@ -106,15 +109,24 @@ alter table consultations disable row level security;
 ```
 
 ## 현재 구현 상태
+- [x] 유입용 `/consult`은 공종 선택 없이 지역·공간/업종 → 면적 → 공사 시기·희망 예산 슬라이더 → 연락처 신청으로 구성. 신청 화면 요약 포함. 공종 선택은 견적엔진용에만 유지. 2026-09-26 로컬만 적용.
+- [x] 관리자 `/admin`에 1차 상담(`consultations`) / 2차 상세 견적 미리보기(`leads`) 분리 탭과 각 요청 정보 조회 추가. 상담 저장 실패 시 완료 화면 차단. 2026-09-26 로컬만 적용. 인증/RLS 보안 개선과 실제 DB 검증은 미완료.
+- [x] AI 자동 견적 방식 선택 (`/estimate`) — 유입용은 기존 `/consult` 4단계, 견적엔진용은 `/estimate/detail` 5단계로 분리 진입. 홈/블로그/스캔 진입 링크 및 첫 단계의 방식 재선택 연결. 최종 엔진·PDF 준비 중 안내, 기존 폼/저장/계산은 그대로. 2026-09-26 로컬만 적용.
 - [x] 홈 화면 — AI 자동 견적(메인) + AI 견적 스캔(Coming Soon)
+- [x] 홈 클래식 마감 — 구성·문구·CTA·목업 유지, 색감/타이포/선/그림자 정돈. 2026-09-26 사용자 요청으로 로컬만 적용, 커밋·푸시·배포하지 않음.
+- [x] 홈 휴대폰 시연 고도화 — `HomePhoneDemo.tsx`, `homeDemo.ts`, `C.phone` 사용. 견적 4장면/스캔 3장면, 수동 장면 선택·재생 제어, 가시성/모션 축소 대응. 데이터는 설명용 예시이며 실제 엔진·폼/localStorage와 분리. 시연 내부 문구/금액과 기기 외관만 교체하고 나머지 홈 구성·링크 보존. 2026-09-26 로컬만 적용, 푸시·배포 없음.
 - [x] 세부 견적 5단계 플로우 (임시 견적 엔진)
+- [x] 세부 견적 줄자 진행 표시 고도화 — `EstimateLayout.tsx`의 SVG/HTML 단계 라벨과 `C.ruler` 토큰. `estimate/detail/layout.tsx`의 `EstimateProgressProvider`가 공유 MotionValue를 유지해 페이지 이동마다 0.55초 전진/후진. 직접 진입은 현재 단계로 초기화, 모션 축소 시 즉시 이동. 라우트/라벨 정의는 `estimateProgress.ts`. 2026-09-26 로컬 적용만, 푸시·배포 없음.
 - [x] Supabase 리드 수집 (step5 이메일 입력 시 저장)
-- [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: pomit2026
+- [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: 1732
 - [x] 파트너 페이지 — qualified 리드 열람 (결제 연동 미완성)
 - [x] 모바일 반응형
 - [x] 랜딩 페이지 (/landing) — 무료 상담 신청 유도
 - [x] 무료 상담 4단계 폼 (/consult) — 전화번호 수집 → consultations 테이블 저장
 - [x] 세부 견적 상가 업종 — `아직 잘 모르겠어요` 선택 후 세부 업종 없이 진행 가능
+- [x] `아직 잘 모르겠어요` — 공간/업종 설명 선택 입력 (최대 200자), 기존 commercial_sub 컬럼으로 전달. 빈칸도 진행 가능.
+- [x] 공간 설명란을 주거 전체 등급/상가 전체 업종·세부업종으로 확대. 선택한 항목 아래 공통 입력란 하나만 표시하고 옵션 변경 시 설명 유지. 결과 화면에도 설명 표시.
+- [x] `지방` — 시·군·구 선택 입력 (최대 50자), 결과/관리자/파트너 지역 표시. 빈칸도 진행 가능하며 상세 주소는 요청하지 않음.
 - [ ] consultations 테이블 어드민 연결 (상담 신청 목록 관리)
 - [ ] 파트너 로그인 (Supabase Auth 예정)
 - [ ] PDF 발송 (Resend, 견적 엔진 완성 후)
