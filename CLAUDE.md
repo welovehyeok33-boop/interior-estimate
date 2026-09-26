@@ -115,6 +115,7 @@ alter table consultations disable row level security;
 - [x] 랜딩 페이지 (/landing) — 무료 상담 신청 유도
 - [x] 무료 상담 4단계 폼 (/consult) — 전화번호 수집 → consultations 테이블 저장
 - [x] 세부 견적 상가 업종 — `아직 잘 모르겠어요` 선택 후 세부 업종 없이 진행 가능
+- [x] `아직 잘 모르겠어요` — 공간/업종 설명 선택 입력 (최대 200자), 기존 commercial_sub 컬럼으로 전달. 빈칸도 진행 가능.
 - [ ] consultations 테이블 어드민 연결 (상담 신청 목록 관리)
 - [ ] 파트너 로그인 (Supabase Auth 예정)
 - [ ] PDF 발송 (Resend, 견적 엔진 완성 후)

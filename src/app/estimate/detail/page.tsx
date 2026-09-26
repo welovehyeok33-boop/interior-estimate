@@ -248,11 +248,13 @@ export default function DetailEstimatePage() {
                 const sel = commercialType === "unknown";
                 return (
                   <motion.button
-                    onClick={() => { setCommercialType("unknown"); setCommercialSub(null); }}
+                    onClick={() => { if (!sel) { setCommercialType("unknown"); setCommercialSub(null); } }}
                     whileTap={{ scale: 0.97 }}
                     animate={{ x: sel ? 4 : 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     aria-pressed={sel}
+                    aria-expanded={sel}
+                    aria-controls={sel ? "unknown-industry-details" : undefined}
                     style={{
                       marginTop: 2,
                       padding: "14px 16px",
@@ -285,7 +287,7 @@ export default function DetailEstimatePage() {
                         아직 잘 모르겠어요
                       </div>
                       <div style={{ fontSize: 11, lineHeight: 1.45, color: C.textLight }}>
-                        가장 가까운 업종이 없어도 괜찮아요. 다음 단계에서 필요한 공사를 선택해주세요.
+                        가장 가까운 업종이 없어도 괜찮아요. 생각 중인 공간을 자유롭게 적어주세요.
                       </div>
                     </div>
                     <AnimatePresence>
@@ -300,6 +302,27 @@ export default function DetailEstimatePage() {
                   </motion.button>
                 );
               })()}
+              {commercialType === "unknown" && (
+                <div id="unknown-industry-details" style={{ padding: "16px", borderRadius: 12, background: C.selectedBg, border: `1px solid ${C.border}` }}>
+                  <label htmlFor="unknown-industry-description" style={{ display: "block", fontSize: 13, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>
+                    어떤 공간을 생각하고 계세요? (선택)
+                  </label>
+                  <textarea
+                    id="unknown-industry-description"
+                    value={commercialSub ?? ""}
+                    onChange={event => setCommercialSub(event.target.value)}
+                    placeholder="예: 공방 겸 소품샵, 반려동물 동반 카페처럼 복합적인 공간이에요."
+                    rows={3}
+                    maxLength={200}
+                    aria-describedby="unknown-industry-help"
+                    style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.card, color: C.textDark, fontFamily: "inherit", fontSize: 16, lineHeight: 1.6, resize: "vertical" }}
+                  />
+                  <div id="unknown-industry-help" style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 6, fontSize: 11, color: C.textMid, lineHeight: 1.5 }}>
+                    <span>연락처 없이 공간이나 업종만 적어주세요.<br />비워두고 넘어가도 괜찮아요.</span>
+                    <span style={{ whiteSpace: "nowrap" }}>{(commercialSub ?? "").length}/200</span>
+                  </div>
+                </div>
+              )}
             </div>
           </Section>
         )}
@@ -312,7 +335,7 @@ export default function DetailEstimatePage() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ region: region ?? undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub ?? undefined, area: undefined, selectedWorks: [] });
+              saveEstimate({ region: region ?? undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub?.trim() || undefined, area: undefined, selectedWorks: [] });
               router.push("/estimate/detail/step2");
             }}
             style={{

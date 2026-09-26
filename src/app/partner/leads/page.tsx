@@ -186,7 +186,7 @@ export default function PartnerLeadsPage() {
 
                 <div style={{ padding: "18px 18px 0" }}>
                   {/* 뱃지 행 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 14 }}>
                     {/* 지역 */}
                     <span style={{
                       display: "inline-flex", alignItems: "center", gap: 4,
@@ -204,6 +204,7 @@ export default function PartnerLeadsPage() {
                       background: P.bg, color: P.mid,
                       padding: "3px 10px", borderRadius: 20,
                       border: `1px solid ${P.border}`,
+                      maxWidth: "100%", boxSizing: "border-box", overflowWrap: "anywhere", minWidth: 0,
                     }}>
                       {lead.building_type === "commercial" ? <IconBuildingStore size={10} /> : <IconHome size={10} />}
                       {TYPE_LABEL[lead.building_type ?? ""] || "-"}
@@ -327,7 +328,7 @@ export default function PartnerLeadsPage() {
                 marginBottom: 20,
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
+                  <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
                     <div style={{ fontSize: 11, color: P.light, marginBottom: 4 }}>
                       {REGION_LABEL[selected.region ?? ""] || "-"} · {TYPE_LABEL[selected.building_type ?? ""] || "-"}
                       {selected.commercial_sub ? ` · ${selected.commercial_sub}` : ""}

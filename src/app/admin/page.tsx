@@ -293,11 +293,11 @@ export default function AdminPage() {
                     </span>
 
                     {/* 핵심 정보 */}
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: A.text }}>
                         {REGION_LABEL[lead.region ?? ""] || "-"}
                       </span>
-                      <span style={{ fontSize: 13, color: A.mid }}>
+                      <span style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere", fontSize: 13, color: A.mid }}>
                         {TYPE_LABEL[lead.building_type ?? ""] || "-"}
                         {lead.commercial_sub ? ` · ${lead.commercial_sub}` : lead.commercial_type ? ` · ${lead.commercial_type}` : ""}
                       </span>
