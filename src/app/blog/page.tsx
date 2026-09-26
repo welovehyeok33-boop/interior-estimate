@@ -107,7 +107,7 @@ export default function BlogPage() {
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, margin: "0 0 20px", lineHeight: 1.7 }}>
             조건만 입력하면 30초 안에<br />전문가 수준의 견적서를 무료로 받아볼 수 있어요.
           </p>
-          <Link href="/estimate/detail" style={{ display: "inline-block", background: "#F5C200", color: "#111111", padding: "12px 28px", borderRadius: 30, fontWeight: 700, fontSize: 15, textDecoration: "none" }}>
+          <Link href="/estimate" style={{ display: "inline-block", background: "#F5C200", color: "#111111", padding: "12px 28px", borderRadius: 30, fontWeight: 700, fontSize: 15, textDecoration: "none" }}>
             세부 견적 시작하기 →
           </Link>
         </div>

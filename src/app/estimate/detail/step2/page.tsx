@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconArrowRight } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
+import { saveConsult } from "@/lib/consultStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 const GUIDE = [
@@ -15,7 +16,9 @@ const GUIDE = [
   { range: "100평 이상",  desc: "대형 공간 · 복합시설" },
 ];
 
-export default function Step2Page() {
+const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
+
+export function SharedEstimateStep2({ mode = "engine" }: { mode?: "consult" | "engine" }) {
   const router = useRouter();
   const [area, setArea] = useState<string>("");
   const canNext = Number(area) >= 1;
@@ -29,7 +32,7 @@ export default function Step2Page() {
           <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 2단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{mode === "consult" ? "무료 견적 신청" : "세부 견적"} · 2단계</span>
         </div>
       </div>
 
@@ -37,7 +40,7 @@ export default function Step2Page() {
 
         {/* 진행 경로 */}
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 24 }}>
-          <FlightPath step={2} totalSteps={5} />
+          <FlightPath step={2} totalSteps={mode === "consult" ? 4 : 5} stepLabels={mode === "consult" ? CONSULT_STEP_LABELS : undefined} />
         </div>
 
         {/* 면적 입력 */}
@@ -111,7 +114,8 @@ export default function Step2Page() {
             disabled={!canNext}
             onClick={() => {
               saveEstimate({ area: Number(area), selectedWorks: [] });
-              router.push("/estimate/detail/step3");
+              if (mode === "consult") saveConsult({ area: Number(area), selectedWorks: [] });
+              router.push(mode === "consult" ? "/consult/step3" : "/estimate/detail/step3");
             }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
@@ -130,4 +134,8 @@ export default function Step2Page() {
       </div>
     </div>
   );
+}
+
+export default function Step2Page() {
+  return <SharedEstimateStep2 />;
 }

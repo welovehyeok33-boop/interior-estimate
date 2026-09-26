@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
+import { saveConsult } from "@/lib/consultStore";
 import { REGION_DETAIL_MAX_LENGTH } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
 import { SpaceDescriptionInput } from "@/components/SpaceDescriptionInput";
@@ -40,7 +41,9 @@ const COMMERCIAL_TYPES = [
   { id: "etc",           label: "기타",       icon: "📋",  subs: [] },
 ];
 
-export default function DetailEstimatePage() {
+const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
+
+export function SharedEstimateStep1({ mode = "engine" }: { mode?: "consult" | "engine" }) {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
   const [regionDetail, setRegionDetail] = useState("");
@@ -76,15 +79,19 @@ export default function DetailEstimatePage() {
           <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
             폼잇.
           </Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 1단계</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{mode === "consult" ? "무료 견적 신청" : "세부 견적"} · 1단계</span>
         </div>
       </div>
 
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "28px 20px 80px" }}>
 
+        <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", minHeight: 36, marginBottom: 12, fontSize: 13, color: C.textMid, textDecoration: "none" }}>
+          ← 견적 방식 다시 선택
+        </Link>
+
         {/* 진행 경로 */}
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 20 }}>
-          <FlightPath step={1} totalSteps={5} />
+          <FlightPath step={1} totalSteps={mode === "consult" ? 4 : 5} stepLabels={mode === "consult" ? CONSULT_STEP_LABELS : undefined} />
         </div>
 
         {/* 지역 선택 */}
@@ -355,7 +362,7 @@ export default function DetailEstimatePage() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({
+              const commonData = {
                 region: region ?? undefined,
                 regionDetail: region === "local" ? regionDetail.trim() || undefined : undefined,
                 buildingType: type ?? undefined,
@@ -365,8 +372,10 @@ export default function DetailEstimatePage() {
                 spaceDescription: spaceDescription.trim(),
                 area: undefined,
                 selectedWorks: [],
-              });
-              router.push("/estimate/detail/step2");
+              };
+              saveEstimate(commonData);
+              if (mode === "consult") saveConsult(commonData);
+              router.push(mode === "consult" ? "/consult/step2" : "/estimate/detail/step2");
             }}
             style={{
               display: "flex", alignItems: "center", gap: 8,
@@ -387,6 +396,10 @@ export default function DetailEstimatePage() {
       </div>
     </div>
   );
+}
+
+export default function DetailEstimatePage() {
+  return <SharedEstimateStep1 />;
 }
 
 // ── 섹션 래퍼 ──────────────────────────────────────────────
