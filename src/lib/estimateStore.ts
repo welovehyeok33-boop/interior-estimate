@@ -3,6 +3,7 @@
 export type EstimateState = {
   // 1단계
   region: string;          // "seoul" | "metro" | "local"
+  regionDetail: string;    // 지방 선택 시 시·군·구 (선택 입력, 최대 50자)
   buildingType: string;    // "residential" | "commercial"
   residentialGrade: string;
   commercialType: string;

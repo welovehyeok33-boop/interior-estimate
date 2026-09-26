@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
 import { saveEstimate } from "@/lib/estimateStore";
+import { REGION_DETAIL_MAX_LENGTH } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 // ── 데이터 ────────────────────────────────────────────────
@@ -41,6 +42,7 @@ const COMMERCIAL_TYPES = [
 export default function DetailEstimatePage() {
   const router = useRouter();
   const [region, setRegion] = useState<string | null>(null);
+  const [regionDetail, setRegionDetail] = useState("");
   const [type, setType] = useState<string | null>(null);
   const [commercialType, setCommercialType] = useState<string | null>(null);
   const [commercialSub, setCommercialSub] = useState<string | null>(null);
@@ -79,6 +81,9 @@ export default function DetailEstimatePage() {
               const sel = region === r.id;
               return (
                 <motion.button key={r.id} onClick={() => setRegion(r.id)}
+                  aria-pressed={sel}
+                  aria-expanded={r.id === "local" ? sel : undefined}
+                  aria-controls={r.id === "local" && sel ? "local-region-details" : undefined}
                   whileTap={{ scale: 0.92 }}
                   animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
                   transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -100,6 +105,26 @@ export default function DetailEstimatePage() {
               );
             })}
           </div>
+          {region === "local" && (
+            <div id="local-region-details" style={{ marginTop: 12, padding: 16, borderRadius: 12, background: C.selectedBg, border: `1px solid ${C.border}` }}>
+              <label htmlFor="local-region-name" style={{ display: "block", fontSize: 13, fontWeight: 700, color: C.textDark, marginBottom: 8 }}>
+                어느 지역인가요? (선택)
+              </label>
+              <input
+                id="local-region-name"
+                type="text"
+                value={regionDetail}
+                onChange={event => setRegionDetail(event.target.value)}
+                placeholder="예: 부산 해운대구, 대전 유성구, 전남 순천시"
+                maxLength={REGION_DETAIL_MAX_LENGTH}
+                aria-describedby="local-region-help"
+                style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.card, color: C.textDark, fontFamily: "inherit", fontSize: 16, lineHeight: 1.6 }}
+              />
+              <p id="local-region-help" style={{ margin: "8px 0 0", fontSize: 11, color: C.textMid, lineHeight: 1.5 }}>
+                상세 주소 없이 시·군·구까지만 적어주세요. 아직 미정이면 비워둬도 괜찮아요.
+              </p>
+            </div>
+          )}
         </Section>
 
         {/* 공간 유형 */}
@@ -335,7 +360,7 @@ export default function DetailEstimatePage() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ region: region ?? undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub?.trim() || undefined, area: undefined, selectedWorks: [] });
+              saveEstimate({ region: region ?? undefined, regionDetail: region === "local" ? regionDetail.trim() || undefined : undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub?.trim() || undefined, area: undefined, selectedWorks: [] });
               router.push("/estimate/detail/step2");
             }}
             style={{

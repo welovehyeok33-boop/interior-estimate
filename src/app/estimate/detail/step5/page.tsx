@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +12,7 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { loadEstimate, clearEstimate } from "@/lib/estimateStore";
+import { formatEstimateRegion, serializeLeadRegion } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
 import { supabase } from "@/lib/supabase";
 import type { EstimateState } from "@/lib/estimateStore";
@@ -35,7 +38,6 @@ const WORK_UNIT_PRICE: Record<string, number> = {
   소방: 22, 덕트: 28, 가스: 12, 단열: 14, 철물: 6, 그외: 10,
 };
 
-const REGION_LABEL: Record<string, string> = { seoul: "서울", metro: "수도권", local: "지방" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드" };
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 
@@ -83,6 +85,7 @@ export default function Step5Page() {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -94,12 +97,13 @@ export default function Step5Page() {
   const result = calcEstimate(data);
 
   const handleSendEmail = async () => {
-    if (!email.includes("@")) return;
+    if (sending || !email.includes("@")) return;
     setSending(true);
+    setSubmitError("");
     try {
-      await supabase.from("leads").insert({
+      const { error } = await supabase.from("leads").insert({
         email,
-        region: data.region ?? null,
+        region: serializeLeadRegion(data.region, data.regionDetail),
         building_type: data.buildingType ?? null,
         residential_grade: data.residentialGrade ?? null,
         commercial_type: data.commercialType ?? null,
@@ -110,11 +114,13 @@ export default function Step5Page() {
         estimated_total: result.totalMid,
         status: "new",
       });
-    } catch (err) {
-      console.error("Supabase insert error:", err);
+      if (error) throw error;
+      setEmailSent(true);
+    } catch {
+      setSubmitError("저장하지 못했어요. 입력 내용은 유지되니 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSending(false);
     }
-    setSending(false);
-    setEmailSent(true);
   };
 
   if (!mounted) return null;
@@ -211,7 +217,7 @@ export default function Step5Page() {
             {/* 선택 요약 칩들 */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {[
-                { icon: <IconMapPin size={11} />, text: REGION_LABEL[data.region ?? ""] || "지역" },
+                { icon: <IconMapPin size={11} />, text: formatEstimateRegion(data.region, data.regionDetail) },
                 { icon: <IconRuler size={11} />, text: `${data.area ?? "?"}평` },
                 { icon: <IconDiamond size={11} />, text: GRADE_LABEL[data.materialGrade ?? ""] || "등급" },
                 { icon: <IconTool size={11} />, text: `공종 ${result.breakdown.length}개` },
@@ -220,9 +226,9 @@ export default function Step5Page() {
                   display: "inline-flex", alignItems: "center", gap: 5,
                   background: "rgba(255,255,255,0.1)", borderRadius: 20,
                   padding: "4px 10px", fontSize: 11, color: "rgba(255,255,255,0.65)",
-                  fontWeight: 600,
+                  fontWeight: 600, maxWidth: "100%", boxSizing: "border-box", minWidth: 0,
                 }}>
-                  {chip.icon} {chip.text}
+                  {chip.icon} <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{chip.text}</span>
                 </div>
               ))}
             </div>
@@ -518,6 +524,11 @@ export default function Step5Page() {
                     />
                   </div>
 
+                  {submitError && (
+                    <p role="alert" style={{ margin: "0 0 14px", color: C.textDark, fontSize: 13, lineHeight: 1.6 }}>
+                      {submitError}
+                    </p>
+                  )}
                   <button
                     onClick={handleSendEmail}
                     disabled={!email.includes("@") || sending}

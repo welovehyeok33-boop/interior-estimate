@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { formatEstimateRegion } from "@/lib/estimateRegion";
 import {
   IconLock, IconRefresh,
   IconMapPin, IconRuler, IconTool, IconDiamond,
@@ -44,7 +45,6 @@ type Lead = {
 };
 
 // ── 레이블 맵 ───────────────────────────────────────────────
-const REGION_LABEL: Record<string, string> = { seoul: "서울", metro: "수도권", local: "지방" };
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드", budget: "실속형", highend: "하이앤드" };
 const STATUS_CONFIG = {
@@ -294,8 +294,8 @@ export default function AdminPage() {
 
                     {/* 핵심 정보 */}
                     <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: A.text }}>
-                        {REGION_LABEL[lead.region ?? ""] || "-"}
+                      <span style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere", fontSize: 13, fontWeight: 600, color: A.text }}>
+                        {formatEstimateRegion(lead.region)}
                       </span>
                       <span style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere", fontSize: 13, color: A.mid }}>
                         {TYPE_LABEL[lead.building_type ?? ""] || "-"}
@@ -332,11 +332,11 @@ export default function AdminPage() {
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, margin: "16px 0" }}>
                             {[
                               { icon: <IconMail size={13} />,     label: "이메일",   val: lead.email },
-                              { icon: <IconMapPin size={13} />,   label: "지역",     val: REGION_LABEL[lead.region ?? ""] || "-" },
+                              { icon: <IconMapPin size={13} />,   label: "지역",     val: formatEstimateRegion(lead.region) },
                               { icon: <IconRuler size={13} />,    label: "평수",     val: lead.area ? `${lead.area}평` : "-" },
                               { icon: <IconDiamond size={13} />,  label: "자재등급", val: GRADE_LABEL[lead.material_grade ?? ""] || "-" },
                             ].map(item => (
-                              <div key={item.label} style={{ padding: "10px 14px", background: "#111", borderRadius: 10, border: `1px solid ${A.border}` }}>
+                              <div key={item.label} style={{ minWidth: 0, overflowWrap: "anywhere", padding: "10px 14px", background: "#111", borderRadius: 10, border: `1px solid ${A.border}` }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, color: A.light }}>
                                   {item.icon}
                                   <span style={{ fontSize: 11, fontWeight: 600 }}>{item.label}</span>
