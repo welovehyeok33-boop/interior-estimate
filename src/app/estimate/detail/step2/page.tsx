@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconArrowRight } from "@tabler/icons-react";
-import { saveEstimate } from "@/lib/estimateStore";
+import { saveEstimate, useEstimateDraft } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 const GUIDE = [
@@ -17,8 +17,10 @@ const GUIDE = [
 
 export default function Step2Page() {
   const router = useRouter();
-  const [area, setArea] = useState<string>("");
-  const canNext = Number(area) >= 1;
+  const draft = useEstimateDraft();
+  const [areaInput, setArea] = useState<string | null>(null);
+  const area = areaInput ?? (draft.area ? String(draft.area) : "");
+  const canNext = Number.isFinite(Number(area)) && Number(area) >= 1 && Number(area) <= 9999;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
@@ -46,17 +48,22 @@ export default function Step2Page() {
             공사할 공간이 몇 평 정도 되나요?
           </div>
           <div style={{ fontSize: 13, color: C.textLight, marginBottom: 16 }}>
-            어림잡아 입력해도 견적에 큰 차이 없어요
+            실제 사용하는 면적을 입력해주세요. 84㎡는 약 25평이에요.
           </div>
 
           {/* 큰 입력창 */}
           <div style={{ position: "relative", marginBottom: 12 }}>
             <input
               type="number"
+              aria-label="공사 면적 (평)"
+              inputMode="decimal"
               min={1}
               max={9999}
               value={area}
-              onChange={e => setArea(e.target.value)}
+              onChange={e => {
+                setArea(e.target.value);
+                saveEstimate({ area: Number(e.target.value) });
+              }}
               placeholder="32"
               style={{
                 width: "100%",
@@ -86,6 +93,10 @@ export default function Step2Page() {
           </div>
         </div>
 
+        <p style={{ fontSize: 14, lineHeight: 1.7, color: C.textMid }}>
+          {area && !canNext && <span role="alert">면적은 1~9,999평으로 입력해주세요.<br /></span>}
+          <Link href="/consult" style={{ color: C.textDark }}>평수를 모르겠어요 · 무료 상담으로 확인하기 →</Link>
+        </p>
         {/* 평수 가이드 */}
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 28 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, marginBottom: 12 }}>평수 참고 가이드</div>
@@ -101,7 +112,7 @@ export default function Step2Page() {
 
         {/* 하단 버튼 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button onClick={() => router.back()} style={{
+          <button onClick={() => router.push("/estimate/detail")} style={{
             background: "none", border: "none", cursor: "pointer",
             fontSize: 14, color: C.textLight, fontWeight: 500,
           }}>
@@ -110,7 +121,7 @@ export default function Step2Page() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ area: Number(area), selectedWorks: [] });
+              saveEstimate({ area: Number(area) });
               router.push("/estimate/detail/step3");
             }}
             style={{

@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getPublishedPosts } from "@/data/posts";
 
-const BASE_URL = "https://interiorhub.co.kr";
+import { SITE_URL as BASE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const blogPosts = getPublishedPosts().map((post) => ({
@@ -31,7 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/estimate/simple`,
+      url: `${BASE_URL}/consult`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.9,

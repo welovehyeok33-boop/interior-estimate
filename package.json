@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:forms": "tsc src/lib/draftStore.ts src/lib/consultValidation.ts src/lib/estimateValidation.ts src/data/posts.ts --rootDir src --outDir .test-build --module commonjs --target es2020 --strict --skipLibCheck && node --test tests/forms.test.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

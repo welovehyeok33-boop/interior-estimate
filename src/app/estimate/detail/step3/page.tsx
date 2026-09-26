@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +12,7 @@ import {
   IconTemperature, IconFlame, IconWind, IconGauge,
   IconStack2, IconBolt as IconScrewBolt, IconDots,
 } from "@tabler/icons-react";
-import { saveEstimate, loadEstimate } from "@/lib/estimateStore";
+import { saveEstimate, useEstimateField } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 // ── 공종 데이터 ────────────────────────────────────────────
@@ -50,6 +49,7 @@ type WorkItem = { id: string; label: string; desc: string; icon: React.ReactNode
 function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boolean; onClick: () => void }) {
   return (
     <motion.button
+      aria-pressed={selected}
       onClick={onClick}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.88 }}
@@ -113,14 +113,7 @@ function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boole
 
 export default function Step3Page() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    const saved = loadEstimate();
-    if (saved.selectedWorks && saved.selectedWorks.length > 0) {
-      setSelected(saved.selectedWorks);
-    }
-  }, []);
+  const [selected, setSelected] = useEstimateField("selectedWorks", []);
 
   const toggle = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
@@ -158,10 +151,13 @@ export default function Step3Page() {
           </div>
           <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6 }}>
             전부 선택할 필요 없어요. 이번 공사에서 진행할 것들만 체크하면 됩니다.<br />
-            <span style={{ color: C.primary, fontWeight: 600 }}>잘 모르겠으면 넘어가도 괜찮아요</span> — 나중에 수정할 수 있습니다.
+            계산하려면 하나 이상 선택해주세요. 공사 범위를 모르겠다면 아래 무료 상담으로 이어갈 수 있어요.
           </div>
         </div>
 
+        <Link href="/consult" style={{ display: "block", padding: 16, borderRadius: 12, background: C.card, border: `1px solid ${C.border}`, color: C.textDark, marginBottom: 24 }}>
+          필요한 공사를 모르겠어요 · 무료 상담으로 확인하기 →
+        </Link>
         {/* 선택 카운터 */}
         {selected.length > 0 && (
           <div style={{ padding: "9px 14px", borderRadius: 10, background: "#fff", border: `1.5px solid ${C.border}`, marginBottom: 16 }}>
@@ -193,7 +189,7 @@ export default function Step3Page() {
 
         {/* 하단 버튼 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28 }}>
-          <button onClick={() => router.back()} style={{
+          <button onClick={() => router.push("/estimate/detail/step2")} style={{
             background: "none", border: "none", cursor: "pointer",
             fontSize: 14, color: C.textLight, fontWeight: 500,
           }}>
@@ -232,7 +228,7 @@ function WorkGroup({ label, desc, works, selected, onToggle }: {
         <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark }}>{label}</div>
         <div style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>{desc}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
         {works.map(item => (
           <WorkCard key={item.id} item={item} selected={selected.includes(item.id)} onClick={() => onToggle(item.id)} />
         ))}

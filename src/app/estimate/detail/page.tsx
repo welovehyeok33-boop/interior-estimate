@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
-import { saveEstimate } from "@/lib/estimateStore";
+import { saveEstimate, useEstimateField } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 // ── 데이터 ────────────────────────────────────────────────
@@ -24,6 +23,7 @@ const RESIDENTIAL_GRADES = [
   { id: "budget",   label: "실속형",   desc: "합리적인 기능 중심 마감" },
   { id: "standard", label: "스탠다드", desc: "품질과 비용의 균형",   popular: true },
   { id: "highend",  label: "하이앤드", desc: "프리미엄 자재 · 고급 마감" },
+  { id: "unknown", label: "아직 잘 모르겠어요", desc: "자재 등급은 다음 단계에서 살펴볼게요" },
 ];
 
 const COMMERCIAL_TYPES = [
@@ -40,11 +40,11 @@ const COMMERCIAL_TYPES = [
 
 export default function DetailEstimatePage() {
   const router = useRouter();
-  const [region, setRegion] = useState<string | null>(null);
-  const [type, setType] = useState<string | null>(null);
-  const [commercialType, setCommercialType] = useState<string | null>(null);
-  const [commercialSub, setCommercialSub] = useState<string | null>(null);
-  const [residentialGrade, setResidentialGrade] = useState<string | null>(null);
+  const [region, setRegion] = useEstimateField("region", "");
+  const [type] = useEstimateField("buildingType", "");
+  const [commercialType, setCommercialType] = useEstimateField("commercialType", "");
+  const [commercialSub, setCommercialSub] = useEstimateField("commercialSub", "");
+  const [residentialGrade, setResidentialGrade] = useEstimateField("residentialGrade", "");
 
   const selectedCommercial = COMMERCIAL_TYPES.find(c => c.id === commercialType);
   const hasSubs = selectedCommercial && selectedCommercial.subs.length > 0;
@@ -72,13 +72,18 @@ export default function DetailEstimatePage() {
           <FlightPath step={1} totalSteps={5} />
         </div>
 
+        <h1 style={{ fontSize: 22, color: C.textDark, margin: "0 0 12px" }}>예상 비용 계산해보기</h1>
+        <p style={{ fontSize: 14, color: C.textMid, lineHeight: 1.7, marginBottom: 24 }}>
+          시험 운영 중인 참고용 계산이에요. 실제 견적은 상담과 현장 확인이 필요해요.<br />
+          <Link href="/consult" style={{ color: C.textDark }}>조건을 잘 모르겠다면 무료 견적 상담으로 시작하기 →</Link>
+        </p>
         {/* 지역 선택 */}
         <Section label="어느 지역에서 공사하시나요?">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {REGIONS.map(r => {
               const sel = region === r.id;
               return (
-                <motion.button key={r.id} onClick={() => setRegion(r.id)}
+                <motion.button key={r.id} aria-pressed={sel} onClick={() => setRegion(r.id)}
                   whileTap={{ scale: 0.92 }}
                   animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
                   transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -108,8 +113,10 @@ export default function DetailEstimatePage() {
             {TYPES.map(t => {
               const sel = type === t.id;
               return (
-                <motion.button key={t.id}
-                  onClick={() => { setType(t.id); setCommercialType(null); setCommercialSub(null); }}
+                <motion.button key={t.id} aria-pressed={sel}
+                  onClick={() => {
+                    if (type !== t.id) saveEstimate({ buildingType: t.id, commercialType: undefined, commercialSub: undefined, residentialGrade: undefined });
+                  }}
                   whileTap={{ scale: 0.93 }}
                   animate={{ scale: sel ? 1.03 : 1, y: sel ? -2 : 0 }}
                   transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -136,7 +143,7 @@ export default function DetailEstimatePage() {
               {RESIDENTIAL_GRADES.map(g => {
                 const sel = residentialGrade === g.id;
                 return (
-                  <motion.button key={g.id} onClick={() => setResidentialGrade(g.id)}
+                  <motion.button key={g.id} aria-pressed={sel} onClick={() => setResidentialGrade(g.id)}
                     whileTap={{ scale: 0.97 }}
                     animate={{ x: sel ? 4 : 0 }}
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -189,8 +196,8 @@ export default function DetailEstimatePage() {
                       {rowItems.map(ct => {
                         const sel = commercialType === ct.id;
                         return (
-                          <motion.button key={ct.id}
-                            onClick={() => { setCommercialType(ct.id); setCommercialSub(null); }}
+                          <motion.button key={ct.id} aria-pressed={sel}
+                            onClick={() => { if (!sel) { setCommercialType(ct.id); setCommercialSub(null); } }}
                             whileTap={{ scale: 0.91 }}
                             animate={{ scale: sel ? 1.04 : 1, y: sel ? -2 : 0 }}
                             transition={{ type: "spring", stiffness: 420, damping: 22 }}
@@ -221,7 +228,7 @@ export default function DetailEstimatePage() {
                           {selectedInRow.subs.map(sub => {
                             const sel = commercialSub === sub;
                             return (
-                              <motion.button key={sub} onClick={() => setCommercialSub(sub)}
+                              <motion.button key={sub} aria-pressed={sel} onClick={() => setCommercialSub(sub)}
                                 whileTap={{ scale: 0.93 }}
                                 animate={{ scale: sel ? 1.05 : 1 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 22 }}
@@ -285,7 +292,7 @@ export default function DetailEstimatePage() {
                         아직 잘 모르겠어요
                       </div>
                       <div style={{ fontSize: 11, lineHeight: 1.45, color: C.textLight }}>
-                        가장 가까운 업종이 없어도 괜찮아요. 다음 단계에서 필요한 공사를 선택해주세요.
+                        어떤 업종인지 애매해도 괜찮아요. 면적과 필요한 공사를 이어서 선택해주세요.
                       </div>
                     </div>
                     <AnimatePresence>
@@ -312,7 +319,6 @@ export default function DetailEstimatePage() {
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ region: region ?? undefined, buildingType: type ?? undefined, residentialGrade: residentialGrade ?? undefined, commercialType: commercialType ?? undefined, commercialSub: commercialSub ?? undefined, area: undefined, selectedWorks: [] });
               router.push("/estimate/detail/step2");
             }}
             style={{

@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // ── 컬러 토큰 ──────────────────────────────────────────────
 export const C = {
@@ -15,7 +12,8 @@ export const C = {
   gold: "#FFF3B0",
   textDark: "#111111",
   textMid: "#444444",
-  textLight: "#999999",
+  textLight: "#686868",
+  error: "#B42318",
   selectedBg: "#FFFBE8",
   selectedBorder: "#F5C200",
 };
@@ -144,7 +142,6 @@ export function FlightPath({ step, totalSteps }: { step: number; totalSteps: num
 
 // ── 공통 헤더 ──────────────────────────────────────────────
 export function EstimateHeader({ step }: { step: number }) {
-  const router = useRouter();
   return (
     <div style={{
       background: "#111111",
