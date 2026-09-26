@@ -77,7 +77,7 @@ A. 합지 5~7년, 실크 10년 이상이 일반적입니다. 생활 환경에 �
 A. 비용은 페인트가 저렴하고, 디자인 다양성은 도배가 높습니다. 공간 용도에 따라 선택하세요.
 
 **Q. 도배 견적은 어떻게 받나요?**
-A. 현장 조건과 공사 범위를 확인해야 정확한 견적을 받을 수 있어요. 무료 견적 상담으로 필요한 공사부터 이야기해주세요.
+A. 실측 후 견적이 정확합니다. AI 자동 견적으로 예상 비용을 먼저 확인해보세요.
     `.trim(),
   },
 
@@ -1330,12 +1330,7 @@ export function getPublishedPosts(): Post[] {
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
-  try {
-    const normalized = decodeURIComponent(slug).normalize("NFC");
-    return POSTS.find((p) => p.slug.normalize("NFC") === normalized);
-  } catch {
-    return undefined;
-  }
+  return POSTS.find((p) => p.slug === slug);
 }
 
 export const FINISH_SUBCATEGORIES = [

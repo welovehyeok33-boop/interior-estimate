@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconCheck, IconStar } from "@tabler/icons-react";
-import { saveEstimate, useEstimateField } from "@/lib/estimateStore";
+import { saveEstimate, loadEstimate } from "@/lib/estimateStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 // ── 자재 등급 데이터 ──────────────────────────────────────
@@ -65,7 +66,12 @@ const GRADES = [
 
 export default function Step4Page() {
   const router = useRouter();
-  const [grade, setGrade] = useEstimateField("materialGrade", "");
+  const [grade, setGrade] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = loadEstimate();
+    if (saved.materialGrade) setGrade(saved.materialGrade);
+  }, []);
 
   const canNext = !!grade;
 
@@ -101,11 +107,10 @@ export default function Step4Page() {
 
         {/* 등급 카드들 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {GRADES.map(g => {
+          {GRADES.map((g, idx) => {
             const sel = grade === g.id;
             return (
               <motion.button
-                aria-pressed={sel}
                 key={g.id}
                 onClick={() => setGrade(g.id)}
                 whileTap={{ scale: 0.98 }}
@@ -218,14 +223,13 @@ export default function Step4Page() {
         {/* 안내 문구 */}
         <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 12, background: C.card, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 12, color: C.textLight, lineHeight: 1.6 }}>
-            자재 등급은 계산을 위한 예시예요. 실제 사용할 자재는 현장 조건에 맞춰 상담으로 정해주세요.<br />
-            <Link href="/consult" style={{ color: C.textDark }}>자재를 모르겠어요 · 무료 상담으로 확인하기 →</Link>
+            💡 자재 등급은 이후에도 변경할 수 있어요. 잘 모르겠으면 <span style={{ color: C.primary, fontWeight: 600 }}>스탠다드</span>를 추천드립니다.
           </div>
         </div>
 
         {/* 하단 버튼 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28 }}>
-          <button onClick={() => router.push("/estimate/detail/step3")} style={{
+          <button onClick={() => router.back()} style={{
             background: "none", border: "none", cursor: "pointer",
             fontSize: 14, color: C.textLight, fontWeight: 500,
           }}>

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { C } from "@/components/EstimateLayout";
 import { getPublishedPosts, FINISH_SUBCATEGORIES, FUNCTION_SUBCATEGORIES, type Category } from "@/data/posts";
 
 
@@ -14,12 +13,12 @@ export default function BlogPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#FFFDF0" }}>
       {/* 헤더 */}
-      <div style={{ background: C.headerFrom, padding: "14px 0", position: "sticky", top: 0, zIndex: 20 }}>
+      <div style={{ background: "#111111", padding: "14px 0" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
             <span style={{ fontWeight: 800, fontSize: 18, color: "#F5C200", letterSpacing: "-0.02em" }}>폼잇.</span>
           </Link>
-          <Link href="/consult" style={{ fontSize: 13, color: C.textDark, background: C.primary, padding: "12px 14px", borderRadius: 10, textDecoration: "none", fontWeight: 700 }}>무료 견적 상담 →</Link>
+          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>인테리어 공정 가이드</span>
         </div>
       </div>
 
@@ -101,15 +100,15 @@ export default function BlogPage() {
 
         {/* 견적 CTA */}
         <div style={{ background: "#111111", borderRadius: 16, padding: "32px 28px", textAlign: "center", marginTop: 24 }}>
-          <p style={{ color: "#F5C200", fontSize: 13, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.06em" }}>무료 견적 상담</p>
+          <p style={{ color: "#F5C200", fontSize: 13, fontWeight: 700, margin: "0 0 8px", letterSpacing: "0.06em" }}>✈︎ &nbsp; AI 자동 견적</p>
           <h3 style={{ color: "#ffffff", fontSize: 22, fontWeight: 800, margin: "0 0 10px" }}>
             직접 견적 받아보세요
           </h3>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, margin: "0 0 20px", lineHeight: 1.7 }}>
-            공간과 공사 계획을 알려주세요.<br />신청 확인 후 전화로 견적 상담을 이어갑니다.
+            조건만 입력하면 30초 안에<br />전문가 수준의 견적서를 무료로 받아볼 수 있어요.
           </p>
-          <Link href="/consult" style={{ display: "inline-block", background: "#F5C200", color: "#111111", padding: "12px 28px", borderRadius: 30, fontWeight: 700, fontSize: 15, textDecoration: "none" }}>
-            무료 견적 상담 시작하기 →
+          <Link href="/estimate/detail" style={{ display: "inline-block", background: "#F5C200", color: "#111111", padding: "12px 28px", borderRadius: 30, fontWeight: 700, fontSize: 15, textDecoration: "none" }}>
+            세부 견적 시작하기 →
           </Link>
         </div>
       </div>

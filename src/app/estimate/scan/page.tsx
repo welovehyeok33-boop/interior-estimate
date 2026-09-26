@@ -81,13 +81,13 @@ export default function ScanPage() {
 
           {/* CTA */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <Link href="/consult" style={{
+            <Link href="/estimate/detail" style={{
               display: "block", padding: "14px",
               borderRadius: 12, background: `linear-gradient(135deg, #FFD740, #F5C200)`,
               color: "#111", fontWeight: 800, fontSize: 15,
               textDecoration: "none",
             }}>
-              무료 견적 상담 신청하기 →
+              AI 자동 견적 먼저 해보기 →
             </Link>
             <Link href="/" style={{
               display: "block", padding: "14px",
