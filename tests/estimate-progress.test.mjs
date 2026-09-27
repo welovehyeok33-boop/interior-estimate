@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { ESTIMATE_STEP_LABELS, getEstimateStep } from "../src/lib/estimateProgress.ts";
 
 test("견적의 다섯 경로는 표시 순서와 같은 단계로 연결된다", () => {
-  assert.deepEqual(ESTIMATE_STEP_LABELS, ["지역·유형", "면적", "공종", "자재", "완성"]);
+  assert.deepEqual(ESTIMATE_STEP_LABELS, ["지역·유형", "면적", "공간상태", "자재", "완성"]);
   const paths = [
     "/estimate/detail",
     "/estimate/detail/step2",

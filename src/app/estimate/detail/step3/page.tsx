@@ -1,255 +1,96 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  IconArrowRight, IconCheck,
-  IconHammer, IconBuildingFactory2, IconGridDots, IconPaint,
-  IconLayersIntersect, IconBrush, IconLayoutBottombar, IconTool,
-  IconDoor, IconArmchair, IconAd,
-  IconPick, IconDroplet, IconUmbrella, IconBolt,
-  IconTemperature, IconFlame, IconWind, IconGauge,
-  IconStack2, IconBolt as IconScrewBolt, IconDots,
-} from "@tabler/icons-react";
-import { saveEstimate, loadEstimate } from "@/lib/estimateStore";
-import { saveConsult } from "@/lib/consultStore";
-import { FlightPath, C } from "@/components/EstimateLayout";
+import { AnimatePresence, motion } from "framer-motion";
+import { IconArrowRight, IconCheck, IconChevronDown, IconSparkles } from "@tabler/icons-react";
+import { C, FlightPath } from "@/components/EstimateLayout";
+import { CommonQuestionAnswers, EMPTY_COMMON_ANSWERS, ExtraWork, WorkArea, deriveSelectedWorks, hasCompletedCommonQuestions } from "@/lib/estimateQuestions";
+import { loadEstimate, saveEstimate } from "@/lib/estimateStore";
 
-// ── 공종 데이터 ────────────────────────────────────────────
-const FINISH_WORKS = [
-  { id: "목공",      label: "목공",      desc: "몰딩·가벽·천장틀",     icon: <IconHammer size={22} strokeWidth={1.5} /> },
-  { id: "경량",      label: "경량",      desc: "경량철골 파티션",       icon: <IconBuildingFactory2 size={22} strokeWidth={1.5} /> },
-  { id: "타일",      label: "타일",      desc: "욕실·주방·바닥",       icon: <IconGridDots size={22} strokeWidth={1.5} /> },
-  { id: "도장",      label: "도장",      desc: "페인트·에폭시",        icon: <IconPaint size={22} strokeWidth={1.5} /> },
-  { id: "필름",      label: "필름",      desc: "시트·래핑",            icon: <IconLayersIntersect size={22} strokeWidth={1.5} /> },
-  { id: "도배",      label: "도배",      desc: "합지·실크·친환경",     icon: <IconBrush size={22} strokeWidth={1.5} /> },
-  { id: "바닥",      label: "바닥",      desc: "마루·강마루·LVT",      icon: <IconLayoutBottombar size={22} strokeWidth={1.5} /> },
-  { id: "금속",      label: "금속",      desc: "스틸·알루미늄",        icon: <IconTool size={22} strokeWidth={1.5} /> },
-  { id: "창호",      label: "창호",      desc: "창문·도어 교체",       icon: <IconDoor size={22} strokeWidth={1.5} /> },
-  { id: "가구",      label: "가구",      desc: "붙박이장·주방가구",    icon: <IconArmchair size={22} strokeWidth={1.5} /> },
-  { id: "간판",      label: "간판",      desc: "LED·채널·사인",        icon: <IconAd size={22} strokeWidth={1.5} /> },
+type Option<T extends string> = { value: T; label: string; desc?: string };
+
+const STATUS_OPTIONS = [
+  { value: "vacant", label: "현재 비어 있어요", desc: "공실 상태" }, { value: "in_use", label: "사용 중이에요", desc: "영업·거주 중" },
+  { value: "pre_contract", label: "계약 전이에요", desc: "현장 확인 전" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const DEMOLITION_OPTIONS = [
+  { value: "full", label: "전체 철거가 필요해요" }, { value: "partial", label: "일부만 철거할게요" },
+  { value: "none", label: "철거 없이 진행해요" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const AREA_OPTIONS: Option<WorkArea>[] = [
+  { value: "whole", label: "전체 공간" }, { value: "ceiling", label: "천장" }, { value: "walls", label: "벽" },
+  { value: "floor", label: "바닥" }, { value: "unknown", label: "잘 모르겠어요" },
+];
+const CEILING_OPTIONS = [
+  { value: "keep", label: "기존 천장을 유지할게요" }, { value: "refinish", label: "마감만 새로 할게요" },
+  { value: "new", label: "천장을 새로 만들게요" }, { value: "exposed", label: "노출 천장으로 할게요" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const WALL_OPTIONS = [
+  { value: "keep", label: "기존 벽을 유지할게요" }, { value: "remove", label: "일부 벽을 철거할게요" },
+  { value: "new", label: "새 벽을 만들게요" }, { value: "both", label: "철거와 신설 모두 필요해요" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const WALL_FINISH_OPTIONS = [
+  { value: "paint", label: "페인트" }, { value: "wallpaper", label: "도배" }, { value: "film", label: "인테리어 필름" },
+  { value: "tile", label: "타일·패널" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const FLOOR_OPTIONS = [
+  { value: "keep", label: "기존 바닥을 유지할게요" }, { value: "overlay", label: "기존 바닥 위에 시공할게요" },
+  { value: "replace", label: "철거 후 새로 시공할게요" }, { value: "unknown", label: "잘 모르겠어요" },
+] as const;
+const EXTRA_OPTIONS: Option<ExtraWork>[] = [
+  { value: "electric", label: "전기·조명" }, { value: "hvac", label: "냉난방" }, { value: "windows", label: "창호·문" },
+  { value: "furniture", label: "제작 가구" }, { value: "sign", label: "간판" }, { value: "unknown", label: "잘 모르겠어요" },
 ];
 
-const FUNCTION_WORKS = [
-  { id: "철거",      label: "철거",      desc: "기존 인테리어 해체",   icon: <IconPick size={22} strokeWidth={1.5} /> },
-  { id: "설비",      label: "설비",      desc: "배관·급배수",          icon: <IconDroplet size={22} strokeWidth={1.5} /> },
-  { id: "방수",      label: "방수",      desc: "욕실·옥상 방수",       icon: <IconUmbrella size={22} strokeWidth={1.5} /> },
-  { id: "전기/조명", label: "전기·조명", desc: "배선·조명 시공",       icon: <IconBolt size={22} strokeWidth={1.5} /> },
-  { id: "냉난방",    label: "냉난방",    desc: "에어컨·보일러",        icon: <IconTemperature size={22} strokeWidth={1.5} /> },
-  { id: "소방",      label: "소방",      desc: "스프링클러·감지기",    icon: <IconFlame size={22} strokeWidth={1.5} /> },
-  { id: "덕트",      label: "덕트",      desc: "환기·공조 덕트",       icon: <IconWind size={22} strokeWidth={1.5} /> },
-  { id: "가스",      label: "가스",      desc: "가스 배관·설비",       icon: <IconGauge size={22} strokeWidth={1.5} /> },
-  { id: "단열",      label: "단열",      desc: "열·결로 차단",         icon: <IconStack2 size={22} strokeWidth={1.5} /> },
-  { id: "철물",      label: "철물",      desc: "경첩·손잡이·레일",     icon: <IconScrewBolt size={22} strokeWidth={1.5} /> },
-  { id: "그외",      label: "그 외",     desc: "기타 공종",            icon: <IconDots size={22} strokeWidth={1.5} /> },
-];
-
-const CONSULT_STEP_LABELS = ["지역·유형", "면적", "공종", "신청"] as const;
-
-type WorkItem = { id: string; label: string; desc: string; icon: React.ReactNode };
-
-function WorkCard({ item, selected, onClick }: { item: WorkItem; selected: boolean; onClick: () => void }) {
-  return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.88 }}
-      animate={{
-        y: selected ? -3 : 0,
-        boxShadow: selected
-          ? "0 6px 20px rgba(245,194,0,0.35)"
-          : "0 0px 0px rgba(245,194,0,0)",
-      }}
-      transition={{ type: "spring", stiffness: 380, damping: 20 }}
-      style={{
-        position: "relative",
-        padding: "14px 10px 12px",
-        borderRadius: 12,
-        border: selected ? `2px solid ${C.selectedBorder}` : `1.5px solid ${C.border}`,
-        background: selected ? C.selectedBg : C.card,
-        cursor: "pointer", textAlign: "center",
-      }}
-    >
-      {/* 체크 뱃지 */}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            key="badge"
-            initial={{ scale: 0, rotate: -40 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 40 }}
-            transition={{ type: "spring", stiffness: 600, damping: 20 }}
-            style={{
-              position: "absolute", top: 6, right: 6,
-              width: 18, height: 18, borderRadius: "50%",
-              background: C.primary,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              pointerEvents: "none",
-            }}
-          >
-            <IconCheck size={10} color="#111" strokeWidth={3.5} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 아이콘 */}
-      <motion.div
-        animate={{ scale: selected ? 1.15 : 1 }}
-        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        style={{
-          marginBottom: 7, display: "flex", justifyContent: "center",
-          color: selected ? C.primary : "#CCCCCC",
-        }}
-      >
-        {item.icon}
-      </motion.div>
-
-      <div style={{ fontSize: 12, fontWeight: selected ? 700 : 500, color: selected ? C.textDark : C.textMid, marginBottom: 2 }}>
-        {item.label}
-      </div>
-      <div style={{ fontSize: 10, color: C.textLight, lineHeight: 1.3 }}>{item.desc}</div>
-    </motion.button>
-  );
+function QuestionCard({ number, title, hint, children }: { number: string; title: string; hint?: string; children: React.ReactNode }) {
+  return <motion.section initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, padding: "20px 18px", marginBottom: 12 }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}><span style={{ flexShrink: 0, minWidth: 28, height: 28, padding: "0 7px", borderRadius: 14, background: C.selectedBg, border: `1px solid ${C.gold}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: C.textDark }}>{number}</span><div><h2 style={{ margin: 0, fontSize: 17, lineHeight: 1.45, color: C.textDark, letterSpacing: "-0.03em" }}>{title}</h2>{hint && <p style={{ margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: C.textLight }}>{hint}</p>}</div></div>{children}
+  </motion.section>;
 }
 
-export function SharedEstimateStep3({ mode = "engine" }: { mode?: "consult" | "engine" }) {
-  const router = useRouter();
-  const [selected, setSelected] = useState<string[]>([]);
+function SingleChoice<T extends string>({ options, value, onChange }: { options: readonly Option<T>[]; value?: T; onChange: (value: T) => void }) {
+  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>{options.map(option => { const selected = value === option.value; return <motion.button key={option.value} type="button" whileTap={{ scale: 0.97 }} onClick={() => onChange(option.value)} style={{ minHeight: 54, padding: "11px 12px", borderRadius: 12, border: selected ? `2px solid ${C.selectedBorder}` : `1px solid ${C.border}`, background: selected ? C.selectedBg : C.card, textAlign: "left", cursor: "pointer", color: C.textDark }}><span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: selected ? 750 : 600 }}><span>{option.label}</span>{selected && <IconCheck size={16} stroke={3} />}</span>{option.desc && <span style={{ display: "block", marginTop: 3, fontSize: 11, color: C.textLight }}>{option.desc}</span>}</motion.button>; })}</div>;
+}
 
-  useEffect(() => {
-    const saved = loadEstimate();
-    if (saved.selectedWorks && saved.selectedWorks.length > 0) {
-      // localStorage is intentionally restored after hydration to keep server/client markup identical.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelected(saved.selectedWorks);
-    }
-  }, []);
-
-  const toggle = (id: string) =>
-    setSelected(prev => prev.includes(id) ? prev.filter(w => w !== id) : [...prev, id]);
-
-  const canNext = selected.length > 0;
-
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg }}>
-
-      {/* 헤더 */}
-      <div style={{ background: "#111111", padding: "13px 0" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: 17, color: "#F5C200", textDecoration: "none" }}>
-            폼잇.
-          </Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>{mode === "consult" ? "무료 견적 신청" : "세부 견적"} · 3단계</span>
-        </div>
-      </div>
-
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "28px 20px 80px" }}>
-
-        {/* 진행 경로 */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 24 }}>
-          <FlightPath step={3} totalSteps={mode === "consult" ? 4 : 5} stepLabels={mode === "consult" ? CONSULT_STEP_LABELS : undefined} />
-        </div>
-
-        {/* 안내 메시지 */}
-        <div style={{
-          padding: "16px 18px", borderRadius: 14,
-          background: C.selectedBg, border: `1.5px solid ${C.border}`,
-          marginBottom: 24,
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark, marginBottom: 4 }}>
-            실제로 필요한 공사만 골라주세요
-          </div>
-          <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6 }}>
-            전부 선택할 필요 없어요. 이번 공사에서 진행할 것들만 체크하면 됩니다.<br />
-            <span style={{ color: C.primary, fontWeight: 600 }}>잘 모르겠으면 넘어가도 괜찮아요</span> — 나중에 수정할 수 있습니다.
-          </div>
-        </div>
-
-        {/* 선택 카운터 */}
-        {selected.length > 0 && (
-          <div style={{ padding: "9px 14px", borderRadius: 10, background: "#fff", border: `1.5px solid ${C.border}`, marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.textMid }}>
-              선택됨 · <span style={{ color: C.primary, fontWeight: 700 }}>{selected.join(", ")}</span>
-            </span>
-          </div>
-        )}
-
-        {/* 마감공정 */}
-        <WorkGroup
-          label="마감공정"
-          desc="도배·타일·바닥 등 마감 작업"
-          works={FINISH_WORKS}
-          selected={selected}
-          onToggle={toggle}
-        />
-
-        <div style={{ borderTop: `1px dashed ${C.border}`, margin: "20px 0" }} />
-
-        {/* 기능공정 */}
-        <WorkGroup
-          label="기능공정"
-          desc="전기·설비·철거 등 기능 작업"
-          works={FUNCTION_WORKS}
-          selected={selected}
-          onToggle={toggle}
-        />
-
-        {/* 하단 버튼 */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28 }}>
-          <button onClick={() => router.back()} style={{
-            background: "none", border: "none", cursor: "pointer",
-            fontSize: 14, color: C.textLight, fontWeight: 500,
-          }}>
-            ← 이전
-          </button>
-          <button
-            disabled={!canNext}
-            onClick={() => {
-              saveEstimate({ selectedWorks: selected });
-              if (mode === "consult") saveConsult({ selectedWorks: selected });
-              router.push(mode === "consult" ? "/consult/step4" : "/estimate/detail/step4");
-            }}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "12px 28px", borderRadius: 30, border: "none",
-              background: canNext ? `linear-gradient(135deg, #FFD740, #F5C200)` : C.border,
-              color: canNext ? "#111111" : C.textLight,
-              fontWeight: 700, fontSize: 15,
-              cursor: canNext ? "pointer" : "not-allowed",
-              transition: "all 0.2s ease",
-            }}
-          >
-            다음 <IconArrowRight size={16} />
-          </button>
-        </div>
-
-      </div>
-    </div>
-  );
+function MultiChoice<T extends string>({ options, values, onChange }: { options: readonly Option<T>[]; values: T[]; onChange: (values: T[]) => void }) {
+  const toggle = (next: T) => {
+    if (next === "whole" || next === "unknown") return onChange(values.includes(next) ? [] : [next]);
+    const remaining = values.filter(value => value !== "whole" && value !== "unknown");
+    onChange(remaining.includes(next) ? remaining.filter(value => value !== next) : [...remaining, next]);
+  };
+  return <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{options.map(option => { const selected = values.includes(option.value); return <motion.button key={option.value} type="button" whileTap={{ scale: 0.95 }} onClick={() => toggle(option.value)} style={{ padding: "11px 14px", borderRadius: 24, border: selected ? `2px solid ${C.selectedBorder}` : `1px solid ${C.border}`, background: selected ? C.selectedBg : C.card, color: C.textDark, fontSize: 13, fontWeight: selected ? 750 : 550, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>{selected && <IconCheck size={14} stroke={3} />}{option.label}</motion.button>; })}</div>;
 }
 
 export default function Step3Page() {
-  return <SharedEstimateStep3 />;
-}
+  const router = useRouter();
+  const [answers, setAnswers] = useState<CommonQuestionAnswers>(EMPTY_COMMON_ANSWERS);
+  const [showExtras, setShowExtras] = useState(false);
+  useEffect(() => { const saved = loadEstimate().commonAnswers; if (saved) { // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAnswers({ ...EMPTY_COMMON_ANSWERS, ...saved }); } }, []);
+  const update = <K extends keyof CommonQuestionAnswers>(key: K, value: CommonQuestionAnswers[K]) => setAnswers(previous => ({ ...previous, [key]: value }));
+  const includes = (area: WorkArea) => answers.workAreas.includes("whole") || answers.workAreas.includes(area);
+  const canNext = hasCompletedCommonQuestions(answers);
+  const selectedWorks = useMemo(() => deriveSelectedWorks(answers), [answers]);
 
-function WorkGroup({ label, desc, works, selected, onToggle }: {
-  label: string; desc: string;
-  works: WorkItem[]; selected: string[];
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.textDark }}>{label}</div>
-        <div style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>{desc}</div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-        {works.map(item => (
-          <WorkCard key={item.id} item={item} selected={selected.includes(item.id)} onClick={() => onToggle(item.id)} />
-        ))}
-      </div>
-    </div>
-  );
+  return <div style={{ minHeight: "100vh", background: C.bg }}>
+    <div style={{ background: C.headerFrom, padding: "13px 0" }}><div style={{ maxWidth: 600, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}><Link href="/" style={{ fontWeight: 800, fontSize: 17, color: C.primary, textDecoration: "none" }}>폼잇.</Link><span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>세부 견적 · 3단계</span></div></div>
+    <main style={{ maxWidth: 560, margin: "0 auto", padding: "28px 20px 80px" }}>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "20px 16px 12px", marginBottom: 24 }}><FlightPath step={3} totalSteps={5} /></div>
+      <div style={{ marginBottom: 20 }}><div style={{ display: "inline-flex", alignItems: "center", gap: 6, color: C.textMid, fontSize: 12, fontWeight: 700, marginBottom: 8 }}><IconSparkles size={15} color={C.primary} /> 전문 용어 없이 약 1분</div><h1 style={{ margin: "0 0 8px", fontSize: 25, lineHeight: 1.35, letterSpacing: "-0.045em", color: C.textDark }}>공간의 현재 상태만 알려주세요</h1><p style={{ margin: 0, fontSize: 14, lineHeight: 1.65, color: C.textMid }}>답변에 따라 필요한 질문만 보여드릴게요.<br />모르는 항목은 편하게 ‘잘 모르겠어요’를 선택해도 됩니다.</p></div>
+      <QuestionCard number="01" title="현재 공간은 어떤 상태인가요?"><SingleChoice options={STATUS_OPTIONS} value={answers.spaceStatus} onChange={value => update("spaceStatus", value)} /></QuestionCard>
+      <QuestionCard number="02" title="기존 인테리어 철거가 필요한가요?"><SingleChoice options={DEMOLITION_OPTIONS} value={answers.demolition} onChange={value => update("demolition", value)} /></QuestionCard>
+      <QuestionCard number="03" title="어느 부분을 바꾸고 싶으세요?" hint="여러 개를 선택할 수 있어요."><MultiChoice options={AREA_OPTIONS} values={answers.workAreas} onChange={value => update("workAreas", value)} /></QuestionCard>
+      <AnimatePresence>
+        {includes("ceiling") && <QuestionCard key="ceiling" number="04" title="천장은 어떻게 바꾸고 싶으세요?"><SingleChoice options={CEILING_OPTIONS} value={answers.ceiling} onChange={value => update("ceiling", value)} /></QuestionCard>}
+        {includes("walls") && <QuestionCard key="walls" number={includes("ceiling") ? "05" : "04"} title="기존 벽은 어떻게 할까요?"><SingleChoice options={WALL_OPTIONS} value={answers.walls} onChange={value => update("walls", value)} /></QuestionCard>}
+        {includes("walls") && <QuestionCard key="wall-finish" number={includes("ceiling") ? "06" : "05"} title="벽 마감은 무엇을 생각하고 계세요?"><SingleChoice options={WALL_FINISH_OPTIONS} value={answers.wallFinish} onChange={value => update("wallFinish", value)} /></QuestionCard>}
+        {includes("floor") && <QuestionCard key="floor" number="+" title="바닥은 어떻게 바꾸고 싶으세요?"><SingleChoice options={FLOOR_OPTIONS} value={answers.floor} onChange={value => update("floor", value)} /></QuestionCard>}
+      </AnimatePresence>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginTop: 12 }}><button type="button" onClick={() => setShowExtras(value => !value)} aria-expanded={showExtras} style={{ width: "100%", padding: "16px 18px", border: 0, background: C.card, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", color: C.textDark, fontSize: 13, fontWeight: 700 }}><span>추가로 생각 중인 공사가 있나요? <span style={{ color: C.textLight, fontWeight: 500 }}>(선택)</span></span><motion.span animate={{ rotate: showExtras ? 180 : 0 }}><IconChevronDown size={18} /></motion.span></button><AnimatePresence>{showExtras && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: "hidden" }}><div style={{ padding: "0 18px 18px" }}><MultiChoice options={EXTRA_OPTIONS} values={answers.extras} onChange={value => update("extras", value)} /></div></motion.div>}</AnimatePresence></div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 28 }}><button onClick={() => router.back()} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: C.textLight, fontWeight: 500 }}>← 이전</button><button disabled={!canNext} onClick={() => { saveEstimate({ commonAnswers: answers, selectedWorks }); router.push("/estimate/detail/step4"); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 28px", borderRadius: 30, border: "none", background: canNext ? `linear-gradient(135deg, ${C.primaryLight}, ${C.primary})` : C.border, color: canNext ? C.textDark : C.textLight, fontWeight: 750, fontSize: 15, cursor: canNext ? "pointer" : "not-allowed" }}>다음 <IconArrowRight size={17} /></button></div>
+      {!canNext && <p style={{ textAlign: "right", margin: "9px 4px 0", fontSize: 11, color: C.textLight }}>보이는 필수 질문에 답하면 다음으로 갈 수 있어요.</p>}
+    </main>
+  </div>;
 }

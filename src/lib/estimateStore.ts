@@ -1,5 +1,7 @@
 // 견적 폼 전체 상태를 localStorage에 저장/불러오기
 
+import type { CommonQuestionAnswers } from "@/lib/estimateQuestions";
+
 export type EstimateState = {
   // 1단계
   region: string;          // "seoul" | "metro" | "local"
@@ -13,6 +15,7 @@ export type EstimateState = {
   area: number;
   // 3단계
   selectedWorks: string[];
+  commonAnswers: CommonQuestionAnswers;
   // 4단계
   materialGrade: string;   // "economy" | "standard" | "premium"
 };

@@ -104,7 +104,7 @@ export default function Home() {
                 letterSpacing: "-1.8px", margin: m ? "0 0 22px" : "0 0 28px",
                 color: K, wordBreak: "keep-all",
               }}>
-                <span style={{ fontFamily: EDITORIAL_FONT, fontSize: "0.94em", fontWeight: 500, letterSpacing: "-0.04em" }}>견적, 이제</span><br />직접 알아보고<br />직접 판단하세요
+                <span style={{ fontFamily: EDITORIAL_FONT, fontSize: "0.94em", fontWeight: 500, letterSpacing: "-0.04em" }}>인테리어 견적,</span><br />이제는 알고<br />시작하세요
               </h1>
             </FadeUp>
             <FadeUp delay={0.1}>

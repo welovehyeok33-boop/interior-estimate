@@ -45,7 +45,7 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 /consult/step4      → 유입용 4단계 (이름/전화 → 완료)
 /estimate/detail    → 견적 1단계 (지역/업종/등급)
 /estimate/detail/step2 → 견적 2단계 (평수)
-/estimate/detail/step3 → 견적 3단계 (공종)
+/estimate/detail/step3 → 견적 3단계 (소비자 공통 질문 → 내부 공종 자동 변환)
 /estimate/detail/step4 → 견적 4단계 (자재 등급)
 /estimate/detail/step5 → 견적 5단계 (결과 + 이메일)
 /estimate/scan      → AI 견적 스캔 (Coming Soon)
