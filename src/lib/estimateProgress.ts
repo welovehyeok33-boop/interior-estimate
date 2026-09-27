@@ -1,4 +1,4 @@
-export const ESTIMATE_STEP_LABELS = ["지역·유형", "면적", "공종", "자재", "완성"] as const;
+export const ESTIMATE_STEP_LABELS = ["지역·유형", "면적", "공간상태", "자재", "완성"] as const;
 
 const ESTIMATE_STEP_PATHS = [
   "/estimate/detail",

@@ -52,7 +52,7 @@ src/
 │   ├── estimate/
 │   │   ├── detail/page.tsx         # 세부 견적 1단계 (지역/업종/등급)
 │   │   ├── detail/step2/page.tsx   # 2단계 (평수 입력)
-│   │   ├── detail/step3/page.tsx   # 3단계 (공종 선택)
+│   │   ├── detail/step3/page.tsx   # 3단계 (공통 질문, 공종 자동 변환)
 │   │   ├── detail/step4/page.tsx   # 4단계 (자재 등급)
 │   │   └── detail/step5/page.tsx   # 5단계 (결과 + 이메일 수집)
 │   └── estimate/scan/page.tsx      # AI 견적 스캔 (Coming Soon)
@@ -116,6 +116,7 @@ alter table consultations disable row level security;
 - [x] 홈 클래식 마감 — 구성·문구·CTA·목업 유지, 색감/타이포/선/그림자 정돈. 2026-09-26 사용자 요청으로 로컬만 적용, 커밋·푸시·배포하지 않음.
 - [x] 홈 휴대폰 시연 고도화 — `HomePhoneDemo.tsx`, `homeDemo.ts`, `C.phone` 사용. 견적 4장면/스캔 3장면, 수동 장면 선택·재생 제어, 가시성/모션 축소 대응. 데이터는 설명용 예시이며 실제 엔진·폼/localStorage와 분리. 시연 내부 문구/금액과 기기 외관만 교체하고 나머지 홈 구성·링크 보존. 2026-09-26 로컬만 적용, 푸시·배포 없음.
 - [x] 세부 견적 5단계 플로우 (임시 견적 엔진)
+- [x] 세부 견적 3단계를 공종 직접 선택에서 소비자 질문 방식으로 교체. 공간 상태·철거·공사 범위를 먼저 묻고 천장/벽/바닥 후속 질문은 선택 시에만 노출하며, 답변은 기존 임시 계산용 공종으로 자동 변환. 2026-09-26 로컬 적용만.
 - [x] 세부 견적 줄자 진행 표시 고도화 — `EstimateLayout.tsx`의 SVG/HTML 단계 라벨과 `C.ruler` 토큰. `estimate/detail/layout.tsx`의 `EstimateProgressProvider`가 공유 MotionValue를 유지해 페이지 이동마다 0.55초 전진/후진. 직접 진입은 현재 단계로 초기화, 모션 축소 시 즉시 이동. 라우트/라벨 정의는 `estimateProgress.ts`. 2026-09-26 로컬 적용만, 푸시·배포 없음.
 - [x] Supabase 리드 수집 (step5 이메일 입력 시 저장)
 - [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: 1732
