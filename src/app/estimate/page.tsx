@@ -8,7 +8,7 @@ import { C } from "@/components/EstimateLayout";
 const OPTIONS = [
   {
     id: "consult",
-    href: "/consult",
+    href: "/consult?new=1",
     phase: "상담 신청",
     tag: "4단계 신청",
     title: "무료 견적 신청",
