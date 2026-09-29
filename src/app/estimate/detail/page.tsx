@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
 import { loadEstimate, saveEstimate } from "@/lib/estimateStore";
-import { loadConsult, saveConsult } from "@/lib/consultStore";
+import { clearConsult, loadConsult, saveConsult } from "@/lib/consultStore";
 import { REGION_DETAIL_MAX_LENGTH } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
 import { SpaceDescriptionInput } from "@/components/SpaceDescriptionInput";
@@ -54,6 +54,10 @@ export function SharedEstimateStep1({ mode = "engine" }: { mode?: "consult" | "e
   const [spaceDescription, setSpaceDescription] = useState("");
 
   useEffect(() => {
+    if (mode === "consult" && new URLSearchParams(window.location.search).get("new") === "1") {
+      clearConsult();
+      window.history.replaceState(window.history.state, "", "/consult");
+    }
     const saved = mode === "consult" ? loadConsult() : loadEstimate();
     setRegion(saved.region ?? null);
     setRegionDetail(saved.regionDetail ?? "");

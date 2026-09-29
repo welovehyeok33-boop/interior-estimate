@@ -38,7 +38,7 @@ export default function LandingPage() {
           <Link href="/" style={{ fontWeight: 900, fontSize: 18, color: C.primary, textDecoration: "none" }}>
             폼잇.
           </Link>
-          <Link href="/consult" style={{
+          <Link href="/consult?new=1" style={{
             fontSize: 13, fontWeight: 700, color: "#111",
             background: C.primary, padding: "7px 16px", borderRadius: 20,
             textDecoration: "none",
@@ -78,7 +78,7 @@ export default function LandingPage() {
             2분이면 상담 신청 완료됩니다.
           </p>
 
-          <Link href="/consult" style={{
+          <Link href="/consult?new=1" style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             background: `linear-gradient(135deg, #FFD740, #F5C200)`,
             color: "#111", fontWeight: 800, fontSize: m ? 16 : 18,
@@ -224,7 +224,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", margin: "0 0 32px" }}>
             2분이면 신청 완료 · 비용 없음 · 부담 없음
           </p>
-          <Link href="/consult" style={{
+          <Link href="/consult?new=1" style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             background: `linear-gradient(135deg, #FFD740, #F5C200)`,
             color: "#111", fontWeight: 800, fontSize: 16,

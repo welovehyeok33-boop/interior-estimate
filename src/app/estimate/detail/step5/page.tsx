@@ -326,7 +326,7 @@ export default function Step5Page() {
           transition={{ delay: 0.45 }}
         >
           <button
-            onClick={() => router.push("/consult")}
+            onClick={() => router.push("/consult?new=1")}
             style={{
               width: "100%", padding: "16px",
               borderRadius: 16, border: "none",
