@@ -90,7 +90,7 @@ export default function LandingPage() {
           </Link>
 
           <div style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
-            비용 없음 · 부담 없음 · 24시간 이내 연락
+            비용 없음 · 부담 없음 · 접수 후 순차 연락
           </div>
         </motion.div>
       </div>
@@ -99,7 +99,7 @@ export default function LandingPage() {
       <div style={{ background: C.primary, padding: "20px" }}>
         <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", justifyContent: "center", gap: m ? 24 : 48, flexWrap: "wrap" }}>
           {[
-            { num: "100+", label: "업체 데이터 기반" },
+            { num: "4단계", label: "간단한 상담 신청" },
             { num: "24h", label: "이내 전문가 연락" },
             { num: "무료", label: "상담 비용 없음" },
           ].map(item => (
@@ -124,7 +124,7 @@ export default function LandingPage() {
           {[
             { step: "01", title: "공간 정보 입력", desc: "지역, 업종(주거/상가), 평수를 알려주세요. 2분이면 충분해요.", icon: "📋" },
             { step: "02", title: "공사 계획 작성", desc: "공사 시기, 예산, 원하는 것들을 자유롭게 작성해주세요.", icon: "✏️" },
-            { step: "03", title: "전문가 직접 연락", desc: "24시간 이내에 현직 인테리어 전문가가 직접 전화드립니다.", icon: "📞" },
+            { step: "03", title: "전문가 직접 연락", desc: "접수 내용을 확인한 뒤 담당자가 연락드립니다.", icon: "📞" },
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -204,7 +204,7 @@ export default function LandingPage() {
             <div style={{ fontSize: 11, fontWeight: 700, color: C.primary, marginBottom: 8, letterSpacing: "0.05em" }}>EXPERT</div>
             <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 8 }}>현직 인테리어 전문가</div>
             <div style={{ fontSize: 13, color: C.mid, lineHeight: 1.7, wordBreak: "keep-all" }}>
-              100여 개 업체와의 협업 데이터를 바탕으로 정확한 견적과 자재 선택을 도와드립니다.
+              공간과 공사 계획을 확인한 뒤 견적과 자재 선택에 관해 상담해드립니다.
               바가지 없이, 불필요한 공사 없이 딱 필요한 것만 알려드려요.
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", justifyContent: "center", gap: 24, marginTop: 28, flexWrap: "wrap" }}>
             {[
               { icon: <IconShield size={14} />, text: "개인정보 안전 보호" },
-              { icon: <IconClock size={14} />, text: "24시간 이내 연락" },
+              { icon: <IconClock size={14} />, text: "접수 후 순차 연락" },
               { icon: <IconPhone size={14} />, text: "전문가 직접 상담" },
             ].map(item => (
               <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.35)", fontSize: 12 }}>

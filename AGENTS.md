@@ -25,8 +25,8 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 - 아이콘은 `@tabler/icons-react`만
 
 ### Supabase
-- RLS 비활성화 상태 (테이블별로 `disable row level security`)
-- 환경변수: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- 고객 정보 테이블은 RLS 활성화, anon/authenticated 직접 접근 금지. 마이그레이션 적용 전에는 배포 금지.
+- 서버 환경변수: `SUPABASE_SERVICE_ROLE_KEY`, 16자 이상의 `ADMIN_PASSWORD`. 브라우저·로그·Git에 노출 금지. URL은 `NEXT_PUBLIC_SUPABASE_URL`.
 - `.env.local`은 git에 포함 안 됨 → 직접 생성 필요
 
 ## 주요 상태 관리
@@ -47,10 +47,10 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 /estimate/detail/step2 → 견적 2단계 (평수)
 /estimate/detail/step3 → 견적 3단계 (소비자 공통 질문 → 내부 공종 자동 변환)
 /estimate/detail/step4 → 견적 4단계 (자재 등급)
-/estimate/detail/step5 → 견적 5단계 (결과 + 이메일)
+/estimate/detail/step5 → 견적 5단계 (개발 중 계산 예시, PDF 발송 미지원)
 /estimate/scan      → AI 견적 스캔 (Coming Soon)
-/admin              → 어드민 (비번: 1732)
-/partner/leads      → 협력업체 리드 열람
+/admin              → 서버 인증 관리자 (HttpOnly 쿠키)
+/partner/leads      → /admin 리다이렉트 (공개 열람 중단)
 ```
 
 ## Supabase 테이블 요약
@@ -67,7 +67,7 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 ## 작업 후 체크리스트
 - [ ] `tsc --noEmit` 빌드 에러 없는지 확인 (`.next/` 내부 에러는 무시)
 - [ ] 모바일 반응형 확인 (maxWidth: 560)
-- [ ] Supabase 연동 변경 시 RLS 비활성화 상태 유지 확인
+- [ ] Supabase 연동 변경 시 비인증 조회 차단 및 서버 API 접근 검증
 - [ ] CLAUDE.md 현재 구현 상태 업데이트
 - [ ] STATUS.md 업데이트
 

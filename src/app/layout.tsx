@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "폼잇. — AI 자동 견적",
-  description: "현직 인테리어 전문가 + 100개 업체 데이터 기반 AI 자동 견적 플랫폼",
+  title: "폼잇. — 인테리어 견적 상담",
+  description: "지역과 공간, 공사 계획을 간단히 입력하고 무료 견적 상담을 신청하세요. 상세 견적 미리보기도 확인할 수 있습니다.",
   icons: {
     icon: "/favicon.png",
     apple: "/apple-icon.png",

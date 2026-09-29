@@ -1,5 +1,8 @@
 @AGENTS.md
 
+## 2026-09-29 운영 전환 주의
+서버 API 인증/저장으로 전환한 수정본입니다. 운영 DB 마이그레이션과 Vercel 서버 전용 환경변수를 먼저 구성해야 합니다. STATUS.md 최신 항목을 우선하며, 아래 과거 기능 완료 기록을 실제 운영 검증으로 간주하지 마세요. PDF 발송은 미구현이고 공개 파트너 열람은 중단했습니다.
+
 # 폼잇. — AI 기반 자동 견적 플랫폼
 
 ## 회사 정보
@@ -42,7 +45,7 @@ src/
 ├── app/
 │   ├── page.tsx                    # 홈 화면 (두 가지 핵심 서비스)
 │   ├── page.v1.tsx                 # 홈 화면 백업 (이전 버전)
-│   ├── admin/page.tsx              # 내부 어드민 (비번: 1732)
+│   ├── admin/page.tsx              # 내부 어드민 (비번: (폐기 대상 구형 비밀번호))
 │   ├── partner/leads/page.tsx      # 협력업체 리드 열람 페이지
 │   ├── landing/page.tsx            # 무료 상담 랜딩 페이지 (신규)
 │   ├── consult/page.tsx            # 무료 상담 1단계 (지역/업종)
@@ -119,7 +122,7 @@ alter table consultations disable row level security;
 - [x] 세부 견적 3단계를 공종 직접 선택에서 소비자 질문 방식으로 교체. 공간 상태·철거·공사 범위를 먼저 묻고 천장/벽/바닥 후속 질문은 선택 시에만 노출하며, 답변은 기존 임시 계산용 공종으로 자동 변환. 2026-09-26 로컬 적용만.
 - [x] 세부 견적 줄자 진행 표시 고도화 — `EstimateLayout.tsx`의 SVG/HTML 단계 라벨과 `C.ruler` 토큰. `estimate/detail/layout.tsx`의 `EstimateProgressProvider`가 공유 MotionValue를 유지해 페이지 이동마다 0.55초 전진/후진. 직접 진입은 현재 단계로 초기화, 모션 축소 시 즉시 이동. 라우트/라벨 정의는 `estimateProgress.ts`. 2026-09-26 로컬 적용만, 푸시·배포 없음.
 - [x] Supabase 리드 수집 (step5 이메일 입력 시 저장)
-- [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: 1732
+- [x] 어드민 페이지 — 리드 목록/상태변경/삭제, 비번: (폐기 대상 구형 비밀번호)
 - [x] 파트너 페이지 — qualified 리드 열람 (결제 연동 미완성)
 - [x] 모바일 반응형
 - [x] 랜딩 페이지 (/landing) — 무료 상담 신청 유도

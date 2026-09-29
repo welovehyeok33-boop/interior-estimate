@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
+import { INDUSTRY_LABELS } from "@/lib/intakeValidation";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
 import { formatConsultBudget, formatConsultSchedule } from "@/lib/consultStore";
@@ -27,7 +27,7 @@ const A = {
   light:  "#666666",
 };
 
-const ADMIN_PW = "1732";
+
 
 // ── 타입 ────────────────────────────────────────────────────
 type Lead = {
@@ -51,6 +51,11 @@ type Consultation = {
   created_at: string;
   name: string;
   phone: string;
+  residential_grade: string | null;
+  commercial_type: string | null;
+  commercial_sub: string | null;
+  space_description: string | null;
+  consent_at: string | null;
   region: string | null;
   building_type: string | null;
   area: number | null;
@@ -103,36 +108,44 @@ export default function AdminPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  // ── 비밀번호 확인 ─────────────────────────────────────────
   useEffect(() => {
-    // Session storage is available only after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (sessionStorage.getItem("admin_auth") === "1") setAuthed(true);
+    fetch("/api/admin/session", { cache: "no-store" }).then(r => r.json()).then(data => {
+      setAuthed(data.authenticated === true);
+    }).catch(() => setLoadError("인증 상태를 확인하지 못했어요."));
   }, []);
-
-  const login = () => {
-    if (pw === ADMIN_PW) {
-      sessionStorage.setItem("admin_auth", "1");
+  const login = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const response = await fetch("/api/admin/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "로그인하지 못했어요.");
+      setPw("");
+      setPwError(false);
       setAuthed(true);
-    } else {
+    } catch (error) {
       setPwError(true);
-      setTimeout(() => setPwError(false), 1200);
-    }
+      setLoadError(error instanceof Error ? error.message : "로그인하지 못했어요.");
+    } finally { setLoading(false); }
+  };
+  const logout = async () => {
+    const response = await fetch("/api/admin/session", { method: "DELETE" });
+    if (response.ok) { setAuthed(false); setLeads([]); setConsultations([]); }
+    else setActionError("로그아웃하지 못했어요. 다시 시도해주세요.");
   };
 
   // ── 리드 불러오기 ─────────────────────────────────────────
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const [leadResult, consultResult] = await Promise.all([
-      supabase.from("leads").select("*").order("created_at", { ascending: false }),
-      supabase.from("consultations").select("*").order("created_at", { ascending: false }),
-    ]);
-    if (leadResult.error || consultResult.error) {
-      setLoadError("신청 내역을 불러오지 못했어요. DB 연결 및 테이블 권한을 확인해 주세요.");
-    }
-    if (!leadResult.error) setLeads((leadResult.data ?? []) as Lead[]);
-    if (!consultResult.error) setConsultations((consultResult.data ?? []) as Consultation[]);
+    try {
+      const response = await fetch("/api/admin/records", { cache: "no-store" });
+      if (response.status === 401) { setAuthed(false); setLeads([]); setConsultations([]); throw new Error("로그인이 만료됐어요."); }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setLeads(data.leads ?? []);
+      setConsultations(data.consultations ?? []);
+    } catch (error) { setLoadError(error instanceof Error ? error.message : "신청 내역을 불러오지 못했어요."); }
     setLoading(false);
   }, []);
 
@@ -146,7 +159,8 @@ export default function AdminPage() {
   const deleteLead = async (id: string) => {
     setDeleting(id);
     setActionError(null);
-    const { error } = await supabase.from("leads").delete().eq("id", id);
+    const response = await fetch("/api/admin/records", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ table: "leads", id }) }).catch(() => null);
+    const error = !response?.ok;
     if (error) setActionError("삭제하지 못했어요. 다시 시도해 주세요.");
     else {
       setLeads(prev => prev.filter(l => l.id !== id));
@@ -160,7 +174,8 @@ export default function AdminPage() {
   const changeStatus = async (id: string, next: Lead["status"]) => {
     setUpdating(id);
     setActionError(null);
-    const { error } = await supabase.from("leads").update({ status: next }).eq("id", id);
+    const response = await fetch("/api/admin/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ table: "leads", id, status: next }) }).catch(() => null);
+    const error = !response?.ok;
     if (error) setActionError("상태를 저장하지 못했어요. 다시 시도해 주세요.");
     else setLeads(prev => prev.map(l => l.id === id ? { ...l, status: next } : l));
     setUpdating(null);
@@ -198,6 +213,8 @@ export default function AdminPage() {
             <div style={{ position: "relative", marginBottom: 12 }}>
               <IconLock size={16} color={A.light} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
               <input
+                aria-label="관리자 비밀번호"
+                autoComplete="current-password"
                 type="password"
                 placeholder="비밀번호"
                 value={pw}
@@ -215,10 +232,11 @@ export default function AdminPage() {
           </motion.div>
 
           {pwError && (
-            <div style={{ fontSize: 12, color: "#EF4444", textAlign: "center", marginBottom: 10 }}>비밀번호가 틀렸어요</div>
+            <div style={{ fontSize: 12, color: "#EF4444", textAlign: "center", marginBottom: 10 }}>{loadError || "비밀번호를 확인해주세요."}</div>
           )}
 
           <button
+            disabled={loading}
             onClick={login}
             style={{
               width: "100%", padding: "12px",
@@ -277,7 +295,7 @@ export default function AdminPage() {
         {flow === "consult" ? (
           <section aria-label="무료 견적 신청 목록">
             <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>무료 견적 신청</h1>
-            <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>1차 유입용 · 고객 연락처와 요청 사항을 확인하세요.</p>
+            <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>고객 연락처와 요청 사항을 확인하세요. 최근 500건을 표시합니다.</p>
             {loading ? <p style={{ color: A.mid }}>불러오는 중...</p> : consultations.length === 0 ? (
               <p style={{ color: A.mid, padding: "36px 0" }}>아직 상담 신청이 없어요.</p>
             ) : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -294,6 +312,9 @@ export default function AdminPage() {
                     <div>연락처: <a href={`tel:${item.phone}`} style={{ color: C.primary }}>{item.phone}</a></div>
                     <div>지역: {formatEstimateRegion(item.region)}</div>
                     <div>공간: {TYPE_LABEL[item.building_type ?? ""] || item.building_type || "-"} · {item.area ? `${item.area}평` : "면적 미정"}</div>
+                    <div>업종: {INDUSTRY_LABELS[item.commercial_type ?? ""] || "-"} {item.commercial_sub || ""} · 주거 등급: {GRADE_LABEL[item.residential_grade ?? ""] || "-"}</div>
+                    {item.space_description && <div style={{ whiteSpace: "pre-wrap" }}>공간 설명: {item.space_description}</div>}
+                    <div>동의 일시: {item.consent_at ? fmtDate(item.consent_at) : "기존 신청 (기록 없음)"}</div>
                     <div>공사 경험: {EXPERIENCE_LABEL[item.experience ?? ""] || "-"} · 일정: {formatConsultSchedule(item.schedule ?? undefined)}</div>
                     <div>공사 범위: {WORK_SCOPE_LABEL[item.work_scope ?? ""] || "-"} · 예산: {formatConsultBudget(item.budget ?? undefined)}</div>
                     {item.memo && <div style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>메모: {item.memo}</div>}

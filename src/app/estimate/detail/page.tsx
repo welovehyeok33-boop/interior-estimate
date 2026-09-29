@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconArrowRight, IconBuildingSkyscraper, IconTrain, IconMountain, IconCheck, IconHelpCircle } from "@tabler/icons-react";
-import { saveEstimate } from "@/lib/estimateStore";
-import { saveConsult } from "@/lib/consultStore";
+import { loadEstimate, saveEstimate } from "@/lib/estimateStore";
+import { loadConsult, saveConsult } from "@/lib/consultStore";
 import { REGION_DETAIL_MAX_LENGTH } from "@/lib/estimateRegion";
 import { FlightPath, C } from "@/components/EstimateLayout";
 import { SpaceDescriptionInput } from "@/components/SpaceDescriptionInput";
@@ -52,6 +52,17 @@ export function SharedEstimateStep1({ mode = "engine" }: { mode?: "consult" | "e
   const [commercialSub, setCommercialSub] = useState<string | null>(null);
   const [residentialGrade, setResidentialGrade] = useState<string | null>(null);
   const [spaceDescription, setSpaceDescription] = useState("");
+
+  useEffect(() => {
+    const saved = mode === "consult" ? loadConsult() : loadEstimate();
+    setRegion(saved.region ?? null);
+    setRegionDetail(saved.regionDetail ?? "");
+    setType(saved.buildingType ?? null);
+    setResidentialGrade(saved.residentialGrade ?? null);
+    setCommercialType(saved.commercialType ?? null);
+    setCommercialSub(saved.commercialSub ?? null);
+    setSpaceDescription(saved.spaceDescription ?? "");
+  }, [mode]);
 
   const selectedCommercial = COMMERCIAL_TYPES.find(c => c.id === commercialType);
   const hasSubs = selectedCommercial && selectedCommercial.subs.length > 0;
@@ -373,8 +384,8 @@ export function SharedEstimateStep1({ mode = "engine" }: { mode?: "consult" | "e
                 area: undefined,
                 selectedWorks: [],
               };
-              saveEstimate(commonData);
               if (mode === "consult") saveConsult(commonData);
+              else saveEstimate(commonData);
               router.push(mode === "consult" ? "/consult/step2" : "/estimate/detail/step2");
             }}
             style={{

@@ -7,15 +7,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import {
-  IconArrowRight, IconCheck, IconMail, IconDownload,
+  IconCheck,
   IconMapPin, IconRuler, IconTool, IconDiamond, IconChevronDown, IconChevronUp,
   IconRefresh,
 } from "@tabler/icons-react";
 import { loadEstimate, clearEstimate } from "@/lib/estimateStore";
-import { formatEstimateRegion, serializeLeadRegion } from "@/lib/estimateRegion";
-import { getSpaceDescription, serializeLeadSpaceDetails } from "@/lib/estimateSpace";
+import { formatEstimateRegion } from "@/lib/estimateRegion";
+import { getSpaceDescription } from "@/lib/estimateSpace";
 import { FlightPath, C } from "@/components/EstimateLayout";
-import { supabase } from "@/lib/supabase";
+import { validArea, validSpace } from "@/lib/intakeValidation";
+import { hasCompletedCommonQuestions } from "@/lib/estimateQuestions";
 import type { EstimateState } from "@/lib/estimateStore";
 
 // ── 견적 계산 (엔진 연결 전 임시 로직) ─────────────────────
@@ -40,7 +41,7 @@ const WORK_UNIT_PRICE: Record<string, number> = {
 };
 
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드" };
-const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
+
 
 function calcEstimate(data: Partial<EstimateState>) {
   const area = data.area ?? 30;
@@ -82,48 +83,20 @@ export default function Step5Page() {
   const router = useRouter();
   const [data, setData] = useState<Partial<EstimateState>>({});
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [submitError, setSubmitError] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const saved = loadEstimate();
+    if (!validSpace(saved)) { router.replace("/estimate/detail"); return; }
+    if (!validArea(saved.area)) { router.replace("/estimate/detail/step2"); return; }
+    if (!saved.commonAnswers || !hasCompletedCommonQuestions(saved.commonAnswers) || !saved.selectedWorks?.length) { router.replace("/estimate/detail/step3"); return; }
+    if (!["economy", "standard", "premium"].includes(saved.materialGrade ?? "")) { router.replace("/estimate/detail/step4"); return; }
     setData(saved);
     setMounted(true);
-  }, []);
+  }, [router]);
 
   const result = calcEstimate(data);
   const spaceDescription = getSpaceDescription(data);
-
-  const handleSendEmail = async () => {
-    if (sending || !email.includes("@")) return;
-    setSending(true);
-    setSubmitError("");
-    try {
-      const { error } = await supabase.from("leads").insert({
-        email,
-        region: serializeLeadRegion(data.region, data.regionDetail),
-        building_type: data.buildingType ?? null,
-        residential_grade: data.residentialGrade ?? null,
-        commercial_type: data.commercialType ?? null,
-        commercial_sub: serializeLeadSpaceDetails(data),
-        area: data.area ?? null,
-        works: data.selectedWorks ?? [],
-        material_grade: data.materialGrade ?? null,
-        estimated_total: result.totalMid,
-        status: "new",
-      });
-      if (error) throw error;
-      setEmailSent(true);
-    } catch {
-      setSubmitError("저장하지 못했어요. 입력 내용은 유지되니 잠시 후 다시 시도해주세요.");
-    } finally {
-      setSending(false);
-    }
-  };
 
   if (!mounted) return null;
 
@@ -166,13 +139,13 @@ export default function Step5Page() {
               marginBottom: 14,
             }}
           >
-            <IconCheck size={13} strokeWidth={3} /> 견적이 완성됐어요
+            <IconCheck size={13} strokeWidth={3} /> 견적 미리보기 · 개발 중
           </motion.div>
           <div style={{ fontSize: 20, fontWeight: 800, color: C.textDark, marginBottom: 6 }}>
-            예상 공사 견적
+            공사비 계산 예시
           </div>
           <div style={{ fontSize: 13, color: C.textLight }}>
-            선택하신 조건 기반 추정치 · 현장 확인 후 정확한 금액이 산출됩니다
+            임시 단가로 계산한 시연입니다. 실제 견적으로 사용할 수 없어요.
           </div>
         </motion.div>
 
@@ -341,8 +314,8 @@ export default function Step5Page() {
           }}
         >
           <div style={{ fontSize: 13, color: "#7A5F00", lineHeight: 1.7 }}>
-            📋 이 금액은 <strong>입력 조건 기반 추정치</strong>입니다. 정확한 금액은 현장 실측 후 확정되며,<br />
-            ±10~15% 오차 범위가 발생할 수 있습니다.
+            📋 이 금액은 <strong>개발 중인 계산 예시</strong>로 실제 견적이 아닙니다.<br />
+            실제 공사비는 상담과 현장 확인이 필요하며, PDF·이메일 발송은 준비 중입니다.
           </div>
         </motion.div>
 
@@ -353,7 +326,7 @@ export default function Step5Page() {
           transition={{ delay: 0.45 }}
         >
           <button
-            onClick={() => setShowEmailModal(true)}
+            onClick={() => router.push("/consult")}
             style={{
               width: "100%", padding: "16px",
               borderRadius: 16, border: "none",
@@ -365,8 +338,8 @@ export default function Step5Page() {
               marginBottom: 12,
             }}
           >
-            <IconDownload size={20} strokeWidth={2.2} />
-            PDF 견적서 무료로 받기
+
+            무료 견적 상담 신청하기
           </button>
 
           <div style={{ display: "flex", gap: 10 }}>
@@ -398,183 +371,6 @@ export default function Step5Page() {
 
       </div>
 
-      {/* 이메일 입력 모달 */}
-      <AnimatePresence>
-        {showEmailModal && (
-          <>
-            {/* 오버레이 */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !emailSent && setShowEmailModal(false)}
-              style={{
-                position: "fixed", inset: 0,
-                background: "rgba(0,0,0,0.55)",
-                zIndex: 100,
-              }}
-            />
-
-            {/* 모달 */}
-            <motion.div
-              initial={{ opacity: 0, y: 60, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              style={{
-                position: "fixed",
-                bottom: 0, left: 0, right: 0,
-                background: "#ffffff",
-                borderRadius: "24px 24px 0 0",
-                padding: "32px 24px 40px",
-                zIndex: 101,
-                maxWidth: 560, margin: "0 auto",
-              }}
-            >
-              {/* 드래그 핸들 */}
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#E0E0E0", margin: "0 auto 24px" }} />
-
-              {emailSent ? (
-                // 전송 완료
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  style={{ textAlign: "center", padding: "16px 0 8px" }}
-                >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 16 }}
-                    style={{
-                      width: 64, height: 64, borderRadius: "50%",
-                      background: "#F5C200",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      margin: "0 auto 16px",
-                    }}
-                  >
-                    <IconCheck size={30} color="#111" strokeWidth={3} />
-                  </motion.div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: C.textDark, marginBottom: 8 }}>
-                    견적서를 발송했어요!
-                  </div>
-                  <div style={{ fontSize: 14, color: C.textMid, lineHeight: 1.6, marginBottom: 24 }}>
-                    <span style={{ color: C.primary, fontWeight: 700 }}>{email}</span> 으로<br />
-                    PDF 견적서가 전송됩니다.<br />
-                    <span style={{ fontSize: 12, color: C.textLight }}>스팸함도 확인해 주세요</span>
-                  </div>
-                  <button
-                    onClick={() => setShowEmailModal(false)}
-                    style={{
-                      width: "100%", padding: "14px",
-                      borderRadius: 14, border: "none",
-                      background: "#111111", color: "#F5C200",
-                      fontWeight: 700, fontSize: 15, cursor: "pointer",
-                    }}
-                  >
-                    확인
-                  </button>
-                </motion.div>
-              ) : (
-                // 이메일 입력
-                <>
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: C.textDark, marginBottom: 6 }}>
-                      어디로 보내드릴까요?
-                    </div>
-                    <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6 }}>
-                      이메일로 상세 PDF 견적서를 무료로 보내드립니다.<br />
-                      <span style={{ fontSize: 12, color: C.textLight }}>스팸 없이, 딱 견적서만 전송해요</span>
-                    </div>
-                  </div>
-
-                  {/* 견적 요약 */}
-                  <div style={{
-                    padding: "12px 16px", borderRadius: 12,
-                    background: C.selectedBg, border: `1.5px solid ${C.selectedBorder}`,
-                    marginBottom: 20,
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: C.textLight, marginBottom: 2 }}>예상 견적 총액</div>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: C.textDark }}>
-                        {result.totalMid.toLocaleString()}
-                        <span style={{ fontSize: 12, fontWeight: 600, color: C.textMid, marginLeft: 4 }}>만원</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 11, color: C.textLight, textAlign: "right" }}>
-                      {result.breakdown.length}개 공종<br />
-                      {GRADE_LABEL[data.materialGrade ?? ""]} 등급
-                    </div>
-                  </div>
-
-                  {/* 이메일 입력 */}
-                  <div style={{ position: "relative", marginBottom: 14 }}>
-                    <IconMail size={18} color={C.textLight} style={{
-                      position: "absolute", left: 14, top: "50%",
-                      transform: "translateY(-50%)", pointerEvents: "none",
-                    }} />
-                    <input
-                      type="email"
-                      placeholder="example@email.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && handleSendEmail()}
-                      autoFocus
-                      style={{
-                        width: "100%", boxSizing: "border-box",
-                        padding: "14px 14px 14px 44px",
-                        borderRadius: 12,
-                        border: `2px solid ${email.includes("@") ? C.selectedBorder : C.border}`,
-                        fontSize: 15, color: C.textDark,
-                        outline: "none",
-                        background: "#fff",
-                        transition: "border-color 0.15s",
-                      }}
-                    />
-                  </div>
-
-                  {submitError && (
-                    <p role="alert" style={{ margin: "0 0 14px", color: C.textDark, fontSize: 13, lineHeight: 1.6 }}>
-                      {submitError}
-                    </p>
-                  )}
-                  <button
-                    onClick={handleSendEmail}
-                    disabled={!email.includes("@") || sending}
-                    style={{
-                      width: "100%", padding: "14px",
-                      borderRadius: 14, border: "none",
-                      background: email.includes("@") ? `linear-gradient(135deg, #FFD740, #F5C200)` : C.border,
-                      color: email.includes("@") ? "#111111" : C.textLight,
-                      fontWeight: 800, fontSize: 15,
-                      cursor: email.includes("@") ? "pointer" : "not-allowed",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    {sending ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-                        style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid #111", borderTopColor: "transparent" }}
-                      />
-                    ) : (
-                      <>
-                        <IconMail size={18} strokeWidth={2.2} />
-                        PDF 견적서 받기
-                      </>
-                    )}
-                  </button>
-
-                  <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: C.textLight }}>
-                    광고 없음 · 스팸 없음 · 언제든 수신 거부 가능
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

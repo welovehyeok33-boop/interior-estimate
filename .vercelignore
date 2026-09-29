@@ -1,0 +1,5 @@
+.gh-cli
+.npm-cache
+.test-build
+.local-secrets
+.env*
