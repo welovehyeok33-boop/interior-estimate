@@ -46,7 +46,8 @@ export function saveConsult(data: Partial<ConsultState>) {
 export function loadConsult(): Partial<ConsultState> {
   if (typeof window === "undefined") return {};
   try {
-    return JSON.parse(localStorage.getItem(KEY) || "{}");
+    const value = JSON.parse(localStorage.getItem(KEY) || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch {
     return {};
   }

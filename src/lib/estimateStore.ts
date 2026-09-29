@@ -32,7 +32,8 @@ export function loadEstimate(): Partial<EstimateState> {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : {};
+    const value = raw ? JSON.parse(raw) : {};
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch {
     return {};
   }

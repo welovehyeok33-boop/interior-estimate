@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconArrowRight } from "@tabler/icons-react";
-import { saveEstimate } from "@/lib/estimateStore";
-import { saveConsult } from "@/lib/consultStore";
+import { loadEstimate, saveEstimate } from "@/lib/estimateStore";
+import { loadConsult, saveConsult } from "@/lib/consultStore";
 import { FlightPath, C } from "@/components/EstimateLayout";
 
 const GUIDE = [
@@ -21,7 +21,11 @@ const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as 
 export function SharedEstimateStep2({ mode = "engine" }: { mode?: "consult" | "engine" }) {
   const router = useRouter();
   const [area, setArea] = useState<string>("");
-  const canNext = Number(area) >= 1;
+  const canNext = Number.isFinite(Number(area)) && Number(area) >= 1 && Number(area) <= 9999;
+  useEffect(() => {
+    const saved = mode === "consult" ? loadConsult() : loadEstimate();
+    if (saved.area) setArea(String(saved.area));
+  }, [mode]);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg }}>
@@ -58,6 +62,7 @@ export function SharedEstimateStep2({ mode = "engine" }: { mode?: "consult" | "e
               type="number"
               min={1}
               max={9999}
+              aria-label="공사 면적 (평)"
               value={area}
               onChange={e => setArea(e.target.value)}
               placeholder="32"
@@ -113,8 +118,8 @@ export function SharedEstimateStep2({ mode = "engine" }: { mode?: "consult" | "e
           <button
             disabled={!canNext}
             onClick={() => {
-              saveEstimate({ area: Number(area), selectedWorks: [] });
               if (mode === "consult") saveConsult({ area: Number(area), selectedWorks: [] });
+              else saveEstimate({ area: Number(area), selectedWorks: [] });
               router.push(mode === "consult" ? "/consult/step3" : "/estimate/detail/step3");
             }}
             style={{

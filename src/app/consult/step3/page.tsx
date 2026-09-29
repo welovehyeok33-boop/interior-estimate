@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { IconArrowRight, IconCalendarEvent, IconCheck, IconCoin } from "@tabler/icons-react";
 import { C, FlightPath } from "@/components/EstimateLayout";
 import { CONSULT_SCHEDULES, formatConsultBudget, loadConsult, saveConsult } from "@/lib/consultStore";
+import { validArea, validSpace } from "@/lib/intakeValidation";
 
 const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
 const BUDGET_MIN = 500;
@@ -17,17 +18,19 @@ export default function ConsultStep3Page() {
   const router = useRouter();
   const [schedule, setSchedule] = useState("");
   const [budget, setBudget] = useState(3000);
-  const [budgetUnknown, setBudgetUnknown] = useState(false);
+  const [budgetUnknown, setBudgetUnknown] = useState(true);
 
   useEffect(() => {
     const saved = loadConsult();
+    if (!validSpace(saved)) { router.replace("/consult"); return; }
+    if (!validArea(saved.area)) { router.replace("/consult/step2"); return; }
     const amount = Number(saved.budget);
     // Restore local progress after hydration to avoid server/client markup differences.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSchedule(saved.schedule ?? "");
     setBudget(Number.isFinite(amount) && amount >= BUDGET_MIN ? Math.min(amount, BUDGET_MAX) : 3000);
-    setBudgetUnknown(saved.budget === "unknown");
-  }, []);
+    setBudgetUnknown(!saved.budget || saved.budget === "unknown");
+  }, [router]);
   const canNext = Boolean(schedule) && (budgetUnknown || budget >= BUDGET_MIN);
   const progress = ((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
 
@@ -81,9 +84,9 @@ export default function ConsultStep3Page() {
             </motion.div>
             <div style={{ position: "relative", padding: "4px 0 0" }}>
               <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, top: 13, height: 8, borderRadius: 8, background: `linear-gradient(90deg, ${C.primary} 0%, ${C.primary} ${progress}%, ${C.border} ${progress}%, ${C.border} 100%)` }} />
-              <input aria-label="희망 예산" type="range" min={BUDGET_MIN} max={BUDGET_MAX} step={BUDGET_STEP} value={budget} disabled={budgetUnknown}
-                onInput={event => setBudget(Number(event.currentTarget.value))}
-                style={{ position: "relative", zIndex: 1, width: "100%", height: 26, margin: 0, accentColor: C.primary, cursor: budgetUnknown ? "not-allowed" : "grab", opacity: budgetUnknown ? 0.35 : 1 }} />
+              <input aria-label="희망 예산" aria-valuetext={budgetUnknown ? "미정. 움직이면 예산을 선택합니다." : formatConsultBudget(String(budget))} type="range" min={BUDGET_MIN} max={BUDGET_MAX} step={BUDGET_STEP} value={budget}
+                onInput={event => { setBudget(Number(event.currentTarget.value)); setBudgetUnknown(false); }}
+                style={{ position: "relative", zIndex: 1, width: "100%", height: 26, margin: 0, accentColor: C.primary, cursor: "grab", opacity: budgetUnknown ? 0.35 : 1 }} />
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 10, color: C.textLight }}><span>500만원</span><span>5,000만원</span><span>1억원+</span></div>
             </div>
           </div>

@@ -96,7 +96,7 @@ export default function Home() {
                 background: C.home.paper, border: `1px solid ${C.home.line}`, padding: "6px 14px", borderRadius: 20, marginBottom: m ? 22 : 28,
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: Y, display: "inline-block" }} />
-                AI 인테리어 견적 플랫폼
+                인테리어 견적 상담 플랫폼
               </span>
               <h1 style={{
                 fontSize: m ? "clamp(34px, 9vw, 48px)" : "clamp(36px, 4.2vw, 58px)",
@@ -109,7 +109,7 @@ export default function Home() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <p style={{ fontSize: m ? 15 : 16, color: C.home.muted, lineHeight: 1.9, margin: m ? "0 0 28px" : "0 0 36px", letterSpacing: "-0.2px", wordBreak: "keep-all" }}>
-                AI가 자동으로 계산해드리고,<br />받은 견적서가 적정한지도 바로 분석해드려요.
+                공간과 공사 계획을 간단히 알려주세요.<br />접수 후 상담을 통해 견적을 안내해드려요.
               </p>
             </FadeUp>
             <FadeUp delay={0.18}>
@@ -121,7 +121,7 @@ export default function Home() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   height: m ? 50 : 56, boxSizing: "border-box",
                   boxShadow: `0 4px 12px ${C.home.shadow}`,
-                }}>AI 자동 견적 →</Link>
+                }}>견적 알아보기 →</Link>
                 <Link href="/estimate/scan" style={{
                   padding: m ? "14px 18px" : "16px 24px", borderRadius: 9,
                   background: C.home.paper, color: C.home.muted,
@@ -136,7 +136,7 @@ export default function Home() {
               </div>
             </FadeUp>
             <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap", justifyContent: m ? "center" : "flex-start", borderTop: `1px solid ${C.home.line}`, paddingTop: 22 }}>
-              {[["22가지", "공종 데이터"], ["100곳+", "업체 단가"], ["30초", "견적 계산"], ["무료", "PDF 발급"]].map(([n, d]) => (
+              {[["4단계", "간단한 신청"], ["선택형", "쉬운 질문"], ["미정도", "신청 가능"], ["무료", "견적 상담"]].map(([n, d]) => (
                 <motion.div key={n} variants={fadeUp}>
                   <div style={{ fontSize: m ? 18 : 22, fontWeight: 800, color: K, letterSpacing: "-0.4px" }}>{n}</div>
                   <div style={{ fontSize: 11, color: C.home.muted, marginTop: 5 }}>{d}</div>
@@ -161,7 +161,7 @@ export default function Home() {
                 두 가지 핵심 서비스
               </span>
               <h2 style={{ fontSize: m ? "clamp(24px,7vw,36px)" : "clamp(28px,3.5vw,44px)", fontWeight: 800, color: C.home.onDark, margin: 0, letterSpacing: "-1.1px", lineHeight: 1.3, wordBreak: "keep-all" }}>
-                AI가 견적 문제를<br />처음부터 끝까지 해결합니다
+                공사 준비는 간단하게,<br />궁금한 점은 상담으로
               </h2>
             </div>
           </FadeUp>
@@ -176,7 +176,7 @@ export default function Home() {
             }}>
               <div style={{ position: "absolute", top: -50, right: -50, width: 220, height: 220, borderRadius: "50%", background: "rgba(0,0,0,0.05)", pointerEvents: "none" }} />
               <div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: C.textMid, letterSpacing: "1.5px", display: "block", marginBottom: 20 }}>01 · AI 자동 견적</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.textMid, letterSpacing: "1.5px", display: "block", marginBottom: 20 }}>01 · 무료 견적 상담</span>
                 <h3 style={{ fontSize: m ? 24 : 34, fontWeight: 800, color: K, margin: m ? "0 0 16px" : "0 0 20px", letterSpacing: "-0.8px", lineHeight: 1.3 }}>
                   공사 전에<br />먼저 알아보세요
                 </h3>
@@ -185,7 +185,7 @@ export default function Home() {
                   30초면 항목별 예상 금액이 나오고<br />PDF로 받아 업체 미팅 때 활용하세요.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {["22개 공종 중 필요한 것만 선택", "지역 · 자재 등급별 단가 자동 반영", "항목별 견적 PDF 무료 발급"].map(t => (
+                  {["전문 공종을 몰라도 신청 가능", "시기와 예산이 미정이어도 가능", "신청 내용을 확인한 뒤 개별 연락"].map(t => (
                     <div key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 18, height: 18, borderRadius: "50%", background: K, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <span style={{ fontSize: 9, color: Y, fontWeight: 900 }}>✓</span>
@@ -224,7 +224,7 @@ export default function Home() {
                   받은 견적서,<br />적정한지 확인하세요
                 </h3>
                 <p style={{ fontSize: 13, color: C.home.mutedOnDark, lineHeight: 1.85, margin: m ? "0 0 20px" : "0 0 28px", wordBreak: "keep-all" }}>
-                  사진 한 장으로 AI가 항목별로 적정한지 판단해요. 엑셀, PDF, 손사진 모두 가능.
+                  견적서의 항목을 읽고 비교하는 기능을 준비하고 있어요. 아래 화면은 서비스 예시입니다.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   {["사진 · PDF · 엑셀 어떤 형태든", "공종별 시세와 비교 분석", "비싼 항목 이유 설명"].map(t => (
@@ -264,7 +264,7 @@ export default function Home() {
             <div style={{ border: `1px solid ${C.home.line}`, borderRadius: 14, overflow: "hidden", boxShadow: `0 8px 28px ${C.home.shadow}` }}>
               <div style={{ background: K, padding: m ? "18px 20px" : "22px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>서울 강남구 · 33평 · 중급 자재</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>설명용 예시 · 33평 · 중급 자재</div>
                   <div style={{ fontSize: m ? 13 : 15, fontWeight: 700, color: "#fff" }}>세부 견적서</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -298,7 +298,7 @@ export default function Home() {
                 ))}
               </FadeStagger>
               <div style={{ padding: m ? "14px 20px" : "16px 28px", background: YL, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                <span style={{ fontSize: 12, color: C.home.muted }}>자재 등급·공종 선택에 따라 ±15% 차이</span>
+                <span style={{ fontSize: 12, color: C.home.muted }}>설명용 예시이며 실제 시공 견적이 아닙니다</span>
                 <Link href="/estimate" style={{
                   padding: "8px 16px", borderRadius: 8, background: Y, color: K,
                   textDecoration: "none", fontSize: 13, fontWeight: 800,
@@ -347,7 +347,7 @@ export default function Home() {
               background: K, color: "#fff",
               textDecoration: "none", fontWeight: 800, fontSize: 14,
             }}>
-              📷 견적서 분석하기 →
+              📷 견적 스캔 출시 안내 →
             </Link>
           </FadeUp>
           <FadeUp delay={m ? 0 : 0.15}>
@@ -365,10 +365,10 @@ export default function Home() {
             </h2>
           </FadeUp>
           {[
-            { q: "AI 자동 견적은 얼마나 정확한가요?", a: "100개 이상 실제 업체 시공 단가 기반으로 계산하며 ±15% 오차 범위를 가져요. 계약 전 적정가 판단 기준으로 쓰기에 충분합니다." },
-            { q: "견적 스캔은 어떤 형태도 가능한가요?", a: "사진, PDF, 엑셀 파일 등 어떤 형태든 AI가 텍스트를 추출해 분석해요. 손으로 쓴 견적서도 인식 가능합니다." },
-            { q: "지역에 따라 얼마나 차이 나요?", a: "서울 강남권은 기준 단가보다 약 20% 높고, 경기권은 비슷하거나 5~10% 낮아요. 지역 선택 시 자동 반영됩니다." },
-            { q: "비용은 얼마인가요?", a: "AI 자동 견적과 견적 스캔 모두 무료로 제공됩니다. PDF 발급까지 무료예요." },
+            { q: "AI 자동 견적은 얼마나 정확한가요?", a: "상세 견적 미리보기는 임시 단가로 계산한 개발 중 기능입니다. 실제 견적이나 계약 판단 기준으로 사용할 수 없으며, 정확한 비용은 상담과 현장 확인이 필요합니다." },
+            { q: "견적 스캔은 어떤 형태도 가능한가요?", a: "견적 스캔은 출시 준비 중입니다. 현재는 예시 화면만 제공하며 파일 업로드와 분석 기능은 이용할 수 없습니다." },
+            { q: "지역에 따라 얼마나 차이 나요?", a: "지역뿐 아니라 현장 상태, 면적, 자재와 공사 범위에 따라 달라집니다. 신청 내용을 확인한 뒤 상담으로 안내합니다." },
+            { q: "비용은 얼마인가요?", a: "현재 무료 견적 상담 신청과 상세 견적 미리보기를 무료로 이용할 수 있습니다. 상세 PDF와 이메일 발송, 견적 스캔은 준비 중입니다." },
           ].map((item, i, arr) => (
             <FadeUp key={i} delay={i * 0.06}>
               <div style={{
@@ -400,7 +400,7 @@ export default function Home() {
             <h2 style={{ fontSize: m ? "clamp(28px,8vw,44px)" : "clamp(32px,4.5vw,56px)", fontWeight: 800, color: C.home.onDark, margin: "0 0 16px", letterSpacing: "-1.3px", lineHeight: 1.25, wordBreak: "keep-all" }}>
               지금 바로 시작하세요
             </h2>
-            <p style={{ fontSize: m ? 14 : 16, color: C.home.mutedOnDark, margin: "0 0 36px" }}>가입 없이 · 30초 · 완전 무료</p>
+            <p style={{ fontSize: m ? 14 : 16, color: C.home.mutedOnDark, margin: "0 0 36px" }}>가입 없이 · 4단계 신청 · 상담 신청 무료</p>
           </FadeUp>
           <FadeUp delay={0.1}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: m ? "100%" : 460 }}>
@@ -413,8 +413,8 @@ export default function Home() {
                 boxShadow: `0 6px 20px ${C.home.shadow}`,
               }}>
                 <div>
-                  <div>AI 자동 견적 받기</div>
-                  <div style={{ fontSize: m ? 11 : 12, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 4 }}>공종별 금액 산출 · 항목 분류 · PDF 무료 발급</div>
+                  <div>무료 견적 신청하기</div>
+                  <div style={{ fontSize: m ? 11 : 12, fontWeight: 500, color: "rgba(0,0,0,0.5)", marginTop: 4 }}>공간 · 공사 계획 입력 후 상담 신청</div>
                 </div>
                 <span style={{ fontSize: m ? 18 : 22, marginLeft: 12 }}>→</span>
               </Link>
@@ -470,7 +470,7 @@ export default function Home() {
           gap: m ? 16 : 12,
         }}>
           <Image src="/logo.png" alt="폼잇." width={28} height={24} style={{ objectFit: "contain" }} />
-          <span style={{ fontSize: 12, color: C.home.muted, order: m ? 3 : 0 }}>© 2026 폼잇. AI 기반 견적 플랫폼</span>
+          <span style={{ fontSize: 12, color: C.home.muted, order: m ? 3 : 0 }}>© 2026 폼잇. 인테리어 견적 상담</span>
           <div style={{ display: "flex", gap: 20 }}>
             {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }].map(l => (
               <Link key={l.href} href={l.href} style={{ fontSize: 13, color: C.home.muted, textDecoration: "none" }}>{l.label}</Link>
@@ -503,7 +503,7 @@ function ScanPreviewCard() {
     <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.home.line}`, boxShadow: `0 8px 28px ${C.home.shadow}` }}>
       <div style={{ background: K, padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>AI 견적 스캔 결과</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>AI 견적 스캔 예시 · 준비 중</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>업로드한 견적서 분석</div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -535,7 +535,7 @@ function ScanPreviewCard() {
       <div style={{ padding: "16px 24px", background: YL, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
         <span style={{ fontSize: 12, color: "#aaa" }}>결과 기반 상세 리포트 제공</span>
         <Link href="/estimate/scan" style={{ padding: "8px 18px", borderRadius: 8, background: K, color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 800 }}>
-          내 견적 분석하기 →
+          견적 스캔 준비 현황 →
         </Link>
       </div>
     </div>

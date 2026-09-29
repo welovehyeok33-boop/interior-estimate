@@ -9,7 +9,7 @@ const OPTIONS = [
   {
     id: "consult",
     href: "/consult",
-    phase: "1차 · 유입용",
+    phase: "상담 신청",
     tag: "4단계 신청",
     title: "무료 견적 신청",
     description: "공사 계획과 연락처를 남기고, 상담을 통해 견적을 안내받는 방식이에요.",
@@ -20,12 +20,12 @@ const OPTIONS = [
   {
     id: "engine",
     href: "/estimate/detail",
-    phase: "2차 · 견적엔진용",
+    phase: "개발 중 미리보기",
     tag: "5단계 · 개발 중",
     title: "상세 견적 미리보기",
-    description: "공종과 자재를 직접 선택하는 기존 5단계 견적 흐름을 살펴보세요.",
+    description: "공간 상태와 자재에 따른 계산 예시를 살펴보세요.",
     note: "현재 금액은 임시 계산값이며, 최종 견적엔진과 상세 PDF는 준비 중이에요.",
-    action: "견적엔진용 살펴보기",
+    action: "상세 견적 미리보기",
     icon: IconCalculator,
   },
 ] as const;
@@ -38,7 +38,7 @@ export default function EstimateChoicePage() {
       <header style={{ background: C.headerFrom }}>
         <div style={{ maxWidth: 880, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <Link href="/" aria-label="폼잇 홈" style={{ color: C.primary, fontSize: 18, fontWeight: 800, textDecoration: "none" }}>폼잇.</Link>
-          <span style={{ color: C.home.mutedOnDark, fontSize: 12 }}>AI 자동 견적 · 방식 선택</span>
+          <span style={{ color: C.home.mutedOnDark, fontSize: 12 }}>견적 · 방식 선택</span>
         </div>
       </header>
 
