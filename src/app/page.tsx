@@ -181,8 +181,8 @@ export default function Home() {
                   공사 전에<br />먼저 알아보세요
                 </h3>
                 <p style={{ fontSize: m ? 14 : 15, color: "rgba(0,0,0,0.6)", lineHeight: 1.85, margin: m ? "0 0 24px" : "0 0 32px", wordBreak: "keep-all" }}>
-                  공종 선택 → 면적 입력 → 자재 등급 선택.<br />
-                  30초면 항목별 예상 금액이 나오고<br />PDF로 받아 업체 미팅 때 활용하세요.
+                  공간과 면적, 공사 시기와 예산을 알려주세요.<br />
+                  신청 내용을 담당자가 확인한 뒤<br />상담을 통해 견적을 안내해드려요.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {["전문 공종을 몰라도 신청 가능", "시기와 예산이 미정이어도 가능", "신청 내용을 확인한 뒤 개별 연락"].map(t => (
@@ -227,7 +227,7 @@ export default function Home() {
                   견적서의 항목을 읽고 비교하는 기능을 준비하고 있어요. 아래 화면은 서비스 예시입니다.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  {["사진 · PDF · 엑셀 어떤 형태든", "공종별 시세와 비교 분석", "비싼 항목 이유 설명"].map(t => (
+                  {["파일 업로드 기능 준비 중", "공종별 비교 화면 설계 중", "아래 내용은 설명용 예시"].map(t => (
                     <div key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#2E2E2E", border: "1px solid #3A3A3A", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <span style={{ fontSize: 8, color: "#555", fontWeight: 900 }}>✓</span>
@@ -324,14 +324,14 @@ export default function Home() {
               &quot;이 견적서,<br />바가지 아닌가요?&quot;
             </h2>
             <p style={{ fontSize: m ? 14 : 15, color: "#555", lineHeight: 1.85, margin: "0 0 28px", wordBreak: "keep-all" }}>
-              업체에서 받은 견적서를 사진 한 장으로 올리면<br />
-              AI가 공종별 시세와 비교해 항목마다 판단해줘요.
+              견적서의 항목과 금액을 비교해보는 기능을<br />
+              준비하고 있어요. 아래 화면은 설명용 예시예요.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 32 }}>
               {[
-                { step: "1", text: "업체에서 받은 견적서 사진을 올려요" },
-                { step: "2", text: "AI가 항목을 읽고 공종을 파악해요" },
-                { step: "3", text: "내부 단가 DB와 비교해 적정성 판단" },
+                { step: "1", text: "견적서 업로드 기능을 준비하고 있어요" },
+                { step: "2", text: "항목을 정리하는 방식을 설계하고 있어요" },
+                { step: "3", text: "비교 기준은 견적 엔진 완성 후 제공해요" },
               ].map(s => (
                 <div key={s.step} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: Y, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 900, fontSize: 12, color: K }}>
@@ -504,7 +504,7 @@ function ScanPreviewCard() {
       <div style={{ background: K, padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>AI 견적 스캔 예시 · 준비 중</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>업로드한 견적서 분석</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>견적서 분석 화면 예시</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>주의 항목</div>
