@@ -112,7 +112,7 @@ export function FlightPath({ step, totalSteps, stepLabels }: { step: number; tot
         </span>
       </div>
 
-      <div role="progressbar" aria-label="견적 입력 단계" aria-valuemin={1} aria-valuemax={count} aria-valuenow={current} aria-valuetext={`${count}단계 중 ${current}단계, ${labels[current - 1]}`}>
+      <div role="progressbar" aria-label="견적 입력 단계" aria-valuemin={1} aria-valuemax={count} aria-valuenow={current} aria-valuetext={`${count}단계 중 ${current}단계, ${labels[current - 1]}`} style={{ width: "92%", margin: "0 auto" }}>
         <svg aria-hidden="true" focusable="false" viewBox={`0 0 ${VIEW_WIDTH} 84`} style={{ display: "block", width: "100%", height: "auto" }}>
           <defs>
             <linearGradient id={`${id}-housing`} x1="0" y1="0" x2="0.85" y2="1">
@@ -182,13 +182,12 @@ export function FlightPath({ step, totalSteps, stepLabels }: { step: number; tot
           <circle cx="34" cy="45" r="14.5" fill="none" stroke={C.ruler.highlight} strokeWidth="0.7" />
           <circle cx="34" cy="45" r="5.5" fill={C.ruler.housingInset} />
           <line x1="32" x2="36" y1="45" y2="45" stroke={C.ruler.housingEdge} strokeWidth="1.2" />
-          <text x="34" y="23" textAnchor="middle" fontSize="5" letterSpacing="1.2" fill={C.ruler.housingLabel} fontWeight="700">FORMIT</text>
           {[59, 63, 67].map(y => <line key={y} x1="55" x2="61" y1={y} y2={y} stroke={C.ruler.housingEdge} strokeWidth="1.5" strokeLinecap="round" />)}
         </svg>
       </div>
 
       {/* HTML labels stay legible when the decorative SVG scales down on mobile. */}
-      <ol aria-label="견적 단계" style={{ position: "relative", height: 43, listStyle: "none", margin: "2px 0 0", padding: 0 }}>
+      <ol aria-label="견적 단계" style={{ position: "relative", width: "92%", height: 43, listStyle: "none", margin: "2px auto 0", padding: 0 }}>
         {labels.map((label, index) => {
           const number = index + 1;
           const active = number === current;
