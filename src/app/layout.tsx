@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import VisitTracker from "@/components/VisitTracker";
 
 export const metadata: Metadata = {
   title: "폼잇. — 인테리어 견적 상담",
@@ -20,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{ margin: 0, fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif" }}>
         {children}
+        <Suspense fallback={null}><VisitTracker /></Suspense>
       </body>
     </html>
   );
