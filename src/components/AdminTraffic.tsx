@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { C } from "@/components/EstimateLayout";
 import { conversionRate, koreaDay, type TrafficReport } from "@/lib/analytics";
+import TrafficPreference from './TrafficPreference';
 
 export default function AdminTraffic({ refresh }: { refresh: number }) {
   const [data, setData] = useState<TrafficReport | null>(null);
@@ -38,6 +39,7 @@ export default function AdminTraffic({ refresh }: { refresh: number }) {
       <button type="button" disabled={loading} onClick={() => setRetry(v => v + 1)} style={buttonStyle}>통계 새로고침</button>
     </div>
     {error && <p role="alert">{error} <button type="button" onClick={() => setRetry(v => v + 1)} style={buttonStyle}>다시 시도</button></p>}
+    <TrafficPreference />
     {loading && <p role="status">통계를 불러오는 중...</p>}
     {data && today && <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>

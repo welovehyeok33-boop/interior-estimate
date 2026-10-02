@@ -2,6 +2,11 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { koreaDay } from "./analytics";
+import { TRAFFIC_EXCLUSION_COOKIE, trafficExcluded } from "./trafficPreference";
+
+export async function isTrafficExcluded() {
+  return trafficExcluded((await cookies()).get(TRAFFIC_EXCLUSION_COOKIE)?.value);
+}
 
 export const VISITOR_COOKIE = "formit_visitor";
 function key() {
@@ -19,6 +24,7 @@ function readId(token?: string) {
 }
 export async function visitorIdentity(create = false) {
   const jar = await cookies();
+  if (trafficExcluded(jar.get(TRAFFIC_EXCLUSION_COOKIE)?.value)) return null;
   let id = readId(jar.get(VISITOR_COOKIE)?.value);
   if (!id && !create) return null;
   if (!id) {
