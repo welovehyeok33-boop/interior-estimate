@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { INDUSTRY_LABELS } from "@/lib/intakeValidation";
+import AdminTraffic from "@/components/AdminTraffic";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
 import { formatConsultBudget, formatConsultSchedule } from "@/lib/consultStore";
@@ -93,6 +94,7 @@ function fmtDate(iso: string) {
 
 export default function AdminPage() {
   const [authed, setAuthed]     = useState(false);
+  const [trafficRefresh, setTrafficRefresh] = useState(0);
   const [pw, setPw]             = useState("");
   const [pwError, setPwError]   = useState(false);
   const [leads, setLeads]       = useState<Lead[]>([]);
@@ -136,6 +138,7 @@ export default function AdminPage() {
 
   // ── 리드 불러오기 ─────────────────────────────────────────
   const fetchLeads = useCallback(async () => {
+    setTrafficRefresh(v => v + 1);
     setLoading(true);
     setLoadError(null);
     try {
@@ -275,6 +278,7 @@ export default function AdminPage() {
       </div>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
+        <AdminTraffic refresh={trafficRefresh} />
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
           {([
