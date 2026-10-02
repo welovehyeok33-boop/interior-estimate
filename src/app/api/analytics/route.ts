@@ -1,10 +1,11 @@
 import { apiJson, isAdmin, sameOrigin } from "@/lib/serverAuth";
 import { serverDb } from "@/lib/serverDb";
-import { trafficBucket, visitorIdentity } from "@/lib/serverAnalytics";
+import { isTrafficExcluded, trafficBucket, visitorIdentity } from "@/lib/serverAnalytics";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return apiJson({ error: "Invalid origin" }, 403);
   try {
+    if (await isTrafficExcluded()) return apiJson({ skipped: true });
     if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") return apiJson({ skipped: true });
     if (request.headers.get("dnt") === "1" || request.headers.get("sec-gpc") === "1" ||
         /bot|crawler|spider|headless/i.test(request.headers.get("user-agent") || "") || await isAdmin()) return apiJson({ skipped: true });
