@@ -10,7 +10,7 @@ export const SESSION_SECONDS = 8 * 60 * 60;
 function secret() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const password = process.env.ADMIN_PASSWORD;
-  if (!key || !password || password.length < 16) throw new Error('Admin authentication is not configured');
+  if (!key || !password?.trim() || password.length > 200) throw new Error('Admin authentication is not configured');
   return createHmac('sha256', key).update(`formit-admin-v1:${password}`).digest('hex');
 }
 export function passwordMatches(value: string) {

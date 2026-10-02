@@ -26,7 +26,7 @@ Next.js 16 + Supabase 기반 인테리어 자동 견적 플랫폼. 소비자 견
 
 ### Supabase
 - 고객 정보 테이블은 RLS 활성화, anon/authenticated 직접 접근 금지. 마이그레이션 적용 전에는 배포 금지.
-- 서버 환경변수: `SUPABASE_SERVICE_ROLE_KEY`, 16자 이상의 `ADMIN_PASSWORD`. 브라우저·로그·Git에 노출 금지. URL은 `NEXT_PUBLIC_SUPABASE_URL`.
+- 서버 환경변수: `SUPABASE_SERVICE_ROLE_KEY`, 비어 있지 않은 최대 200자 `ADMIN_PASSWORD` (사용자 요청으로 최소 16자 제한 제거). 브라우저·로그·Git에 노출 금지. URL은 `NEXT_PUBLIC_SUPABASE_URL`.
 - `.env.local`은 git에 포함 안 됨 → 직접 생성 필요
 
 ## 주요 상태 관리
