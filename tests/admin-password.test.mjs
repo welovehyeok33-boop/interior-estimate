@@ -19,10 +19,10 @@ function auth(password, key = 'test-service-key') {
 
 test('short and long configured passwords match exactly', () => {
   for (const password of ['abcd', 'test-only-12!', 'x'.repeat(16), 'x'.repeat(200)]) {
-    const module = auth(password);
-    assert.equal(module.passwordMatches(password), true);
-    assert.equal(module.passwordMatches('wrong'), false);
-    assert.equal(module.passwordMatches(''), false);
+    const authApi = auth(password);
+    assert.equal(authApi.passwordMatches(password), true);
+    assert.equal(authApi.passwordMatches('wrong'), false);
+    assert.equal(authApi.passwordMatches(''), false);
   }
   assert.equal(auth(' abcd ').passwordMatches('abcd'), false);
 });
