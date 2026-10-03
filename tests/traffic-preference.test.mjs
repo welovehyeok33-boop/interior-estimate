@@ -5,6 +5,9 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as preference from '../src/lib/trafficPreference.ts';
 import * as attribution from '../src/lib/attribution.ts';
+import * as details from '../src/lib/trafficDetails.ts';
+import * as serverDetails from '../src/lib/serverTrafficDetails.ts';
+import * as analytics from '../src/lib/analytics.ts';
 
 function setup() {
   const values = new Map();
@@ -16,6 +19,7 @@ function setup() {
     '@/lib/trafficPreference': preference, './trafficPreference': preference,
     './analytics': {}, 'node:crypto': {},
     '@/lib/attribution': attribution,
+    '@/lib/trafficDetails': details, '@/lib/serverTrafficDetails': serverDetails, '@/lib/analytics': analytics,
     '@/lib/serverAuth': {
       apiJson: (body, status = 200) => Response.json(body, { status }),
       sameOrigin: r => r.headers.get('origin') === new URL(r.url).origin,
