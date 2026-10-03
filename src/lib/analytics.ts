@@ -6,6 +6,10 @@ export type TrafficDay = {
 export type TrafficReport = {
   days: TrafficDay[]; startedAt: string; updatedAt: string;
   totalRequests: number; pendingRequests: number;
+  attributionStartedAt: string; from: string; to: string; dueRequests: number;
+  sources: { source: string | null; medium: string; campaign: string; visitors: number; starts: number; converted: number }[];
+  landings: { landing: string | null; visitors: number; converted: number }[];
+  statuses: { status: string; count: number }[];
 };
 export function koreaDay(date = new Date()) {
   return new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
