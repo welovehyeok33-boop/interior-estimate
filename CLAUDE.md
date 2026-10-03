@@ -1,6 +1,6 @@
 ## 2026-10-03 관리자 확장
 통계는 admin_dashboard RPC로 오늘/어제/7/30일을 조회합니다. traffic_daily source/medium/campaign/landing은 record_traffic_v2에서 하루 첫 값만 기록하고 URL 원문은 저장하지 않습니다. 이전 값은 미분류로 남습니다. 여러 날 방문자는 일별 방문자 합계입니다.
-상담 관리 API /api/admin/consultations는 서버 인증·동일 출처 확인·검색/25건 페이지네이션 및 admin_version 낙관적 잠금을 사용합니다. admin_note는 고객 memo와 별개이며 next_contact_at은 UTC 저장, 화면은 KST입니다. 기존 records PATCH로 상담 상태 변경은 차단했습니다. DB migration 20261003 적용 완료, 코드 배포 전입니다.
+상담 관리 API /api/admin/consultations는 서버 인증·동일 출처 확인·검색/25건 페이지네이션 및 admin_version 낙관적 잠금을 사용합니다. admin_note는 고객 memo와 별개이며 next_contact_at은 UTC 저장, 화면은 KST입니다. 기존 records PATCH로 상담 상태 변경은 차단했습니다. DB migration 20261003 및 PR #12 운영 배포 완료. form.it.kr 새 안내 반영·관리자 API 비로그인 401 검증 완료.
 
 @AGENTS.md
 
