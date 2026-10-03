@@ -77,7 +77,7 @@ export default function AdminPage() {
   const [pwError, setPwError]   = useState(false);
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [consultationCount, setConsultationCount] = useState(0);
-  const [flow, setFlow] = useState<"consult" | "engine">("consult");
+  const [flow, setFlow] = useState<'overview' | 'sources' | 'consult' | 'engine'>('overview');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
@@ -256,27 +256,31 @@ export default function AdminPage() {
       </div>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <AdminTraffic refresh={trafficRefresh} />
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
+        <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
           {([
-            { id: "consult", title: "1차 · 무료 견적 신청", count: consultationCount, note: "연락처를 남긴 상담 신청" },
-            { id: "engine", title: "2차 · 상세 견적 미리보기", count: leads.length, note: "임시 엔진 결과와 이메일 신청" },
+            { id: 'overview', title: '방문자 집계', count: null },
+            { id: 'sources', title: '유입 트래픽', count: null },
+            { id: 'consult', title: '상담 관리', count: consultationCount },
+            { id: 'engine', title: '상세견적 관리', count: leads.length },
           ] as const).map(item => (
-            <button key={item.id} onClick={() => setFlow(item.id)} aria-pressed={flow === item.id}
-              style={{ flex: "1 1 250px", textAlign: "left", padding: "17px 18px", borderRadius: 14, cursor: "pointer", background: flow === item.id ? A.goldBg : A.card, border: `1.5px solid ${flow === item.id ? C.primary : A.border}`, color: A.text }}>
-              <span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{item.title} <span style={{ color: C.primary }}>{item.count}</span></span>
-              <span style={{ display: "block", marginTop: 5, fontSize: 12, color: A.mid }}>{item.note}</span>
+            <button key={item.id} type="button" onClick={() => setFlow(item.id)} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
+              style={{ flex: '1 1 140px', padding: '14px 12px', borderRadius: 12, cursor: 'pointer', background: flow === item.id ? C.primary : C.home.darkCard, border: `1px solid ${flow === item.id ? C.primary : C.home.darkLine}`, color: flow === item.id ? C.textDark : C.home.onDark, fontSize: 14, fontWeight: 800 }}>
+              {item.title}{item.count !== null && <span style={{ marginLeft: 6, fontSize: 12 }}>({item.count})</span>}
             </button>
           ))}
+        </nav>
+
+        <div id="admin-traffic" hidden={flow !== 'overview' && flow !== 'sources'}>
+          <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
 
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
-        {flow === "consult" ? (
+        <div id="admin-consult" hidden={flow !== 'consult'}>
           <AdminConsultations refresh={trafficRefresh} onSaved={() => setTrafficRefresh(v => v + 1)} />
-        ) : <section aria-label="상세 견적 미리보기 신청 목록">
+        </div>
+        <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
         <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>2차 견적엔진용 · 현재 금액은 임시 계산값이며 확정 견적이 아닙니다.</p>
 
@@ -503,7 +507,7 @@ export default function AdminPage() {
             })}
           </div>
         )}
-        </section>}
+        </section>
       </div>
     </div>
   );
