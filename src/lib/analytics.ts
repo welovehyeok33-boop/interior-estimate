@@ -1,9 +1,11 @@
+import type { TrafficDetails } from './trafficDetails';
 export type TrafficKind = "visit" | "consult" | "engine";
 export type TrafficDay = {
   day: string; visitors: number; consult_starts: number; engine_starts: number;
   converted: number; requests: number;
 };
 export type TrafficReport = {
+  details: TrafficDetails;
   days: TrafficDay[]; startedAt: string; updatedAt: string;
   totalRequests: number; pendingRequests: number;
   attributionStartedAt: string; from: string; to: string; dueRequests: number;

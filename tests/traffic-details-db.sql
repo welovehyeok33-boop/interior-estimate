@@ -1,0 +1,34 @@
+begin;
+do $$
+declare d date := (now() at time zone 'Asia/Seoul')::date;
+  v text := encode(sha256(gen_random_uuid()::text::bytea),'hex');
+  w text := encode(sha256(gen_random_uuid()::text::bytea),'hex');
+  meta jsonb := '{"country":"KR","region":"11","city":"Seoul","ip_mask":"203.0.*.*","device":"모바일","browser":"Safari","os":"iOS"}';
+  result jsonb; cid uuid;
+begin
+  perform public.set_traffic_detail_settings(true,true);
+  perform public.record_traffic_v3(d,v,'visit','{"source":"naver","landing":"/"}','/',meta);
+  perform public.record_traffic_v3(d,v,'consult',null,'/consult',meta);
+  perform public.record_traffic_v3(d,v,'consult',null,'/consult',meta);
+  if not exists(select 1 from public.traffic_details where day=d and visitor=v and pages=array['/','/consult'] and ip_mask='203.0.*.*') then raise exception 'Dedup/mask/order failed'; end if;
+  insert into public.consultations(name,phone,analytics_visitor) values('QA rollback only','01000000000',v) returning id into cid;
+  result:=public.admin_traffic_details(7,0);
+  if not exists(select 1 from jsonb_array_elements(result->'pages') p where p->>'path'='/consult' and (p->>'converted')::int>=1) then raise exception 'Conversion report failed'; end if;
+  perform public.set_traffic_detail_settings(true,false);
+  perform public.record_traffic_v3(d,w,'visit',null,'/',meta);
+  if exists(select 1 from public.traffic_details where day=d and visitor=w and ip_mask is not null) then raise exception 'IP disable ignored'; end if;
+  result:=public.admin_traffic_details(1,0);
+  if exists(select 1 from jsonb_array_elements(result->'recent') r where r->>'ip_mask' is not null) then raise exception 'IP display disable ignored'; end if;
+  perform public.set_traffic_detail_settings(false,false);
+  perform public.record_traffic_v3(d,w,'engine',null,'/estimate/detail',meta);
+  if exists(select 1 from public.traffic_details where day=d and visitor=w and '/estimate/detail'=any(pages)) then raise exception 'Detail disable ignored'; end if;
+  if not exists(select 1 from public.traffic_daily where day=d and visitor=w and engine_start) then raise exception 'Base tracking disabled'; end if;
+  insert into public.traffic_daily(day,visitor) values(d-30,v);
+  insert into public.traffic_details(day,visitor,device,browser,os) values(d-30,v,'QA','QA','QA');
+  perform public.admin_traffic_details(30,0);
+  if exists(select 1 from public.traffic_details where day=d-30 and visitor=v) then raise exception 'Retention failed'; end if;
+  if not exists(select 1 from public.traffic_daily where day=d-30 and visitor=v) then raise exception 'Historical totals deleted'; end if;
+  if has_table_privilege('anon','public.traffic_details','select') or has_table_privilege('authenticated','public.traffic_details','select') or has_function_privilege('anon','public.admin_traffic_details(integer,integer)','execute') or has_function_privilege('authenticated','public.set_traffic_detail_settings(boolean,boolean)','execute') then raise exception 'Public access exposed'; end if;
+end $$;
+rollback;
+select 'PASS: metadata, dedup, conversion, settings, retention, private access; all QA changes rolled back' as result;
