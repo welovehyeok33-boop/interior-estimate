@@ -1,5 +1,5 @@
 ## 2026-10-03 관리자 카테고리
-AdminPage에서 overview/sources/consult/engine 카테고리를 관리합니다. AdminTraffic view는 부모에서 전달하며 내부 중복 탭은 제거했습니다. hidden으로 패널을 숨겨 카테고리 이동 시 조회 기간·상담 초안이 유지됩니다. 이번 UI 변경은 로컬 적용이며 DB/API 변경은 없습니다.
+AdminPage에서 overview/sources/consult/engine 카테고리를 관리합니다. AdminTraffic view는 부모에서 전달하며 내부 중복 탭은 제거했습니다. hidden으로 패널을 숨겨 카테고리 이동 시 조회 기간·상담 초안이 유지됩니다. PR #13으로 운영 배포 완료했으며 DB/API 변경은 없습니다.
 
 ## 2026-10-03 관리자 확장
 통계는 admin_dashboard RPC로 오늘/어제/7/30일을 조회합니다. traffic_daily source/medium/campaign/landing은 record_traffic_v2에서 하루 첫 값만 기록하고 URL 원문은 저장하지 않습니다. 이전 값은 미분류로 남습니다. 여러 날 방문자는 일별 방문자 합계입니다.
