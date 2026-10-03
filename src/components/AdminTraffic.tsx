@@ -7,8 +7,8 @@ import { CONSULT_STATUSES } from '@/lib/adminCrm';
 import { action, goldAction, muted, panel } from './adminStyles';
 import TrafficPreference from './TrafficPreference';
 
-export default function AdminTraffic({ refresh }: { refresh: number }) {
-  const [range, setRange] = useState('7'), [view, setView] = useState('overview');
+export default function AdminTraffic({ refresh, view }: { refresh: number; view: 'overview' | 'sources' }) {
+  const [range, setRange] = useState('7');
   const [data, setData] = useState<TrafficReport | null>(null);
   const [error, setError] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0);
   useEffect(() => {
@@ -33,18 +33,17 @@ export default function AdminTraffic({ refresh }: { refresh: number }) {
   const cell = { padding: '12px 10px', borderBottom: `1px solid ${C.home.darkLine}`, textAlign: 'left' as const };
   const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
   return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
-    <h2 style={{ margin: '0 0 8px', fontSize: 23 }}>폼잇 운영 현황</h2>
+    <h2 style={{ margin: '0 0 8px', fontSize: 23 }}>{view === 'overview' ? '방문자 집계' : '유입 트래픽'}</h2>
     <p style={muted}>한국시간 기준 · 방문부터 상담 신청까지</p>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) =>
         <button key={id} aria-pressed={range === id} onClick={() => setRange(id)} style={range === id ? goldAction : action}>{label}</button>)}
       <button disabled={loading} onClick={() => setRetry(v => v + 1)} style={action}>새로고침</button>
     </div>
-    <TrafficPreference />
-    <div style={{ display: 'flex', gap: 8, margin: '18px 0' }}>
-      {[['overview', '종합 현황'], ['sources', '유입 분석']].map(([id, label]) =>
-        <button key={id} aria-pressed={view === id} onClick={() => setView(id)} style={view === id ? goldAction : action}>{label}</button>)}
-    </div>
+    <details style={{ margin: '16px 0', color: C.home.onDark }}>
+      <summary style={{ cursor: 'pointer', padding: '10px 0', fontSize: 13 }}>내 방문 집계 제외 설정</summary>
+      <TrafficPreference />
+    </details>
     {loading ? <p role="status">통계를 불러오는 중…</p> : error ? <p role="alert">{error}</p> : data && <>
       <p style={muted}>{data.from} ~ {data.to} · 오늘 수치는 진행 중입니다.</p>
       {data.from <= koreaDay(new Date(data.startedAt)) && <p style={muted}>선택 기간에 집계 시작 전 또는 일부 시간만 집계된 날짜가 포함됩니다.</p>}
