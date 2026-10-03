@@ -1,86 +1,99 @@
 "use client";
-import { useEffect, useState } from "react";
-import { C } from "@/components/EstimateLayout";
-import { conversionRate, koreaDay, type TrafficReport } from "@/lib/analytics";
+import { useEffect, useState } from 'react';
+import { C } from './EstimateLayout';
+import { conversionRate, koreaDay, type TrafficReport } from '@/lib/analytics';
+import { SOURCE_LABELS } from '@/lib/attribution';
+import { CONSULT_STATUSES } from '@/lib/adminCrm';
+import { action, goldAction, muted, panel } from './adminStyles';
 import TrafficPreference from './TrafficPreference';
 
 export default function AdminTraffic({ refresh }: { refresh: number }) {
+  const [range, setRange] = useState('7'), [view, setView] = useState('overview');
   const [data, setData] = useState<TrafficReport | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [retry, setRetry] = useState(0);
+  const [error, setError] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     async function read() {
-      setLoading(true); setError("");
+      setLoading(true); setError('');
       try {
-        const r = await fetch("/api/admin/analytics", { cache: "no-store", signal: controller.signal });
+        const r = await fetch('/api/admin/analytics?range=' + range, { cache: 'no-store', signal: controller.signal });
         const body = await r.json();
-        if (!r.ok) throw new Error(body.error || "통계를 불러오지 못했어요.");
-        setData(body);
-      } catch (e) {
-        if (!controller.signal.aborted) { setError(e instanceof Error ? e.message : "통계 연결 오류"); setData(null); }
-      } finally { if (!controller.signal.aborted) setLoading(false); }
+        if (!r.ok) throw new Error(body.error || '통계 조회 실패');
+        if (!controller.signal.aborted) setData(body);
+      } catch (e) { if (!controller.signal.aborted) { setData(null); setError(e instanceof Error ? e.message : '조회 실패'); } }
+      finally { if (!controller.signal.aborted) setLoading(false); }
     }
-    void read();
-    return () => controller.abort();
-  }, [refresh, retry]);
-  const today = data?.days.at(-1);
-  const yesterday = data?.days.at(-2);
-  const startedDay = data ? koreaDay(new Date(data.startedAt)) : "";
-  const rate = today ? conversionRate(today.converted, today.visitors) : null;
-  const max = Math.max(1, ...(data?.days.map(d => Math.max(d.visitors, d.requests)) ?? []));
-  const buttonStyle = { background: C.primary, color: C.textDark, border: 0, borderRadius: 8, padding: "8px 12px", cursor: "pointer" };
-  return <section aria-label="방문 및 신청 통계" aria-busy={loading}
-    style={{ marginBottom: 28, padding: 20, borderRadius: 16, background: C.home.darkCard, color: C.home.onDark, border: `1px solid ${C.home.darkLine}` }}>
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-      <div><h2 style={{ margin: 0, fontSize: 20 }}>오늘의 방문과 신청</h2>
-        <p style={{ color: C.home.mutedOnDark, margin: "6px 0 18px", fontSize: 12 }}>한국시간 자정 기준 · 방문자는 브라우저별 하루 1회</p></div>
-      <button type="button" disabled={loading} onClick={() => setRetry(v => v + 1)} style={buttonStyle}>통계 새로고침</button>
+    void read(); return () => controller.abort();
+  }, [range, refresh, retry]);
+  const days = data?.days.filter(d => d.day >= data.from && d.day <= data.to) || [];
+  const totals = days.reduce((a, d) => ({ visitors: a.visitors + d.visitors, requests: a.requests + d.requests,
+    converted: a.converted + d.converted, starts: a.starts + d.consult_starts, engine: a.engine + d.engine_starts }),
+    { visitors: 0, requests: 0, converted: 0, starts: 0, engine: 0 });
+  const rate = conversionRate(totals.converted, totals.visitors);
+  const cell = { padding: '12px 10px', borderBottom: `1px solid ${C.home.darkLine}`, textAlign: 'left' as const };
+  const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
+  return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
+    <h2 style={{ margin: '0 0 8px', fontSize: 23 }}>폼잇 운영 현황</h2>
+    <p style={muted}>한국시간 기준 · 방문부터 상담 신청까지</p>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) =>
+        <button key={id} aria-pressed={range === id} onClick={() => setRange(id)} style={range === id ? goldAction : action}>{label}</button>)}
+      <button disabled={loading} onClick={() => setRetry(v => v + 1)} style={action}>새로고침</button>
     </div>
-    {error && <p role="alert">{error} <button type="button" onClick={() => setRetry(v => v + 1)} style={buttonStyle}>다시 시도</button></p>}
     <TrafficPreference />
-    {loading && <p role="status">통계를 불러오는 중...</p>}
-    {data && today && <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        {[
-          { title: "오늘 방문자", value: today.visitors + "명", note: yesterday && yesterday.day >= startedDay ? `어제 ${yesterday.visitors}명` : "어제 방문 기록 없음" },
-          { title: "무료 견적 신청", value: today.requests + "건", note: "오늘 DB에 접수된 신청" },
-          { title: "신청 전환율", value: rate === null ? "—" : rate + "%", note: "방문자 중 오늘 신청한 비율" },
-          { title: "연락 대기", value: data.pendingRequests + "건", note: `현재 보관 중 전체 신청 ${data.totalRequests}건` },
-        ].map(card => <div key={card.title} style={{ padding: 16, background: C.headerFrom, borderRadius: 12 }}>
-          <div style={{ fontSize: 12, color: C.home.mutedOnDark }}>{card.title}</div>
-          <strong style={{ display: "block", fontSize: 28, margin: "9px 0", color: C.primary }}>{card.value}</strong>
-          <div style={{ fontSize: 11, color: C.home.mutedOnDark }}>{card.note}</div>
-        </div>)}
-      </div>
-      <p style={{ fontSize: 13, lineHeight: 1.8 }}>오늘 상담 입력 시작 <strong>{today.consult_starts}명</strong> · 상세견적 진입 <strong>{today.engine_starts}명</strong> · 신청 완료 방문자 <strong>{today.converted}명</strong></p>
-      <h3 style={{ fontSize: 15, margin: "24px 0 12px" }}>최근 7일 추이</h3>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: 370, borderCollapse: "collapse", fontSize: 12, textAlign: "right" }}>
-          <thead><tr>{["날짜", "방문자", "신청", "전환율", "방문 / 신청"].map(t => <th key={t} style={{ padding: "10px 6px", borderBottom: `1px solid ${C.home.darkLine}` }}>{t}</th>)}</tr></thead>
-          <tbody>{data.days.map(d => {
-            const hasTraffic = d.day >= startedDay;
-            const percent = conversionRate(d.converted, d.visitors);
-            return <tr key={d.day}>
-              <th scope="row" style={{ padding: "12px 6px", whiteSpace: "nowrap" }}>{d.day.slice(5)}{d.day === today.day ? " 오늘" : ""}</th>
-              <td>{hasTraffic ? d.visitors + "명" : "기록 없음"}</td>
-              <td>{d.requests}건</td><td>{hasTraffic && percent !== null ? percent + "%" : "—"}</td>
-              <td aria-hidden="true" style={{ width: "30%", paddingLeft: 12 }}>
-                <div style={{ height: 5, width: `${d.visitors / max * 100}%`, background: C.primary, marginBottom: 4, borderRadius: 4 }} />
-                <div style={{ height: 5, width: `${d.requests / max * 100}%`, background: C.home.mutedOnDark, borderRadius: 4 }} />
-              </td>
-            </tr>;
-          })}</tbody>
-        </table>
-      </div>
-      <p style={{ color: C.home.mutedOnDark, fontSize: 11, lineHeight: 1.8, marginBottom: 0 }}>
-        방문 집계 시작: {new Date(data.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}<br />
-        노란 막대는 방문자, 회색 막대는 신청 건수입니다. 새로고침은 방문자를 늘리지 않습니다.
-        기기·브라우저 변경 또는 쿠키 삭제 시 별도로 집계됩니다. 관리자 로그인 중인 방문, 알려진 봇, 추적 거부 설정은 제외합니다.
-        쿠키가 없는 신청은 접수 건수에만 포함되어 전환율과 차이가 날 수 있습니다. 집계 시작 당일은 일부 시간만 반영됩니다.<br />
-        마지막 갱신: {new Date(data.updatedAt).toLocaleTimeString("ko-KR", { timeZone: "Asia/Seoul" })}
-      </p>
+    <div style={{ display: 'flex', gap: 8, margin: '18px 0' }}>
+      {[['overview', '종합 현황'], ['sources', '유입 분석']].map(([id, label]) =>
+        <button key={id} aria-pressed={view === id} onClick={() => setView(id)} style={view === id ? goldAction : action}>{label}</button>)}
+    </div>
+    {loading ? <p role="status">통계를 불러오는 중…</p> : error ? <p role="alert">{error}</p> : data && <>
+      <p style={muted}>{data.from} ~ {data.to} · 오늘 수치는 진행 중입니다.</p>
+      {data.from <= koreaDay(new Date(data.startedAt)) && <p style={muted}>선택 기간에 집계 시작 전 또는 일부 시간만 집계된 날짜가 포함됩니다.</p>}
+      {view === 'overview' ? <>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+          {[
+            [days.length > 1 ? '일별 방문자 합계' : '방문자', totals.visitors + '명'],
+            ['무료 견적 신청', totals.requests + '건'], ['신청 전환율', rate === null ? '—' : rate + '%'],
+            ['상담 입력 진입', totals.starts + '명'], ['상세견적 진입', totals.engine + '명'],
+            ['신청 완료 방문', totals.converted + '명'],
+          ].map(([label, value]) => <div key={label} style={{ padding: 16, background: C.headerFrom, borderRadius: 12 }}>
+            <div style={muted}>{label}</div><strong style={{ display: 'block', fontSize: 28, color: C.primary, marginTop: 8 }}>{value}</strong>
+          </div>)}
+        </div>
+        <h3>상담 현황 <small style={muted}>전체 기간</small></h3>
+        <p>전체 접수 {data.totalRequests}건 · 신규 {data.pendingRequests}건 · 연락 예정 시간 경과 {data.dueRequests}건</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{data.statuses.map(s => <span key={s.status} style={{ ...action, cursor: 'default' }}>{CONSULT_STATUSES[s.status] || s.status} {s.count}</span>)}</div>
+        <h3>일별 추이</h3>
+        <div style={{ overflowX: 'auto' }}><table style={table}>
+          <thead><tr>{['날짜', '방문자', '상담 진입', '신청 건수', '전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
+          <tbody>{days.map(d => <tr key={d.day}>
+            <th scope="row" style={cell}>{d.day}</th><td style={cell}>{d.day < koreaDay(new Date(data.startedAt)) ? '수집 전' : d.visitors}</td>
+            <td style={cell}>{d.consult_starts}</td><td style={cell}>{d.requests}</td><td style={cell}>{conversionRate(d.converted, d.visitors) ?? '—'}{d.visitors > 0 ? '%' : ''}</td>
+          </tr>)}</tbody>
+        </table></div>
+      </> : <>
+        <h3>어디서 들어왔나요?</h3>
+        <p style={muted}>브라우저별 하루 첫 유입 기준입니다. 출처를 전달하지 않는 앱·브라우저는 직접 / 출처 없음으로 표시될 수 있습니다.</p>
+        <div style={{ overflowX: 'auto' }}><table style={table}>
+          <thead><tr>{['유입처 / 매체', '캠페인', '방문', '상담 진입', '신청 완료 방문', '전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
+          <tbody>{data.sources.map((s, i) => <tr key={i}>
+            <td style={cell}>{s.source ? SOURCE_LABELS[s.source] || s.source : '수집 전·미분류'}<br /><small style={muted}>{s.medium || '—'}</small></td>
+            <td style={{ ...cell, overflowWrap: 'anywhere' }}>{s.campaign || '—'}</td><td style={cell}>{s.visitors}</td><td style={cell}>{s.starts}</td><td style={cell}>{s.converted}</td>
+            <td style={cell}>{conversionRate(s.converted, s.visitors) ?? '—'}{s.visitors ? '%' : ''}</td>
+          </tr>)}</tbody>
+        </table></div>
+        {data.sources.length === 0 && <p>선택 기간에 방문 기록이 없습니다.</p>}
+        <h3>처음 방문한 페이지</h3>
+        <div style={{ overflowX: 'auto' }}><table style={table}>
+          <thead><tr>{['첫 페이지', '방문', '신청 완료 방문'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
+          <tbody>{data.landings.map((l, i) => <tr key={i}><td style={cell}>{l.landing || '수집 전·미분류'}</td><td style={cell}>{l.visitors}</td><td style={cell}>{l.converted}</td></tr>)}</tbody>
+        </table></div>
+        <p style={muted}>홍보 링크에 utm_source, utm_medium, utm_campaign을 붙이면 캠페인별로 나뉩니다. 영문자로 시작하는 영문·숫자·밑줄·하이픈 64자 이내 식별자를 사용하세요. 이름·전화번호 등 개인정보를 넣지 마세요.<br />
+          유입 경로 수집 시작: {new Date(data.attributionStartedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}. 이전 유입처는 복원할 수 없습니다.</p>
+      </>}
+      <p style={{ ...muted, marginTop: 24 }}>방문자는 브라우저별 하루 1회입니다. 여러 날의 합계는 기간 전체 순방문자가 아닙니다.
+        신청 전환율은 일별 신청 완료 방문 ÷ 일별 방문의 합계입니다. 쿠키 없는 신청·집계 제외 방문의 신청도 접수 건수에는 포함됩니다.
+        관리자 로그인 중 방문, 방문 제외 설정, 알려진 봇, 추적 거부 설정은 제외합니다. 브라우저·기기를 바꾸면 별도 집계될 수 있습니다.<br />
+        마지막 갱신: {new Date(data.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p>
     </>}
   </section>;
 }

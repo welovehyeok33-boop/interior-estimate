@@ -4,11 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { INDUSTRY_LABELS } from "@/lib/intakeValidation";
+import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
-import { formatConsultBudget, formatConsultSchedule } from "@/lib/consultStore";
+
 import {
   IconLock, IconRefresh,
   IconMapPin, IconRuler, IconTool, IconDiamond,
@@ -47,33 +47,11 @@ type Lead = {
   status: "new" | "qualified" | "contracted";
 };
 
-type Consultation = {
-  id: string;
-  created_at: string;
-  name: string;
-  phone: string;
-  residential_grade: string | null;
-  commercial_type: string | null;
-  commercial_sub: string | null;
-  space_description: string | null;
-  consent_at: string | null;
-  region: string | null;
-  building_type: string | null;
-  area: number | null;
-  experience: string | null;
-  schedule: string | null;
-  work_scope: string | null;
-  budget: string | null;
-  memo: string | null;
-  status: string | null;
-};
+
 
 // ── 레이블 맵 ───────────────────────────────────────────────
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드", budget: "실속형", highend: "하이앤드" };
-const CONSULT_STATUS: Record<string, string> = { new: "신규", contacted: "연락 완료", contracted: "계약" };
-const EXPERIENCE_LABEL: Record<string, string> = { yes: "있음", no: "없음" };
-const WORK_SCOPE_LABEL: Record<string, string> = { full: "전체", partial: "부분" };
 const STATUS_CONFIG = {
   new:        { label: "신규",     color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
   qualified:  { label: "판매가능", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
@@ -98,11 +76,10 @@ export default function AdminPage() {
   const [pw, setPw]             = useState("");
   const [pwError, setPwError]   = useState(false);
   const [leads, setLeads]       = useState<Lead[]>([]);
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultationCount, setConsultationCount] = useState(0);
   const [flow, setFlow] = useState<"consult" | "engine">("consult");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [expandedConsult, setExpandedConsult] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
   const [loading, setLoading]   = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -132,7 +109,7 @@ export default function AdminPage() {
   };
   const logout = async () => {
     const response = await fetch("/api/admin/session", { method: "DELETE" });
-    if (response.ok) { setAuthed(false); setLeads([]); setConsultations([]); }
+    if (response.ok) { setAuthed(false); setLeads([]); setConsultationCount(0); }
     else setActionError("로그아웃하지 못했어요. 다시 시도해주세요.");
   };
 
@@ -143,11 +120,11 @@ export default function AdminPage() {
     setLoadError(null);
     try {
       const response = await fetch("/api/admin/records", { cache: "no-store" });
-      if (response.status === 401) { setAuthed(false); setLeads([]); setConsultations([]); throw new Error("로그인이 만료됐어요."); }
+      if (response.status === 401) { setAuthed(false); setLeads([]); setConsultationCount(0); throw new Error("로그인이 만료됐어요."); }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setLeads(data.leads ?? []);
-      setConsultations(data.consultations ?? []);
+      setConsultationCount(data.consultationCount ?? 0);
     } catch (error) { setLoadError(error instanceof Error ? error.message : "신청 내역을 불러오지 못했어요."); }
     setLoading(false);
   }, []);
@@ -267,6 +244,7 @@ export default function AdminPage() {
           <div>
             <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>폼잇.</span>
             <span style={{ fontSize: 13, color: A.mid, marginLeft: 10 }}>어드민</span>
+            <button onClick={logout} style={{ color: C.primary, background: 'none', border: 0, cursor: 'pointer', marginLeft: 12 }}>로그아웃</button>
           </div>
           <button
             onClick={fetchLeads}
@@ -282,7 +260,7 @@ export default function AdminPage() {
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
           {([
-            { id: "consult", title: "1차 · 무료 견적 신청", count: consultations.length, note: "연락처를 남긴 상담 신청" },
+            { id: "consult", title: "1차 · 무료 견적 신청", count: consultationCount, note: "연락처를 남긴 상담 신청" },
             { id: "engine", title: "2차 · 상세 견적 미리보기", count: leads.length, note: "임시 엔진 결과와 이메일 신청" },
           ] as const).map(item => (
             <button key={item.id} onClick={() => setFlow(item.id)} aria-pressed={flow === item.id}
@@ -297,36 +275,7 @@ export default function AdminPage() {
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         {flow === "consult" ? (
-          <section aria-label="무료 견적 신청 목록">
-            <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>무료 견적 신청</h1>
-            <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>고객 연락처와 요청 사항을 확인하세요. 최근 500건을 표시합니다.</p>
-            {loading ? <p style={{ color: A.mid }}>불러오는 중...</p> : consultations.length === 0 ? (
-              <p style={{ color: A.mid, padding: "36px 0" }}>아직 상담 신청이 없어요.</p>
-            ) : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {consultations.map(item => (
-                <div key={item.id} style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 14, overflow: "hidden" }}>
-                  <button onClick={() => setExpandedConsult(expandedConsult === item.id ? null : item.id)} aria-expanded={expandedConsult === item.id}
-                    style={{ width: "100%", background: "none", border: 0, color: A.text, cursor: "pointer", textAlign: "left", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <span style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      <strong>{item.name}</strong><span style={{ color: A.mid, fontSize: 13 }}>{formatEstimateRegion(item.region)} · {TYPE_LABEL[item.building_type ?? ""] || item.building_type || "공간 미정"}{item.area ? ` · ${item.area}평` : ""}</span>
-                    </span>
-                    <span style={{ fontSize: 12, color: A.mid }}>{fmtDate(item.created_at)} · {CONSULT_STATUS[item.status ?? ""] || item.status || "상태 미정"} <IconChevronRight size={13} style={{ verticalAlign: "middle" }} /></span>
-                  </button>
-                  {expandedConsult === item.id && <div style={{ borderTop: `1px solid ${A.border}`, padding: "16px 18px", color: A.text, fontSize: 13, lineHeight: 1.8, overflowWrap: "anywhere" }}>
-                    <div>연락처: <a href={`tel:${item.phone}`} style={{ color: C.primary }}>{item.phone}</a></div>
-                    <div>지역: {formatEstimateRegion(item.region)}</div>
-                    <div>공간: {TYPE_LABEL[item.building_type ?? ""] || item.building_type || "-"} · {item.area ? `${item.area}평` : "면적 미정"}</div>
-                    <div>업종: {INDUSTRY_LABELS[item.commercial_type ?? ""] || "-"} {item.commercial_sub || ""} · 주거 등급: {GRADE_LABEL[item.residential_grade ?? ""] || "-"}</div>
-                    {item.space_description && <div style={{ whiteSpace: "pre-wrap" }}>공간 설명: {item.space_description}</div>}
-                    <div>동의 일시: {item.consent_at ? fmtDate(item.consent_at) : "기존 신청 (기록 없음)"}</div>
-                    <div>공사 경험: {EXPERIENCE_LABEL[item.experience ?? ""] || "-"} · 일정: {formatConsultSchedule(item.schedule ?? undefined)}</div>
-                    <div>공사 범위: {WORK_SCOPE_LABEL[item.work_scope ?? ""] || "-"} · 예산: {formatConsultBudget(item.budget ?? undefined)}</div>
-                    {item.memo && <div style={{ marginTop: 8, whiteSpace: "pre-wrap" }}>메모: {item.memo}</div>}
-                  </div>}
-                </div>
-              ))}
-            </div>}
-          </section>
+          <AdminConsultations refresh={trafficRefresh} onSaved={() => setTrafficRefresh(v => v + 1)} />
         ) : <section aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
         <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>2차 견적엔진용 · 현재 금액은 임시 계산값이며 확정 견적이 아닙니다.</p>

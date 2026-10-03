@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as preference from '../src/lib/trafficPreference.ts';
+import * as attribution from '../src/lib/attribution.ts';
 
 function setup() {
   const values = new Map();
@@ -14,6 +15,7 @@ function setup() {
     'next/headers': { cookies: async () => jar }, 'server-only': {},
     '@/lib/trafficPreference': preference, './trafficPreference': preference,
     './analytics': {}, 'node:crypto': {},
+    '@/lib/attribution': attribution,
     '@/lib/serverAuth': {
       apiJson: (body, status = 200) => Response.json(body, { status }),
       sameOrigin: r => r.headers.get('origin') === new URL(r.url).origin,

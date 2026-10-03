@@ -7,10 +7,10 @@ export async function GET() {
     const db = serverDb();
     const [leads, consultations] = await Promise.all([
       db.from('leads').select('*').order('created_at', { ascending: false }).limit(500),
-      db.from('consultations').select('*').order('created_at', { ascending: false }).limit(500),
+      db.from('consultations').select('id', { count: 'exact', head: true }),
     ]);
     if (leads.error || consultations.error) throw new Error('Read failed');
-    return apiJson({ leads: leads.data, consultations: consultations.data });
+    return apiJson({ leads: leads.data, consultationCount: consultations.count });
   } catch { return apiJson({ error: '신청 내역을 불러오지 못했어요.' }, 503); }
 }
 async function mutate(request: Request, remove: boolean) {
@@ -20,6 +20,7 @@ async function mutate(request: Request, remove: boolean) {
     const body = await request.json();
     if (!/^[a-f0-9-]{36}$/i.test(body?.id ?? '') || !['leads', 'consultations'].includes(body?.table)) return apiJson({ error: '잘못된 요청입니다.' }, 400);
     const statuses = body.table === 'leads' ? ['new', 'qualified', 'contracted'] : ['new', 'contacted', 'contracted'];
+    if (!remove && body.table === 'consultations') return apiJson({ error: '관리자 화면을 새로고침해주세요.' }, 400);
     if (!remove && !statuses.includes(body.status)) return apiJson({ error: '상태를 확인해주세요.' }, 400);
     const query = serverDb().from(body.table);
     const { data, error } = await (remove ? query.delete() : query.update({ status: body.status })).eq('id', body.id).select('id');
