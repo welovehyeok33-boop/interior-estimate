@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
 import { conversionRate, koreaDay, type TrafficReport } from '@/lib/analytics';
 import { SOURCE_LABELS } from '@/lib/attribution';
-import { CONSULT_STATUSES } from '@/lib/adminCrm';
-import { action, goldAction, muted, panel, consultStatusBadge } from './adminStyles';
+import { action, goldAction, muted, panel } from './adminStyles';
+import AdminFlowChart from './AdminFlowChart';
 import TrafficPreference from './TrafficPreference';
 import AdminTrafficDetails, { DETAIL_TABS, type DetailTab } from './AdminTrafficDetails';
 
@@ -35,15 +35,14 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
   const cell = { padding: '16px 12px', borderBottom: `1px solid ${C.admin.line}`, textAlign: 'left' as const };
   const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
   return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
-    <p style={{ ...muted, fontSize: 11, letterSpacing: '0.15em', margin: '0 0 8px' }}>{view === 'overview' ? 'ANALYTICS' : 'ACQUISITION'}</p>
-    <h2 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.04em' }}>{view === 'overview' ? '방문자 집계' : '유입 트래픽'}</h2>
-    <p style={muted}>한국시간 기준 · 방문부터 상담 신청까지</p>
+    <h2 style={{ margin: '0 0 6px', fontSize: 20, letterSpacing: '-0.03em' }}>{view === 'overview' ? '방문 · 신청 분석' : '유입 트래픽'}</h2>
+    <p style={{ ...muted, margin: '0 0 20px' }}>방문에서 신청까지, 폼잇의 흐름을 확인하세요.</p>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) =>
         <button key={id} aria-pressed={range === id} onClick={() => setRange(id)} style={range === id ? goldAction : action}>{label}</button>)}
       <button disabled={loading} onClick={() => setRetry(v => v + 1)} style={action}>새로고침</button>
     </div>
-    <details style={{ margin: '16px 0', color: C.home.onDark }}>
+    <details style={{ margin: '12px 0', color: C.admin.muted }}>
       <summary style={{ cursor: 'pointer', padding: '10px 0', fontSize: 13 }}>내 방문 집계 제외 설정</summary>
       <TrafficPreference />
     </details>
@@ -57,21 +56,19 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
             ['무료 견적 신청', totals.requests + '건'], ['신청 전환율', rate === null ? '—' : rate + '%'],
             ['상담 입력 진입', totals.starts + '명'], ['상세견적 진입', totals.engine + '명'],
             ['신청 완료 방문', totals.converted + '명'],
-          ].map(([label, value]) => <div key={label} style={{ padding: 20, background: C.admin.bg, border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
-            <div style={muted}>{label}</div><strong style={{ display: 'block', fontSize: 30, fontWeight: 650, color: C.admin.text, marginTop: 16, fontVariantNumeric: 'tabular-nums' }}>{value}</strong>
+          ].map(([label, value], index) => <div key={label} style={{ padding: 18, background: index === 0 ? C.admin.accentBg : C.admin.bg, borderTop: `3px solid ${index === 0 ? C.primary : C.admin.line}`, borderRadius: 10 }}>
+            <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ display: 'block', fontSize: 28, fontWeight: 750, color: C.admin.text, marginTop: 12, fontVariantNumeric: 'tabular-nums' }}>{value}</strong>
           </div>)}
         </div>
-        <h3>상담 현황 <small style={muted}>전체 기간</small></h3>
-        <p>전체 접수 {data.totalRequests}건 · 신규 {data.pendingRequests}건 · 연락 예정 시간 경과 {data.dueRequests}건</p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{data.statuses.map(s => <span key={s.status} style={consultStatusBadge(s.status)}>{CONSULT_STATUSES[s.status] || s.status} {s.count}</span>)}</div>
-        <h3>일별 추이</h3>
+        <AdminFlowChart details={data.details} />
+        <details style={{ marginTop: 20 }}><summary style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '12px 0' }}>일별 수치 자세히 보기</summary>
         <div style={{ overflowX: 'auto' }}><table style={table}>
           <thead><tr>{['날짜', '방문자', '상담 진입', '신청 건수', '전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
           <tbody>{days.map(d => <tr key={d.day}>
             <th scope="row" style={cell}>{d.day}</th><td style={cell}>{d.day < koreaDay(new Date(data.startedAt)) ? '수집 전' : d.visitors}</td>
             <td style={cell}>{d.consult_starts}</td><td style={cell}>{d.requests}</td><td style={cell}>{conversionRate(d.converted, d.visitors) ?? '—'}{d.visitors > 0 ? '%' : ''}</td>
           </tr>)}</tbody>
-        </table></div>
+        </table></div></details>
       </> : <>
         <nav aria-label="트래픽 세부 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '16px 0' }}>
           {DETAIL_TABS.map(t => <button key={t.id} aria-pressed={detailTab === t.id} onClick={() => setDetailTab(t.id)} style={detailTab === t.id ? goldAction : action}>{t.title}</button>)}
@@ -97,10 +94,10 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
           유입 경로 수집 시작: {new Date(data.attributionStartedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}. 이전 유입처는 복원할 수 없습니다.</p>
         </> : data.details ? <AdminTrafficDetails data={data.details} tab={detailTab} onSaved={() => setRetry(v => v + 1)} /> : <p role="alert">상세 통계 설정을 불러오지 못했어요. 새로고침해주세요.</p>}
       </>}
-      <p style={{ ...muted, marginTop: 24 }}>방문자는 브라우저별 하루 1회입니다. 여러 날의 합계는 기간 전체 순방문자가 아닙니다.
+      <details style={{ ...muted, marginTop: 16, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 및 마지막 갱신</summary><p>방문자는 브라우저별 하루 1회입니다. 여러 날의 합계는 기간 전체 순방문자가 아닙니다.
         신청 전환율은 일별 신청 완료 방문 ÷ 일별 방문의 합계입니다. 쿠키 없는 신청·집계 제외 방문의 신청도 접수 건수에는 포함됩니다.
         관리자 로그인 중 방문, 방문 제외 설정, 알려진 봇, 추적 거부 설정은 제외합니다. 브라우저·기기를 바꾸면 별도 집계될 수 있습니다.<br />
-        마지막 갱신: {new Date(data.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p>
+        마지막 갱신: {new Date(data.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p></details>
     </>}
   </section>;
 }

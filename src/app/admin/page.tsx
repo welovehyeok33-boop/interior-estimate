@@ -48,9 +48,9 @@ type Lead = {
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드", budget: "실속형", highend: "하이앤드" };
 const STATUS_CONFIG = {
-  new:        { label: "신규",     color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
-  qualified:  { label: "판매가능", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-  contracted: { label: "계약",     color: A.gold,    bg: A.goldBg },
+  new:        { label: "신규",     color: C.consultStatus.new.color, bg: C.consultStatus.new.background },
+  qualified:  { label: "판매가능", color: C.consultStatus.consulting.color, bg: C.consultStatus.consulting.background },
+  contracted: { label: "계약",     color: C.consultStatus.contracted.color, bg: C.consultStatus.contracted.background },
 };
 const TABS = [
   { id: "all",        label: "전체" },
@@ -78,6 +78,12 @@ export default function AdminPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
+  const [consultTarget, setConsultTarget] = useState({ status: 'all', revision: 0 });
+  function openStatus(nextFlow: 'consult' | 'engine', status: string) {
+    if (nextFlow === 'consult') setConsultTarget(v => ({ status, revision: v.revision + 1 }));
+    else setTab(status);
+    setFlow(nextFlow);
+  }
   const [loading, setLoading]   = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -185,7 +191,7 @@ export default function AdminPage() {
           style={{ width: 320, padding: "40px 32px", background: A.card, borderRadius: 20, border: `1px solid ${A.border}` }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 28, fontWeight: 900, color: A.gold, marginBottom: 6 }}>폼잇.</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: A.text, marginBottom: 6 }}>폼잇.</div>
             <div style={{ fontSize: 13, color: A.mid }}>관리자 페이지</div>
           </div>
 
@@ -203,7 +209,7 @@ export default function AdminPage() {
                 style={{
                   width: "100%", boxSizing: "border-box",
                   padding: "12px 14px 12px 40px",
-                  background: "#111", border: `1.5px solid ${pwError ? "#EF4444" : A.border}`,
+                  background: A.card, border: `1.5px solid ${pwError ? C.consultStatus.lost.color : A.border}`,
                   borderRadius: 10, color: A.text, fontSize: 15, outline: "none",
                   transition: "border-color 0.15s",
                 }}
@@ -239,10 +245,10 @@ export default function AdminPage() {
     <div style={{ minHeight: "100vh", background: A.bg }}>
 
       {/* 헤더 */}
-      <div style={{ background: A.bg, borderBottom: `1px solid ${A.border}`, padding: "20px 0" }}>
+      <div style={{ background: A.card, borderBottom: `1px solid ${A.border}`, padding: "20px 0" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", display: "flex", gap: 12, flexWrap: 'wrap', justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>폼잇.</span>
+            <span style={{ fontWeight: 900, fontSize: 18, color: C.textDark, background: C.primary, borderRadius: 7, padding: '6px 10px' }}>폼잇.</span>
             <span style={{ fontSize: 12, color: A.mid, marginLeft: 14 }}>관리자</span>
             <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
@@ -256,9 +262,10 @@ export default function AdminPage() {
       </div>
 
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px 20px 64px" }}>
+        {flow === 'overview' && <div style={{ marginBottom: 24 }}><h1 style={{ margin: '0 0 6px', fontSize: 28, letterSpacing: '-0.04em', color: A.text }}>대시보드</h1><p style={{ margin: 0, color: A.mid, fontSize: 13 }}>폼잇의 방문 현황과 견적 신청을 한눈에.</p></div>}
         <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 6, border: `1px solid ${A.border}`, background: A.card, borderRadius: 14, marginBottom: 32 }}>
           {([
-            { id: 'overview', title: '전체 현황 · 방문자', count: null },
+            { id: 'overview', title: '대시보드', count: null },
             { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
@@ -270,17 +277,18 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        {flow === 'overview' && <AdminStatusOverview consultation={consultationSummary} engine={leadSummary} loading={loading} error={loadError} onOpen={setFlow} />}
 
         <div id="admin-traffic" hidden={flow !== 'overview' && flow !== 'sources'}>
           <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
 
+        {flow === 'overview' && <AdminStatusOverview consultation={consultationSummary} engine={leadSummary} loading={loading} error={loadError} onOpen={openStatus} />}
+
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          <AdminConsultations refresh={trafficRefresh} onSaved={fetchLeads} />
+          <AdminConsultations key={consultTarget.revision} initialStatus={consultTarget.status} refresh={trafficRefresh} onSaved={fetchLeads} />
         </div>
         <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
@@ -290,9 +298,9 @@ export default function AdminPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 28 }}>
           {[
             { label: "전체 리드",   value: stats.total,      color: A.text },
-            { label: "신규",        value: stats.new,        color: "#3B82F6" },
-            { label: "판매가능",    value: stats.qualified,  color: "#10B981" },
-            { label: "계약",        value: stats.contracted, color: A.gold },
+            { label: "신규",        value: stats.new,        color: STATUS_CONFIG.new.color },
+            { label: "판매가능",    value: stats.qualified,  color: STATUS_CONFIG.qualified.color },
+            { label: "계약",        value: stats.contracted, color: STATUS_CONFIG.contracted.color },
           ].map(s => (
             <div key={s.label} style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 14, padding: "18px 20px" }}>
               <div style={{ fontSize: 11, color: A.light, marginBottom: 8, fontWeight: 600, letterSpacing: "0.05em" }}>{s.label.toUpperCase()}</div>
@@ -312,7 +320,7 @@ export default function AdminPage() {
                 style={{
                   padding: "8px 16px", borderRadius: 20, border: `1.5px solid ${active ? A.gold : A.border}`,
                   background: active ? A.goldBg : A.card,
-                  color: active ? A.gold : A.mid, fontWeight: active ? 700 : 500,
+                  color: active ? C.admin.accentText : A.mid, fontWeight: active ? 700 : 500,
                   fontSize: 13, cursor: "pointer",
                   display: "flex", alignItems: "center", gap: 6,
                 }}
@@ -372,7 +380,7 @@ export default function AdminPage() {
                         {lead.commercial_sub ? ` · ${lead.commercial_sub}` : lead.commercial_type ? ` · ${lead.commercial_type}` : ""}
                       </span>
                       <span style={{ fontSize: 13, color: A.mid }}>{lead.area ? `${lead.area}평` : "-"}</span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: A.gold }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: C.admin.accentText }}>
                         {lead.estimated_total ? `${lead.estimated_total.toLocaleString()}만원` : "-"}
                       </span>
                     </div>
@@ -406,7 +414,7 @@ export default function AdminPage() {
                               { icon: <IconRuler size={13} />,    label: "평수",     val: lead.area ? `${lead.area}평` : "-" },
                               { icon: <IconDiamond size={13} />,  label: "자재등급", val: GRADE_LABEL[lead.material_grade ?? ""] || "-" },
                             ].map(item => (
-                              <div key={item.label} style={{ minWidth: 0, overflowWrap: "anywhere", padding: "10px 14px", background: "#111", borderRadius: 10, border: `1px solid ${A.border}` }}>
+                              <div key={item.label} style={{ minWidth: 0, overflowWrap: "anywhere", padding: "10px 14px", background: A.bg, borderRadius: 10, border: `1px solid ${A.border}` }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, color: A.light }}>
                                   {item.icon}
                                   <span style={{ fontSize: 11, fontWeight: 600 }}>{item.label}</span>
