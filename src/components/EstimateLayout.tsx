@@ -28,6 +28,7 @@ export const C = {
     contacted: { color: "#67E8F9", background: "#173A40" },
     consulting: { color: "#93C5FD", background: "#20324C" },
     quoted: { color: "#D8B4FE", background: "#382748" },
+    lost: { color: "#FDA4AF", background: "#481F2A" },
     contracted: { color: "#86EFAC", background: "#1E3C2C" },
     closed: { color: "#CBD5E1", background: "#30353D" },
   },

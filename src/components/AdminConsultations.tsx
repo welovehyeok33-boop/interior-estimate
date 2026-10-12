@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
 import { action, field, goldAction, muted, panel, consultStatusStyle, consultStatusBadge } from './adminStyles';
-import { CONSULT_STATUSES, fromKstInput, kstInput, type Consultation } from '@/lib/adminCrm';
+import { CONSULT_STATUSES, CONSULT_STATUS_OPTIONS, fromKstInput, kstInput, type Consultation } from '@/lib/adminCrm';
 import { formatEstimateRegion } from '@/lib/estimateRegion';
 import { formatConsultBudget, formatConsultSchedule } from '@/lib/consultStore';
 import { INDUSTRY_LABELS } from '@/lib/intakeValidation';
@@ -37,11 +37,12 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: () => void }) 
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <label>상담 상태<br /><select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status) }}>
-          {!Object.hasOwn(CONSULT_STATUSES, status) && <option value={status}>{status} (기존)</option>}
-          {Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
+          {!CONSULT_STATUS_OPTIONS.some(([id]) => id === status) && <option value={status}>{CONSULT_STATUSES[status] || `${status} (기존)`}</option>}
+          {CONSULT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
         </select></label>
-        <label>다음 연락 일시 (한국시간)<br /><input type="datetime-local" value={next} onInput={e => setNext(e.currentTarget.value)} onChange={e => setNext(e.target.value)} style={field} /></label>
+        <label>다음 연락 일시 (한국시간)<br /><input type="datetime-local" disabled={status === 'lost'} value={status === 'lost' ? '' : next} onInput={e => setNext(e.currentTarget.value)} onChange={e => setNext(e.target.value)} style={field} /></label>
       </div>
+      {status === 'lost' && <p style={muted}>무산으로 저장하면 다음 연락 일정이 해제됩니다. 기존 상담 기록과 메모는 유지됩니다.</p>}
       <label style={{ display: 'block', marginTop: 14 }}>관리자 상담 메모 (고객에게 공개되지 않음)
         <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={4000} rows={4} style={{ ...field, display: 'block', width: '100%', resize: 'vertical' }} />
       </label>
@@ -77,7 +78,7 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
       <input aria-label="이름 또는 전화번호 검색" placeholder="이름 또는 전화번호" maxLength={80} value={q} onChange={e => setQ(e.target.value)} style={{ ...field, flex: '1 1 180px' }} />
       <button style={goldAction}>검색</button>
       <select aria-label="상담 상태 필터" value={filter.status} onChange={e => { setOpen(null); setFilter(v => ({ ...v, status: e.target.value, page: 1 })); }} style={{ ...field, ...(filter.status === 'all' ? {} : consultStatusStyle(filter.status)) }}>
-        <option value="all" style={field}>전체 상태</option>{Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
+        <option value="all" style={field}>전체 상태</option>{CONSULT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
       </select>
       <button type="button" style={action} onClick={() => { setOpen(null); setReload(v => v + 1); }}>목록 새로고침</button>
     </form>

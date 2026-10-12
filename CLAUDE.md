@@ -1,4 +1,5 @@
 ## 2026-10-12 상담 상태 색상
+후속 요청으로 CONSULT_STATUS_OPTIONS는 contact_attempted를 제외하고 quoted → lost → contracted 순서를 사용합니다. 기존 contact_attempted는 표시/메모 저장 호환을 위해 레이블 및 서버 검증에 남깁니다. lost 저장 시 next_contact_at을 null로 정리하므로 기존 DB overdue 집계에도 포함되지 않습니다. 기존 연락 일정 해제는 편집 UI에 안내합니다.
 C.consultStatus에 7개 상태별 전경/배경 토큰을 정의하고 adminStyles의 consultStatusStyle/consultStatusBadge로 상담 목록·선택·필터·통계 요약에 공유합니다. 알 수 없는 기존 상태는 중립색과 기존 텍스트로 유지합니다. 미배포.
 이메일 알림은 10월 9일 사용자가 취소했습니다. 기존 이메일 커밋 e8bb443은 운영에 포함하지 말아야 합니다.
 

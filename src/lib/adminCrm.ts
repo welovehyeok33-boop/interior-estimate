@@ -1,7 +1,9 @@
 export const CONSULT_STATUSES: Record<string, string> = {
-  new: '신규', contact_attempted: '연락 시도', contacted: '연락 완료 (기존)', consulting: '상담 중',
-  quoted: '견적 전달', contracted: '계약', closed: '종료',
+  new: '신규', contacted: '연락 완료 (기존)', consulting: '상담 중',
+  quoted: '견적 전달', lost: '무산', contracted: '계약', closed: '종료',
+  contact_attempted: '연락 시도 (기존)',
 };
+export const CONSULT_STATUS_OPTIONS = Object.entries(CONSULT_STATUSES).filter(([id]) => id !== 'contact_attempted');
 export type Consultation = {
   id: string; created_at: string; name: string; phone: string; status: string;
   region: string | null; building_type: string | null; area: number | null;
@@ -17,7 +19,7 @@ export function crmPatch(body: Record<string, unknown>) {
   if (body.next_contact_at !== null && (typeof body.next_contact_at !== 'string' ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(body.next_contact_at) ||
     !Number.isFinite(Date.parse(body.next_contact_at)) || new Date(body.next_contact_at).toISOString() !== body.next_contact_at)) return null;
-  return { status: body.status, admin_note: body.admin_note.trim(), next_contact_at: body.next_contact_at as string | null,
+  return { status: body.status, admin_note: body.admin_note.trim(), next_contact_at: body.status === 'lost' ? null : body.next_contact_at as string | null,
     admin_version: body.admin_version + 1 };
 }
 export function kstInput(iso: string | null) {

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const q = raw.replace(/[^\p{L}\p{N}\s-]/gu, '').trim();
     let query = serverDb().from('consultations').select('*', { count: 'exact' });
     if (status !== 'all') query = query.eq('status', status);
-    if (params.get('due') === '1') query = query.lte('next_contact_at', new Date().toISOString()).not('status', 'in', '(closed,contracted)');
+    if (params.get('due') === '1') query = query.lte('next_contact_at', new Date().toISOString()).not('status', 'in', '(closed,contracted,lost)');
     if (q) query = /^[\d\s-]+$/.test(q) ? query.ilike('phone', `%${q.replace(/\D/g, '')}%`) : query.ilike('name', `%${q}%`);
     const result = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 25, page * 25 - 1);
     if (result.error) throw result.error;
