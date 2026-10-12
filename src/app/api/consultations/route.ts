@@ -3,10 +3,6 @@ import { apiJson, isAdmin, rateLimit, sameOrigin } from '@/lib/serverAuth';
 import { CONSENT_VERSION, validateConsult } from '@/lib/intakeValidation';
 import { serializeLeadRegion } from '@/lib/estimateRegion';
 import { visitorIdentity } from '@/lib/serverAnalytics';
-import { after } from 'next/server';
-import { notifyConsultation } from '@/lib/consultNotification';
-
-export const maxDuration = 30;
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return apiJson({ error: '허용되지 않은 요청입니다.' }, 403);
@@ -35,15 +31,6 @@ export async function POST(request: Request) {
     });
     // A retry after a lost response must not create another customer record.
     if (error && error.code !== '23505') throw error;
-    // Only a newly saved application triggers mail; duplicate submissions do not.
-    if (!error) {
-      try {
-        after(async () => {
-          try { await notifyConsultation(body.submissionId); }
-          catch { console.error('consult_notification: unexpected_failure'); }
-        });
-      } catch { console.error('consult_notification: scheduling_failed'); }
-    }
     return apiJson({ ok: true });
   } catch { return apiJson({ error: '신청을 저장하지 못했어요. 입력 내용은 유지되니 잠시 후 다시 시도해주세요.' }, 503); }
 }

@@ -4,6 +4,13 @@ export const CONSULT_STATUSES: Record<string, string> = {
   contact_attempted: '연락 시도 (기존)',
 };
 export const CONSULT_STATUS_OPTIONS = Object.entries(CONSULT_STATUSES).filter(([id]) => id !== 'contact_attempted');
+// Inclusive KST month start, exclusive next month start, serialized for timestamptz.
+export function consultationMonthRange(month: string) {
+  if (!/^(20\d{2})-(0[1-9]|1[0-2])$/.test(month)) return null;
+  const [year, value] = month.split('-').map(Number);
+  return { start: new Date(Date.UTC(year, value - 1, 1) - 9 * 3600000).toISOString(),
+    end: new Date(Date.UTC(year, value, 1) - 9 * 3600000).toISOString() };
+}
 export type Consultation = {
   id: string; created_at: string; name: string; phone: string; status: string;
   region: string | null; building_type: string | null; area: number | null;

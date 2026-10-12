@@ -7,7 +7,8 @@ import * as crm from '../src/lib/adminCrm.ts';
 function setup(auth = true, exists = true) {
   const calls = [];
   const query = {};
-  for (const method of ['select','eq','lte','not','ilike','order','update']) query[method] = (...args) => { calls.push([method,...args]); return query; };
+  for (const method of ['select','eq','lte','gte','lt','not','ilike','order','update']) query[method] = (...args) => { calls.push([method,...args]); return query; };
+  query.then = resolve => Promise.resolve({ count: 0, error: null }).then(resolve);
   query.range = async (...args) => { calls.push(['range',...args]); return { data: [], count: 0 }; };
   query.maybeSingle = async () => ({ data: exists ? { id: 'ok' } : null });
   const deps = { '@/lib/adminCrm': crm, '@/lib/serverAuth': {
@@ -43,4 +44,16 @@ test('CRM uses server pagination and literal phone search',async()=>{
   assert.ok(s.calls.some(c=>c[0]==='range'&&c[1]===25&&c[2]===49));
   assert.ok(s.calls.some(c=>c[0]==='ilike'&&c[1]==='phone'&&c[2]==='%0101234%'));
   assert.ok(s.calls.some(c=>c[0]==='not'&&c[1]==='status'));
+});
+test('CRM month uses KST exclusive boundaries and returns full status summary',async()=>{
+  const s=setup();
+  const r=await s.GET(new Request('https://form.it.kr/api/admin/consultations?month=2026-12'));
+  assert.equal(r.status,200);
+  const data=await r.json();
+  assert.ok(data.summary.some(v=>v.status==='lost'));
+  assert.equal(s.calls.filter(c=>c[0]==='select'&&c[2]?.head).length,Object.keys(crm.CONSULT_STATUSES).length+1);
+  assert.ok(s.calls.some(c=>c[0]==='gte'&&c[2]==='2026-11-30T15:00:00.000Z'));
+  assert.ok(s.calls.some(c=>c[0]==='lt'&&c[2]==='2026-12-31T15:00:00.000Z'));
+  for (const month of ['2026-13','2026-00','26-01','bad']) assert.equal((await s.GET(new Request('https://form.it.kr/api/admin/consultations?month='+month))).status,400);
+  assert.deepEqual(crm.consultationMonthRange('2024-02'),{start:'2024-01-31T15:00:00.000Z',end:'2024-02-29T15:00:00.000Z'});
 });

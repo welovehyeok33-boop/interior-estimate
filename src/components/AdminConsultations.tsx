@@ -54,7 +54,8 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: () => void }) 
 }
 export default function AdminConsultations({ refresh, onSaved }: { refresh: number; onSaved: () => void }) {
   const [items, setItems] = useState<Consultation[]>([]), [total, setTotal] = useState(0);
-  const [q, setQ] = useState(''), [filter, setFilter] = useState({ q: '', status: 'all', due: false, page: 1 });
+  const [summary, setSummary] = useState<{ status: string; count: number }[]>([]);
+  const [q, setQ] = useState(''), [filter, setFilter] = useState({ q: '', status: 'all', due: false, page: 1, month: '' });
   const [open, setOpen] = useState<string | null>(null), [reload, setReload] = useState(0);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [message, setMessage] = useState('');
   useEffect(() => {
@@ -62,11 +63,11 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
     async function read() {
       setLoading(true); setError('');
       try {
-        const params = new URLSearchParams({ q: filter.q, status: filter.status, due: filter.due ? '1' : '0', page: String(filter.page) });
+        const params = new URLSearchParams({ q: filter.q, status: filter.status, due: filter.due ? '1' : '0', page: String(filter.page), month: filter.month });
         const r = await fetch(`/api/admin/consultations?${params}`, { cache: 'no-store', signal: controller.signal });
         const body = await r.json();
         if (!r.ok) throw new Error(body.error || '조회 실패');
-        if (!controller.signal.aborted) { setItems(body.items); setTotal(body.total); }
+        if (!controller.signal.aborted) { setItems(body.items); setTotal(body.total); setSummary(body.summary || []); }
       } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : '조회 실패'); }
       finally { if (!controller.signal.aborted) setLoading(false); }
     }
@@ -74,10 +75,22 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
   }, [filter, refresh, reload]);
   return <section aria-label="무료 견적 상담 관리" style={{ color: C.home.onDark }}>
     <h1 style={{ fontSize: 22 }}>상담 관리</h1>
+    <div style={{ ...panel, marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <label>접수 월 <input aria-label="접수 월" type="month" min="2000-01" max="2099-12" value={filter.month} onChange={e => { setOpen(null); setFilter(v => ({ ...v, month: e.target.value, page: 1 })); }} style={field} /></label>
+        <button type="button" style={action} onClick={() => { setOpen(null); setFilter(v => ({ ...v, month: new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7), page: 1 })); }}>이번 달</button>
+        <button type="button" style={action} onClick={() => { setOpen(null); setFilter(v => ({ ...v, month: '', page: 1 })); }}>전체 기간</button>
+      </div>
+      <p style={muted}>{filter.month || '전체 기간'} 접수 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 아래 상태별 건수는 검색·상태·연락 예정 필터와 무관합니다.</p>
+      {!loading && !error && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {summary.filter(s => s.status !== 'contact_attempted' || s.count > 0).map(s => <button type="button" key={s.status} aria-pressed={filter.status === s.status} style={{ ...action, ...consultStatusBadge(s.status), outline: filter.status === s.status ? `2px solid ${C.home.onDark}` : undefined, outlineOffset: 2 }} onClick={() => { setOpen(null); setFilter(v => ({ ...v, status: s.status, page: 1 })); }}>{s.status === 'all' ? '전체' : CONSULT_STATUSES[s.status] || s.status} {s.count}건</button>)}
+      </div>}
+    </div>
     <form onSubmit={e => { e.preventDefault(); setFilter(v => ({ ...v, q, page: 1 })); setOpen(null); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
       <input aria-label="이름 또는 전화번호 검색" placeholder="이름 또는 전화번호" maxLength={80} value={q} onChange={e => setQ(e.target.value)} style={{ ...field, flex: '1 1 180px' }} />
       <button style={goldAction}>검색</button>
       <select aria-label="상담 상태 필터" value={filter.status} onChange={e => { setOpen(null); setFilter(v => ({ ...v, status: e.target.value, page: 1 })); }} style={{ ...field, ...(filter.status === 'all' ? {} : consultStatusStyle(filter.status)) }}>
+        {filter.status === 'contact_attempted' && <option value="contact_attempted">연락 시도 (기존)</option>}
         <option value="all" style={field}>전체 상태</option>{CONSULT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
       </select>
       <button type="button" style={action} onClick={() => { setOpen(null); setReload(v => v + 1); }}>목록 새로고침</button>

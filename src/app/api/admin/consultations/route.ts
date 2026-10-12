@@ -1,6 +1,6 @@
 import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
-import { CONSULT_STATUSES, crmPatch } from '@/lib/adminCrm';
+import { CONSULT_STATUSES, crmPatch, consultationMonthRange } from '@/lib/adminCrm';
 
 export async function GET(request: Request) {
   try {
@@ -8,16 +8,30 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const page = Number(params.get('page') || 1), status = params.get('status') || 'all';
     const raw = params.get('q') || '';
+    const month = params.get('month') || '';
+    const range = month ? consultationMonthRange(month) : null;
+    if (month && !range) return apiJson({ error: '접수 월을 확인해주세요.' }, 400);
     if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || raw.length > 80 ||
       (status !== 'all' && !Object.hasOwn(CONSULT_STATUSES, status))) return apiJson({ error: '검색 조건을 확인해주세요.' }, 400);
     const q = raw.replace(/[^\p{L}\p{N}\s-]/gu, '').trim();
-    let query = serverDb().from('consultations').select('*', { count: 'exact' });
+    const db = serverDb();
+    let query = db.from('consultations').select('*', { count: 'exact' });
+    if (range) query = query.gte('created_at', range.start).lt('created_at', range.end);
     if (status !== 'all') query = query.eq('status', status);
     if (params.get('due') === '1') query = query.lte('next_contact_at', new Date().toISOString()).not('status', 'in', '(closed,contracted,lost)');
     if (q) query = /^[\d\s-]+$/.test(q) ? query.ilike('phone', `%${q.replace(/\D/g, '')}%`) : query.ilike('name', `%${q}%`);
     const result = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 25, page * 25 - 1);
     if (result.error) throw result.error;
-    return apiJson({ items: result.data, total: result.count, page, pageSize: 25 });
+    // Counts cover the entire selected month, not the current page/search/status.
+    const summary = await Promise.all(['all', ...Object.keys(CONSULT_STATUSES)].map(async key => {
+      let count = db.from('consultations').select('id', { count: 'exact', head: true });
+      if (range) count = count.gte('created_at', range.start).lt('created_at', range.end);
+      if (key !== 'all') count = count.eq('status', key);
+      const value = await count;
+      if (value.error) throw value.error;
+      return { status: key, count: value.count ?? 0 };
+    }));
+    return apiJson({ items: result.data, total: result.count, page, pageSize: 25, summary });
   } catch { return apiJson({ error: '상담 목록을 불러오지 못했어요.' }, 503); }
 }
 export async function PATCH(request: Request) {
