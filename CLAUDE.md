@@ -1,6 +1,18 @@
-## 2026-10-03 방문 상세 정보 (앱 배포 전)
+## 2026-10-12 상담 상태 색상
+GET /api/admin/consultations의 month=YYYY-MM은 한국시간 월초 이상/다음 월초 미만으로 필터링합니다. summary는 동일 접수 월 전체의 현재 상태 건수(head/count exact)이며 검색/상태/연락 필터와 무관합니다. 월말 역사 상태가 아닙니다. 이메일 발송 모듈/테스트/신청 후 호출은 사용자 취소에 따라 제거하여 운영 배포에 포함되지 않습니다.
+AdminConsultations 접힌 카드에는 이름/지역 아래 업종(commercial_type, commercial_sub)과 면적(area, 평)을 노출합니다. 주거는 공간: 주거, 누락/잘못된 면적은 미입력으로 표시합니다. 기존 API 데이터를 사용하며 DB 변경은 없습니다.
+후속 요청으로 CONSULT_STATUS_OPTIONS는 contact_attempted를 제외하고 quoted → lost → contracted 순서를 사용합니다. 기존 contact_attempted는 표시/메모 저장 호환을 위해 레이블 및 서버 검증에 남깁니다. lost 저장 시 next_contact_at을 null로 정리하므로 기존 DB overdue 집계에도 포함되지 않습니다. 기존 연락 일정 해제는 편집 UI에 안내합니다.
+C.consultStatus에 7개 상태별 전경/배경 토큰을 정의하고 adminStyles의 consultStatusStyle/consultStatusBadge로 상담 목록·선택·필터·통계 요약에 공유합니다. 알 수 없는 기존 상태는 중립색과 기존 텍스트로 유지합니다. 미배포.
+이메일 알림은 10월 9일 사용자가 취소했습니다. 기존 이메일 커밋 e8bb443은 운영에 포함하지 말아야 합니다.
+
+## 2026-10-05 상담 접수 알림 (사용자 취소, 미배포)
+consultations POST의 신규 INSERT 성공 후 after로 consultNotification을 호출합니다. 저장 실패·중복 제출은 메일 발송 안 함. 메일에는 개인정보 없이 고정 접수 안내와 https://form.it.kr/admin만 넣습니다. 수신자는 사용자 입력이 아닌 서버 환경변수로 결정합니다.
+Resend 연결을 위한 Production 전용 환경변수: RESEND_API_KEY(발송 권한 키), CONSULT_NOTIFY_FROM(인증된 발신 도메인의 순수 이메일 주소), CONSULT_NOTIFY_TO(사용자가 지정한 수신 주소). NEXT_PUBLIC 접두사 금지, 키를 채팅·Git에 저장하지 말 것. VERCEL_ENV=production 이외는 발송하지 않습니다. 도메인의 기존 웹사이트 DNS를 교체하지 않고 Resend가 제시한 발신 인증 레코드만 추가해야 합니다.
+일시 오류는 5초 제한/최대 3회로 재시도하며 같은 idempotency key를 사용합니다. 영속 큐나 배달 보장 기능은 없으며 지속 장애는 고정 오류 코드만 로그에 남깁니다. 메일 설정·발송 실패가 상담 저장 응답을 실패시키면 안 됩니다. 서비스 연결 및 실제 수신 확인 전에는 완료라고 안내하지 않습니다.
+
+## 2026-10-03 방문 상세 정보 (운영 배포 완료)
 record_traffic_v3가 기존 일별 집계를 유지하면서 traffic_details에 허용한 페이지별 도달과 서버에서 추출한 추정 지역·환경·마스킹 IP를 기록합니다. raw IP/UA 및 임의 URL은 저장하지 않습니다. admin_traffic_details는 관리자 전용 서버 RPC이며 국가/지역/환경/페이지 집계와 최근 50건을 반환합니다. 단계 도달 통계는 엄격한 순서 기반 이탈 퍼널이 아닙니다.
-관리자 analytics PATCH는 동일 출처·인증·boolean 검증 후 상세 수집 및 IP 수집/표시 설정을 변경합니다. 사용자 승인에 따라 상세 기록만 KST 최근 30일 보존하며 다음 수집·조회에서 정리합니다. 기존 traffic_daily 및 상담 정보는 삭제하지 않습니다. 운영 DB 마이그레이션 적용·롤백 테스트 완료, 앱 코드는 미배포입니다.
+관리자 analytics PATCH는 동일 출처·인증·boolean 검증 후 상세 수집 및 IP 수집/표시 설정을 변경합니다. 사용자 승인에 따라 상세 기록만 KST 최근 30일 보존하며 다음 수집·조회에서 정리합니다. 기존 traffic_daily 및 상담 정보는 삭제하지 않습니다. 운영 DB 마이그레이션 적용·롤백 테스트 완료. PR #14(242fcb7)로 운영 배포 성공, 공개 경로·메뉴 반영·관리자 API 비로그인 차단·DNT 제외 확인. 운영 로그인 후 실제 상세 데이터 조회는 별도 확인 필요.
 
 ## 2026-10-03 관리자 카테고리
 AdminPage에서 overview/sources/consult/engine 카테고리를 관리합니다. AdminTraffic view는 부모에서 전달하며 내부 중복 탭은 제거했습니다. hidden으로 패널을 숨겨 카테고리 이동 시 조회 기간·상담 초안이 유지됩니다. PR #13으로 운영 배포 완료했으며 DB/API 변경은 없습니다.

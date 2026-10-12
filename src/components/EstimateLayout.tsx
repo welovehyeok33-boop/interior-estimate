@@ -22,6 +22,16 @@ export const C = {
   textLight: "#999999",
   selectedBg: "#FFFBE8",
   selectedBorder: "#F5C200",
+  consultStatus: {
+    new: { color: "#FFD740", background: "#403619" },
+    contact_attempted: { color: "#FDBA74", background: "#432B1B" },
+    contacted: { color: "#67E8F9", background: "#173A40" },
+    consulting: { color: "#93C5FD", background: "#20324C" },
+    quoted: { color: "#D8B4FE", background: "#382748" },
+    lost: { color: "#FDA4AF", background: "#481F2A" },
+    contracted: { color: "#86EFAC", background: "#1E3C2C" },
+    closed: { color: "#CBD5E1", background: "#30353D" },
+  },
   phone: {
     frame: "#20221F",
     frameEdge: "#55574E",
