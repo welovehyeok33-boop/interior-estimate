@@ -1,4 +1,8 @@
-## 2026-10-05 상담 접수 알림 (연결·배포 전)
+## 2026-10-12 상담 상태 색상
+C.consultStatus에 7개 상태별 전경/배경 토큰을 정의하고 adminStyles의 consultStatusStyle/consultStatusBadge로 상담 목록·선택·필터·통계 요약에 공유합니다. 알 수 없는 기존 상태는 중립색과 기존 텍스트로 유지합니다. 미배포.
+이메일 알림은 10월 9일 사용자가 취소했습니다. 기존 이메일 커밋 e8bb443은 운영에 포함하지 말아야 합니다.
+
+## 2026-10-05 상담 접수 알림 (사용자 취소, 미배포)
 consultations POST의 신규 INSERT 성공 후 after로 consultNotification을 호출합니다. 저장 실패·중복 제출은 메일 발송 안 함. 메일에는 개인정보 없이 고정 접수 안내와 https://form.it.kr/admin만 넣습니다. 수신자는 사용자 입력이 아닌 서버 환경변수로 결정합니다.
 Resend 연결을 위한 Production 전용 환경변수: RESEND_API_KEY(발송 권한 키), CONSULT_NOTIFY_FROM(인증된 발신 도메인의 순수 이메일 주소), CONSULT_NOTIFY_TO(사용자가 지정한 수신 주소). NEXT_PUBLIC 접두사 금지, 키를 채팅·Git에 저장하지 말 것. VERCEL_ENV=production 이외는 발송하지 않습니다. 도메인의 기존 웹사이트 DNS를 교체하지 않고 Resend가 제시한 발신 인증 레코드만 추가해야 합니다.
 일시 오류는 5초 제한/최대 3회로 재시도하며 같은 idempotency key를 사용합니다. 영속 큐나 배달 보장 기능은 없으며 지속 장애는 고정 오류 코드만 로그에 남깁니다. 메일 설정·발송 실패가 상담 저장 응답을 실패시키면 안 됩니다. 서비스 연결 및 실제 수신 확인 전에는 완료라고 안내하지 않습니다.

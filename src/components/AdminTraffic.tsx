@@ -4,7 +4,7 @@ import { C } from './EstimateLayout';
 import { conversionRate, koreaDay, type TrafficReport } from '@/lib/analytics';
 import { SOURCE_LABELS } from '@/lib/attribution';
 import { CONSULT_STATUSES } from '@/lib/adminCrm';
-import { action, goldAction, muted, panel } from './adminStyles';
+import { action, goldAction, muted, panel, consultStatusBadge } from './adminStyles';
 import TrafficPreference from './TrafficPreference';
 import AdminTrafficDetails, { DETAIL_TABS, type DetailTab } from './AdminTrafficDetails';
 
@@ -62,7 +62,7 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
         </div>
         <h3>상담 현황 <small style={muted}>전체 기간</small></h3>
         <p>전체 접수 {data.totalRequests}건 · 신규 {data.pendingRequests}건 · 연락 예정 시간 경과 {data.dueRequests}건</p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{data.statuses.map(s => <span key={s.status} style={{ ...action, cursor: 'default' }}>{CONSULT_STATUSES[s.status] || s.status} {s.count}</span>)}</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{data.statuses.map(s => <span key={s.status} style={consultStatusBadge(s.status)}>{CONSULT_STATUSES[s.status] || s.status} {s.count}</span>)}</div>
         <h3>일별 추이</h3>
         <div style={{ overflowX: 'auto' }}><table style={table}>
           <thead><tr>{['날짜', '방문자', '상담 진입', '신청 건수', '전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
-import { action, field, goldAction, muted, panel } from './adminStyles';
+import { action, field, goldAction, muted, panel, consultStatusStyle, consultStatusBadge } from './adminStyles';
 import { CONSULT_STATUSES, fromKstInput, kstInput, type Consultation } from '@/lib/adminCrm';
 import { formatEstimateRegion } from '@/lib/estimateRegion';
 import { formatConsultBudget, formatConsultSchedule } from '@/lib/consultStore';
@@ -36,9 +36,9 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: () => void }) 
     <p style={muted}>개인정보 동의: {item.consent_at ? dateLabel(item.consent_at) : '기존 기록 없음'}</p>
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <label>상담 상태<br /><select value={status} onChange={e => setStatus(e.target.value)} style={field}>
+        <label>상담 상태<br /><select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status) }}>
           {!Object.hasOwn(CONSULT_STATUSES, status) && <option value={status}>{status} (기존)</option>}
-          {Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          {Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
         </select></label>
         <label>다음 연락 일시 (한국시간)<br /><input type="datetime-local" value={next} onInput={e => setNext(e.currentTarget.value)} onChange={e => setNext(e.target.value)} style={field} /></label>
       </div>
@@ -76,8 +76,8 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
     <form onSubmit={e => { e.preventDefault(); setFilter(v => ({ ...v, q, page: 1 })); setOpen(null); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
       <input aria-label="이름 또는 전화번호 검색" placeholder="이름 또는 전화번호" maxLength={80} value={q} onChange={e => setQ(e.target.value)} style={{ ...field, flex: '1 1 180px' }} />
       <button style={goldAction}>검색</button>
-      <select aria-label="상담 상태 필터" value={filter.status} onChange={e => { setOpen(null); setFilter(v => ({ ...v, status: e.target.value, page: 1 })); }} style={field}>
-        <option value="all">전체 상태</option>{Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+      <select aria-label="상담 상태 필터" value={filter.status} onChange={e => { setOpen(null); setFilter(v => ({ ...v, status: e.target.value, page: 1 })); }} style={{ ...field, ...(filter.status === 'all' ? {} : consultStatusStyle(filter.status)) }}>
+        <option value="all" style={field}>전체 상태</option>{Object.entries(CONSULT_STATUSES).map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
       </select>
       <button type="button" style={action} onClick={() => { setOpen(null); setReload(v => v + 1); }}>목록 새로고침</button>
     </form>
@@ -90,7 +90,7 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
       {items.map(item => <article key={item.id} style={{ ...panel, marginBottom: 10 }}>
         <button type="button" aria-expanded={open === item.id} onClick={() => setOpen(open === item.id ? null : item.id)} style={{ ...action, width: '100%', border: 0, background: 'transparent', textAlign: 'left', padding: '0 0 12px', display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <span><strong>{item.name}</strong> · {formatEstimateRegion(item.region)}<br /><span style={muted}>{dateLabel(item.created_at)} · {formatConsultBudget(item.budget ?? undefined)}</span></span>
-          <span style={{ color: C.primary }}>{CONSULT_STATUSES[item.status] || item.status || '미정'}<br /><span style={muted}>다음 연락: {dateLabel(item.next_contact_at)}</span></span>
+          <span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span><br /><span style={muted}>다음 연락: {dateLabel(item.next_contact_at)}</span></span>
         </button>
         {open === item.id && <Editor key={`${item.id}:${item.admin_version}`} item={item} onSaved={() => { setOpen(null); setMessage('상담 내용을 저장했어요.'); setReload(v => v + 1); onSaved(); }} />}
       </article>)}
