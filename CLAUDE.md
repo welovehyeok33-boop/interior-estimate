@@ -1,4 +1,5 @@
 ## 2026-10-12 상담 상태 색상
+PR #15(0cdaae2) 운영 배포 완료. 아래 미배포/이메일 커밋 제외 메모는 배포 이전 기록이며, 실제 배포에는 이메일 코드가 제거되어 있습니다.
 GET /api/admin/consultations의 month=YYYY-MM은 한국시간 월초 이상/다음 월초 미만으로 필터링합니다. summary는 동일 접수 월 전체의 현재 상태 건수(head/count exact)이며 검색/상태/연락 필터와 무관합니다. 월말 역사 상태가 아닙니다. 이메일 발송 모듈/테스트/신청 후 호출은 사용자 취소에 따라 제거하여 운영 배포에 포함되지 않습니다.
 AdminConsultations 접힌 카드에는 이름/지역 아래 업종(commercial_type, commercial_sub)과 면적(area, 평)을 노출합니다. 주거는 공간: 주거, 누락/잘못된 면적은 미입력으로 표시합니다. 기존 API 데이터를 사용하며 DB 변경은 없습니다.
 후속 요청으로 CONSULT_STATUS_OPTIONS는 contact_attempted를 제외하고 quoted → lost → contracted 순서를 사용합니다. 기존 contact_attempted는 표시/메모 저장 호환을 위해 레이블 및 서버 검증에 남깁니다. lost 저장 시 next_contact_at을 null로 정리하므로 기존 DB overdue 집계에도 포함되지 않습니다. 기존 연락 일정 해제는 편집 UI에 안내합니다.
