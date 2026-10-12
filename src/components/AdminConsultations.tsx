@@ -90,7 +90,14 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
       {items.length === 0 && <p>조건에 맞는 상담이 없습니다.</p>}
       {items.map(item => <article key={item.id} style={{ ...panel, marginBottom: 10 }}>
         <button type="button" aria-expanded={open === item.id} onClick={() => setOpen(open === item.id ? null : item.id)} style={{ ...action, width: '100%', border: 0, background: 'transparent', textAlign: 'left', padding: '0 0 12px', display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span><strong>{item.name}</strong> · {formatEstimateRegion(item.region)}<br /><span style={muted}>{dateLabel(item.created_at)} · {formatConsultBudget(item.budget ?? undefined)}</span></span>
+          <span style={{ minWidth: 0, flex: '1 1 240px', overflowWrap: 'anywhere' }}>
+            <strong>{item.name}</strong> · {formatEstimateRegion(item.region)}
+            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', margin: '7px 0', fontSize: 13, lineHeight: 1.6, color: C.home.onDark }}>
+              <span>{item.building_type === 'residential' ? '공간: 주거' : `업종: ${INDUSTRY_LABELS[item.commercial_type || ''] || item.commercial_type || '미입력'}${item.commercial_sub?.trim() && !['unknown', 'etc'].includes(item.commercial_type || '') ? ` · ${item.commercial_sub.trim()}` : ''}`}</span>
+              <span>평수: {typeof item.area === 'number' && Number.isFinite(item.area) && item.area > 0 ? `${item.area.toLocaleString('ko-KR')}평` : '미입력'}</span>
+            </span>
+            <span style={muted}>{dateLabel(item.created_at)} · {formatConsultBudget(item.budget ?? undefined)}</span>
+          </span>
           <span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span><br /><span style={muted}>다음 연락: {dateLabel(item.next_contact_at)}</span></span>
         </button>
         {open === item.id && <Editor key={`${item.id}:${item.admin_version}`} item={item} onSaved={() => { setOpen(null); setMessage('상담 내용을 저장했어요.'); setReload(v => v + 1); onSaved(); }} />}
