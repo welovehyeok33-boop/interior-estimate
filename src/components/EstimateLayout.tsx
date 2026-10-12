@@ -22,6 +22,10 @@ export const C = {
   textLight: "#999999",
   selectedBg: "#FFFBE8",
   selectedBorder: "#F5C200",
+  admin: {
+    bg: "#111315", surface: "#1B1E21", raised: "#23272B", line: "#343A40",
+    text: "#F3F4F5", muted: "#ABB3BA", subtle: "#7E8993", accentBg: "#302C1B",
+  },
   consultStatus: {
     new: { color: "#FFD740", background: "#403619" },
     contact_attempted: { color: "#FDBA74", background: "#432B1B" },

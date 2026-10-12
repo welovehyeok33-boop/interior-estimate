@@ -17,15 +17,9 @@ import {
 
 // ── 색상 시스템 ─────────────────────────────────────────────
 const A = {
-  bg:     "#0F0F0F",
-  card:   "#1A1A1A",
-  border: "#2A2A2A",
-  hover:  "#222222",
-  gold:   "#F5C200",
-  goldBg: "rgba(245,194,0,0.1)",
-  text:   "#F0F0F0",
-  mid:    "#AAAAAA",
-  light:  "#666666",
+  bg: C.admin.bg, card: C.admin.surface, border: C.admin.line, hover: C.admin.raised,
+  gold: C.primary, goldBg: C.admin.accentBg, text: C.admin.text,
+  mid: C.admin.muted, light: C.admin.subtle,
 };
 
 
@@ -239,12 +233,12 @@ export default function AdminPage() {
     <div style={{ minHeight: "100vh", background: A.bg }}>
 
       {/* 헤더 */}
-      <div style={{ background: "#111", borderBottom: `1px solid ${A.border}`, padding: "14px 0" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: A.bg, borderBottom: `1px solid ${A.border}`, padding: "20px 0" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", display: "flex", gap: 12, flexWrap: 'wrap', justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>폼잇.</span>
-            <span style={{ fontSize: 13, color: A.mid, marginLeft: 10 }}>어드민</span>
-            <button onClick={logout} style={{ color: C.primary, background: 'none', border: 0, cursor: 'pointer', marginLeft: 12 }}>로그아웃</button>
+            <span style={{ fontSize: 12, letterSpacing: '0.12em', color: A.mid, marginLeft: 14 }}>WORKSPACE</span>
+            <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
           <button
             onClick={fetchLeads}
@@ -255,8 +249,8 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px 20px 64px" }}>
+        <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 6, border: `1px solid ${A.border}`, background: A.card, borderRadius: 14, marginBottom: 32 }}>
           {([
             { id: 'overview', title: '방문자 집계', count: null },
             { id: 'sources', title: '유입 트래픽', count: null },
@@ -264,8 +258,8 @@ export default function AdminPage() {
             { id: 'engine', title: '상세견적 관리', count: leads.length },
           ] as const).map(item => (
             <button key={item.id} type="button" onClick={() => setFlow(item.id)} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
-              style={{ flex: '1 1 140px', padding: '14px 12px', borderRadius: 12, cursor: 'pointer', background: flow === item.id ? C.primary : C.home.darkCard, border: `1px solid ${flow === item.id ? C.primary : C.home.darkLine}`, color: flow === item.id ? C.textDark : C.home.onDark, fontSize: 14, fontWeight: 800 }}>
-              {item.title}{item.count !== null && <span style={{ marginLeft: 6, fontSize: 12 }}>({item.count})</span>}
+              style={{ flex: '1 1 140px', minHeight: 46, padding: '12px', borderRadius: 9, cursor: 'pointer', background: flow === item.id ? C.primary : 'transparent', border: 0, color: flow === item.id ? C.textDark : A.mid, fontSize: 14, fontWeight: flow === item.id ? 800 : 600 }}>
+              {item.title}{item.count !== null && <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, background: flow === item.id ? C.primaryLight : A.hover }}>{item.count}</span>}
             </button>
           ))}
         </nav>

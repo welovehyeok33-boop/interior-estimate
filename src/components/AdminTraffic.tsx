@@ -32,10 +32,11 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
     converted: a.converted + d.converted, starts: a.starts + d.consult_starts, engine: a.engine + d.engine_starts }),
     { visitors: 0, requests: 0, converted: 0, starts: 0, engine: 0 });
   const rate = conversionRate(totals.converted, totals.visitors);
-  const cell = { padding: '12px 10px', borderBottom: `1px solid ${C.home.darkLine}`, textAlign: 'left' as const };
+  const cell = { padding: '16px 12px', borderBottom: `1px solid ${C.admin.line}`, textAlign: 'left' as const };
   const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
   return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
-    <h2 style={{ margin: '0 0 8px', fontSize: 23 }}>{view === 'overview' ? '방문자 집계' : '유입 트래픽'}</h2>
+    <p style={{ ...muted, fontSize: 11, letterSpacing: '0.15em', margin: '0 0 8px' }}>{view === 'overview' ? 'ANALYTICS' : 'ACQUISITION'}</p>
+    <h2 style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '-0.04em' }}>{view === 'overview' ? '방문자 집계' : '유입 트래픽'}</h2>
     <p style={muted}>한국시간 기준 · 방문부터 상담 신청까지</p>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) =>
@@ -56,8 +57,8 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
             ['무료 견적 신청', totals.requests + '건'], ['신청 전환율', rate === null ? '—' : rate + '%'],
             ['상담 입력 진입', totals.starts + '명'], ['상세견적 진입', totals.engine + '명'],
             ['신청 완료 방문', totals.converted + '명'],
-          ].map(([label, value]) => <div key={label} style={{ padding: 16, background: C.headerFrom, borderRadius: 12 }}>
-            <div style={muted}>{label}</div><strong style={{ display: 'block', fontSize: 28, color: C.primary, marginTop: 8 }}>{value}</strong>
+          ].map(([label, value]) => <div key={label} style={{ padding: 20, background: C.admin.bg, border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
+            <div style={muted}>{label}</div><strong style={{ display: 'block', fontSize: 30, fontWeight: 650, color: C.admin.text, marginTop: 16, fontVariantNumeric: 'tabular-nums' }}>{value}</strong>
           </div>)}
         </div>
         <h3>상담 현황 <small style={muted}>전체 기간</small></h3>
