@@ -23,8 +23,8 @@ export const C = {
   selectedBg: "#FFFBE8",
   selectedBorder: "#F5C200",
   admin: {
-    bg: "#111315", surface: "#1B1E21", raised: "#23272B", line: "#343A40",
-    text: "#F3F4F5", muted: "#ABB3BA", subtle: "#7E8993", accentBg: "#302C1B",
+    bg: "#17160F", surface: "#252319", raised: "#34301D", line: "#4B4329",
+    text: "#FFFBEA", muted: "#C6BFA5", subtle: "#AAA184", accentBg: "#41370E",
   },
   consultStatus: {
     new: { color: "#FFD740", background: "#403619" },

@@ -80,7 +80,7 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
   }, [filter, refresh, reload]);
   return <section aria-label="무료 견적 상담 관리" style={{ color: C.admin.text }}>
     <div style={{ marginBottom: 28 }}>
-      <p style={{ ...muted, fontSize: 11, letterSpacing: '0.15em', margin: '0 0 8px' }}>CONSULTATIONS</p>
+      <p style={{ color: C.primary, fontSize: 12, fontWeight: 800, margin: '0 0 8px' }}>무료견적 신청</p>
       <h1 style={{ fontSize: 30, letterSpacing: '-0.04em', margin: '0 0 8px', fontWeight: 750 }}>상담 관리</h1>
       <p style={{ ...muted, margin: 0 }}>새로운 문의부터 계약까지, 상담 진행 상황을 한곳에서 확인하세요.</p>
     </div>
@@ -94,9 +94,9 @@ export default function AdminConsultations({ refresh, onSaved }: { refresh: numb
         </div>
       </div>
       <div aria-busy={loading} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: 8, marginTop: 24 }}>
-        {(summary.length ? summary : ['all', ...CONSULT_STATUS_OPTIONS.map(([id]) => id)].map(status => ({ status, count: 0 }))).filter(s => !['contact_attempted', 'contacted'].includes(s.status) || s.count > 0).map(s => <button type="button" disabled={loading || !!error} key={s.status} aria-pressed={filter.status === s.status} style={{ textAlign: 'left', cursor: loading ? 'wait' : 'pointer', padding: '16px 14px', borderRadius: 12, background: filter.status === s.status ? C.admin.raised : C.admin.bg, border: `1px solid ${filter.status === s.status ? C.primary : C.admin.line}`, color: C.admin.text }} onClick={() => { setOpen(null); setFilter(v => ({ ...v, status: s.status, page: 1 })); }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: C.admin.muted }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 6, background: s.status === 'all' ? C.primary : consultStatusStyle(s.status).color }} />{s.status === 'all' ? '전체 상담' : CONSULT_STATUSES[s.status] || s.status}</span>
-          <strong style={{ display: 'block', fontSize: 28, marginTop: 12, fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : s.count.toLocaleString()}<span style={{ fontSize: 11, color: C.admin.muted, marginLeft: 5, fontWeight: 400 }}>건</span></strong>
+        {(summary.length ? summary : ['all', ...CONSULT_STATUS_OPTIONS.map(([id]) => id)].map(status => ({ status, count: 0 }))).filter(s => s.status !== 'contact_attempted' || s.count > 0).map(s => <button type="button" disabled={loading || !!error} key={s.status} aria-pressed={filter.status === s.status} style={{ textAlign: 'left', cursor: loading ? 'wait' : 'pointer', padding: '16px 14px', borderRadius: 12, background: filter.status === s.status ? C.primary : C.admin.bg, border: `1px solid ${filter.status === s.status ? C.primary : C.admin.line}`, color: filter.status === s.status ? C.textDark : C.admin.text }} onClick={() => { setOpen(null); setFilter(v => ({ ...v, status: s.status, page: 1 })); }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: filter.status === s.status ? C.textDark : C.admin.muted }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 6, background: filter.status === s.status ? C.textDark : s.status === 'all' ? C.primary : consultStatusStyle(s.status).color }} />{s.status === 'all' ? '전체 상담' : CONSULT_STATUSES[s.status] || s.status}</span>
+          <strong style={{ display: 'block', fontSize: 28, marginTop: 12, fontWeight: 750, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : s.count.toLocaleString()}<span style={{ fontSize: 11, marginLeft: 5, fontWeight: 400 }}>건</span></strong>
         </button>)}
       </div>
       <details style={{ ...muted, marginTop: 16, fontSize: 12 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태·연락 예정 필터와 무관합니다.</details>

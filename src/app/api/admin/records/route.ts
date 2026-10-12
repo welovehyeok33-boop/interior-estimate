@@ -1,16 +1,27 @@
 import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
+import { CONSULT_STATUSES } from '@/lib/adminCrm';
 
 export async function GET() {
   try {
     if (!await isAdmin()) return apiJson({ error: '로그인이 필요합니다.' }, 401);
     const db = serverDb();
-    const [leads, consultations] = await Promise.all([
+    const summaryFor = async (table: 'leads' | 'consultations', statuses: string[]) => {
+      return Promise.all(['all', ...statuses].map(async status => {
+        let query = db.from(table).select('id', { count: 'exact', head: true });
+        if (status !== 'all') query = query.eq('status', status);
+        const result = await query;
+        if (result.error || result.count === null) throw new Error('Summary failed');
+        return { status, count: result.count };
+      }));
+    };
+    const [leads, consultationSummary, leadSummary] = await Promise.all([
       db.from('leads').select('*').order('created_at', { ascending: false }).limit(500),
-      db.from('consultations').select('id', { count: 'exact', head: true }),
+      summaryFor('consultations', Object.keys(CONSULT_STATUSES)),
+      summaryFor('leads', ['new', 'qualified', 'contracted']),
     ]);
-    if (leads.error || consultations.error) throw new Error('Read failed');
-    return apiJson({ leads: leads.data, consultationCount: consultations.count });
+    if (leads.error) throw new Error('Read failed');
+    return apiJson({ leads: leads.data, consultationCount: consultationSummary[0].count, consultationSummary, leadSummary });
   } catch { return apiJson({ error: '신청 내역을 불러오지 못했어요.' }, 503); }
 }
 async function mutate(request: Request, remove: boolean) {
