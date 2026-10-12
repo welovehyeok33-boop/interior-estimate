@@ -12,7 +12,7 @@ export const DETAIL_TABS: { id: DetailTab; title: string }[] = [
   { id: 'flow', title: '방문 흐름' }, { id: 'recent', title: '최근 방문·IP' }, { id: 'settings', title: '수집 설정' },
 ];
 function GridTable({ headings, rows }: { headings: string[]; rows: ReactNode[][] }) {
-  const cell = { padding: '12px 10px', borderBottom: `1px solid ${C.home.darkLine}`, textAlign: 'left' as const, overflowWrap: 'anywhere' as const };
+  const cell = { padding: '12px 10px', borderBottom: `1px solid ${C.admin.line}`, textAlign: 'left' as const, overflowWrap: 'anywhere' as const };
   return <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', minWidth: 460, borderCollapse: 'collapse', fontSize: 13 }}>
     <thead><tr>{headings.map(h => <th scope="col" key={h} style={cell}>{h}</th>)}</tr></thead>
     <tbody>{rows.map((row, i) => <tr key={i}>{row.map((v, j) => <td key={j} style={cell}>{v}</td>)}</tr>)}</tbody>

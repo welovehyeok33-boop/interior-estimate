@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
+import AdminStatusOverview, { type StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
 
@@ -17,15 +18,9 @@ import {
 
 // ── 색상 시스템 ─────────────────────────────────────────────
 const A = {
-  bg:     "#0F0F0F",
-  card:   "#1A1A1A",
-  border: "#2A2A2A",
-  hover:  "#222222",
-  gold:   "#F5C200",
-  goldBg: "rgba(245,194,0,0.1)",
-  text:   "#F0F0F0",
-  mid:    "#AAAAAA",
-  light:  "#666666",
+  bg: C.admin.bg, card: C.admin.surface, border: C.admin.line, hover: C.admin.raised,
+  gold: C.primary, goldBg: C.admin.accentBg, text: C.admin.text,
+  mid: C.admin.muted, light: C.admin.subtle,
 };
 
 
@@ -53,9 +48,9 @@ type Lead = {
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
 const GRADE_LABEL: Record<string, string> = { economy: "실속형", standard: "스탠다드", premium: "하이앤드", budget: "실속형", highend: "하이앤드" };
 const STATUS_CONFIG = {
-  new:        { label: "신규",     color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
-  qualified:  { label: "판매가능", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
-  contracted: { label: "계약",     color: A.gold,    bg: A.goldBg },
+  new:        { label: "신규",     color: C.consultStatus.new.color, bg: C.consultStatus.new.background },
+  qualified:  { label: "판매가능", color: C.consultStatus.consulting.color, bg: C.consultStatus.consulting.background },
+  contracted: { label: "계약",     color: C.consultStatus.contracted.color, bg: C.consultStatus.contracted.background },
 };
 const TABS = [
   { id: "all",        label: "전체" },
@@ -77,10 +72,18 @@ export default function AdminPage() {
   const [pwError, setPwError]   = useState(false);
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [consultationCount, setConsultationCount] = useState(0);
+  const [consultationSummary, setConsultationSummary] = useState<StatusCount[]>([]);
+  const [leadSummary, setLeadSummary] = useState<StatusCount[]>([]);
   const [flow, setFlow] = useState<'overview' | 'sources' | 'consult' | 'engine'>('overview');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
+  const [consultTarget, setConsultTarget] = useState({ status: 'all', revision: 0 });
+  function openStatus(nextFlow: 'consult' | 'engine', status: string) {
+    if (nextFlow === 'consult') setConsultTarget(v => ({ status, revision: v.revision + 1 }));
+    else setTab(status);
+    setFlow(nextFlow);
+  }
   const [loading, setLoading]   = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -125,6 +128,8 @@ export default function AdminPage() {
       if (!response.ok) throw new Error(data.error);
       setLeads(data.leads ?? []);
       setConsultationCount(data.consultationCount ?? 0);
+      setConsultationSummary(data.consultationSummary ?? []);
+      setLeadSummary(data.leadSummary ?? []);
     } catch (error) { setLoadError(error instanceof Error ? error.message : "신청 내역을 불러오지 못했어요."); }
     setLoading(false);
   }, []);
@@ -146,6 +151,7 @@ export default function AdminPage() {
       setLeads(prev => prev.filter(l => l.id !== id));
       setExpanded(null);
       setConfirmDelete(null);
+      void fetchLeads();
     }
     setDeleting(null);
   };
@@ -157,7 +163,7 @@ export default function AdminPage() {
     const response = await fetch("/api/admin/records", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ table: "leads", id, status: next }) }).catch(() => null);
     const error = !response?.ok;
     if (error) setActionError("상태를 저장하지 못했어요. 다시 시도해 주세요.");
-    else setLeads(prev => prev.map(l => l.id === id ? { ...l, status: next } : l));
+    else { setLeads(prev => prev.map(l => l.id === id ? { ...l, status: next } : l)); void fetchLeads(); }
     setUpdating(null);
   };
 
@@ -185,7 +191,7 @@ export default function AdminPage() {
           style={{ width: 320, padding: "40px 32px", background: A.card, borderRadius: 20, border: `1px solid ${A.border}` }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 28, fontWeight: 900, color: A.gold, marginBottom: 6 }}>폼잇.</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: A.text, marginBottom: 6 }}>폼잇.</div>
             <div style={{ fontSize: 13, color: A.mid }}>관리자 페이지</div>
           </div>
 
@@ -203,7 +209,7 @@ export default function AdminPage() {
                 style={{
                   width: "100%", boxSizing: "border-box",
                   padding: "12px 14px 12px 40px",
-                  background: "#111", border: `1.5px solid ${pwError ? "#EF4444" : A.border}`,
+                  background: A.card, border: `1.5px solid ${pwError ? C.consultStatus.lost.color : A.border}`,
                   borderRadius: 10, color: A.text, fontSize: 15, outline: "none",
                   transition: "border-color 0.15s",
                 }}
@@ -239,12 +245,12 @@ export default function AdminPage() {
     <div style={{ minHeight: "100vh", background: A.bg }}>
 
       {/* 헤더 */}
-      <div style={{ background: "#111", borderBottom: `1px solid ${A.border}`, padding: "14px 0" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: A.card, borderBottom: `1px solid ${A.border}`, padding: "20px 0" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", display: "flex", gap: 12, flexWrap: 'wrap', justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <span style={{ fontWeight: 900, fontSize: 18, color: C.primary }}>폼잇.</span>
-            <span style={{ fontSize: 13, color: A.mid, marginLeft: 10 }}>어드민</span>
-            <button onClick={logout} style={{ color: C.primary, background: 'none', border: 0, cursor: 'pointer', marginLeft: 12 }}>로그아웃</button>
+            <span style={{ fontWeight: 900, fontSize: 18, color: C.textDark, background: C.primary, borderRadius: 7, padding: '6px 10px' }}>폼잇.</span>
+            <span style={{ fontSize: 12, color: A.mid, marginLeft: 14 }}>관리자</span>
+            <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
           <button
             onClick={fetchLeads}
@@ -255,42 +261,46 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "24px 20px 64px" }}>
+        {flow === 'overview' && <div style={{ marginBottom: 24 }}><h1 style={{ margin: '0 0 6px', fontSize: 28, letterSpacing: '-0.04em', color: A.text }}>대시보드</h1><p style={{ margin: 0, color: A.mid, fontSize: 13 }}>폼잇의 방문 현황과 견적 신청을 한눈에.</p></div>}
+        <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 6, border: `1px solid ${A.border}`, background: A.card, borderRadius: 14, marginBottom: 32 }}>
           {([
-            { id: 'overview', title: '방문자 집계', count: null },
+            { id: 'overview', title: '대시보드', count: null },
             { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
-            { id: 'engine', title: '상세견적 관리', count: leads.length },
+            { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
           ] as const).map(item => (
             <button key={item.id} type="button" onClick={() => setFlow(item.id)} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
-              style={{ flex: '1 1 140px', padding: '14px 12px', borderRadius: 12, cursor: 'pointer', background: flow === item.id ? C.primary : C.home.darkCard, border: `1px solid ${flow === item.id ? C.primary : C.home.darkLine}`, color: flow === item.id ? C.textDark : C.home.onDark, fontSize: 14, fontWeight: 800 }}>
-              {item.title}{item.count !== null && <span style={{ marginLeft: 6, fontSize: 12 }}>({item.count})</span>}
+              style={{ flex: '1 1 140px', minHeight: 46, padding: '12px', borderRadius: 9, cursor: 'pointer', background: flow === item.id ? C.primary : 'transparent', border: 0, color: flow === item.id ? C.textDark : A.mid, fontSize: 14, fontWeight: flow === item.id ? 800 : 600 }}>
+              {item.title}{item.count !== null && <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, background: flow === item.id ? C.primaryLight : A.hover }}>{item.count}</span>}
             </button>
           ))}
         </nav>
+
 
         <div id="admin-traffic" hidden={flow !== 'overview' && flow !== 'sources'}>
           <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
 
+        {flow === 'overview' && <AdminStatusOverview consultation={consultationSummary} engine={leadSummary} loading={loading} error={loadError} onOpen={openStatus} />}
+
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          <AdminConsultations refresh={trafficRefresh} onSaved={() => setTrafficRefresh(v => v + 1)} />
+          <AdminConsultations key={consultTarget.revision} initialStatus={consultTarget.status} refresh={trafficRefresh} onSaved={fetchLeads} />
         </div>
         <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
         <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>2차 견적엔진용 · 현재 금액은 임시 계산값이며 확정 견적이 아닙니다.</p>
 
         {/* 통계 카드 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 28 }}>
           {[
             { label: "전체 리드",   value: stats.total,      color: A.text },
-            { label: "신규",        value: stats.new,        color: "#3B82F6" },
-            { label: "판매가능",    value: stats.qualified,  color: "#10B981" },
-            { label: "계약",        value: stats.contracted, color: A.gold },
+            { label: "신규",        value: stats.new,        color: STATUS_CONFIG.new.color },
+            { label: "판매가능",    value: stats.qualified,  color: STATUS_CONFIG.qualified.color },
+            { label: "계약",        value: stats.contracted, color: STATUS_CONFIG.contracted.color },
           ].map(s => (
             <div key={s.label} style={{ background: A.card, border: `1px solid ${A.border}`, borderRadius: 14, padding: "18px 20px" }}>
               <div style={{ fontSize: 11, color: A.light, marginBottom: 8, fontWeight: 600, letterSpacing: "0.05em" }}>{s.label.toUpperCase()}</div>
@@ -300,7 +310,8 @@ export default function AdminPage() {
         </div>
 
         {/* 탭 */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        <p style={{ color: A.mid, fontSize: 12 }}>아래 목록과 필터 건수는 최근 500건 기준입니다. 전체 접수 건수는 상단 현황에서 확인하세요.</p>
+        <div style={{ display: "flex", flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
           {TABS.map(t => {
             const active = tab === t.id;
             const cnt = t.id === "all" ? leads.length : leads.filter(l => l.status === t.id).length;
@@ -309,7 +320,7 @@ export default function AdminPage() {
                 style={{
                   padding: "8px 16px", borderRadius: 20, border: `1.5px solid ${active ? A.gold : A.border}`,
                   background: active ? A.goldBg : A.card,
-                  color: active ? A.gold : A.mid, fontWeight: active ? 700 : 500,
+                  color: active ? C.admin.accentText : A.mid, fontWeight: active ? 700 : 500,
                   fontSize: 13, cursor: "pointer",
                   display: "flex", alignItems: "center", gap: 6,
                 }}
@@ -369,7 +380,7 @@ export default function AdminPage() {
                         {lead.commercial_sub ? ` · ${lead.commercial_sub}` : lead.commercial_type ? ` · ${lead.commercial_type}` : ""}
                       </span>
                       <span style={{ fontSize: 13, color: A.mid }}>{lead.area ? `${lead.area}평` : "-"}</span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: A.gold }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: C.admin.accentText }}>
                         {lead.estimated_total ? `${lead.estimated_total.toLocaleString()}만원` : "-"}
                       </span>
                     </div>
@@ -403,7 +414,7 @@ export default function AdminPage() {
                               { icon: <IconRuler size={13} />,    label: "평수",     val: lead.area ? `${lead.area}평` : "-" },
                               { icon: <IconDiamond size={13} />,  label: "자재등급", val: GRADE_LABEL[lead.material_grade ?? ""] || "-" },
                             ].map(item => (
-                              <div key={item.label} style={{ minWidth: 0, overflowWrap: "anywhere", padding: "10px 14px", background: "#111", borderRadius: 10, border: `1px solid ${A.border}` }}>
+                              <div key={item.label} style={{ minWidth: 0, overflowWrap: "anywhere", padding: "10px 14px", background: A.bg, borderRadius: 10, border: `1px solid ${A.border}` }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, color: A.light }}>
                                   {item.icon}
                                   <span style={{ fontSize: 11, fontWeight: 600 }}>{item.label}</span>
@@ -428,8 +439,8 @@ export default function AdminPage() {
                           )}
 
                           {/* 상태 변경 + 삭제 버튼 */}
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ display: "flex", flexWrap: 'wrap', alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                            <div style={{ display: "flex", flexWrap: 'wrap', alignItems: "center", gap: 8 }}>
                               <span style={{ fontSize: 12, color: A.light, marginRight: 4 }}>상태 변경:</span>
                               {(["new", "qualified", "contracted"] as const).map(s => {
                                 const cfg = STATUS_CONFIG[s];
