@@ -34,6 +34,8 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
     '--admin-subtle': dark ? '#A4AEBB' : '#707989',
     '--admin-accent-bg': dark ? '#393218' : '#FFF6CC',
     '--admin-accent-text': dark ? '#F5D66C' : '#806100',
+    '--admin-metric-edge': dark ? 'transparent' : '#E3E6EB',
+    '--admin-metric-accent-edge': dark ? 'transparent' : C.primary,
     minHeight: '100vh', colorScheme: theme, background: C.admin.bg, color: C.admin.text,
   } as CSSProperties;
   return <ThemeContext.Provider value={{ theme, toggle }}><div data-admin-theme={theme} style={style}>{children}</div></ThemeContext.Provider>;

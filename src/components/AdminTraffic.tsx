@@ -59,7 +59,7 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
             ['상담 입력 진입', totals.starts + '명'],
             ['무료 견적 신청', totals.requests + '건'],
             ['신청 전환율', rate === null ? '—' : rate + '%'],
-          ].map(([label, value], index) => <div key={label} style={{ padding: 18, background: index === 1 ? C.admin.accentBg : C.admin.bg, borderTop: `3px solid ${index === 1 ? C.primary : C.admin.line}`, borderRadius: 10 }}>
+          ].map(([label, value], index) => <div key={label} style={{ padding: 18, background: index === 1 ? C.admin.accentBg : C.admin.bg, borderTop: `3px solid ${index === 1 ? `var(--admin-metric-accent-edge, ${C.primary})` : `var(--admin-metric-edge, ${C.admin.line})`}`, borderRadius: 10 }}>
             <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ display: 'block', fontSize: 28, fontWeight: 750, color: C.admin.text, marginTop: 12, fontVariantNumeric: 'tabular-nums' }}>{value}</strong>
           </div>)}
         </div>
