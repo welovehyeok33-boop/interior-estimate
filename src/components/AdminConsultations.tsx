@@ -79,7 +79,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
         </select></label>
       </div>
       <label style={{ display: 'block', marginTop: 20, fontSize: 12, fontWeight: 650 }}>관리자 상담 메모
-        <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, fontFamily: 'inherit', fontSize: 15, fontWeight: 500, lineHeight: 1.8 }} />
+        <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, fontFamily: 'inherit', fontSize: 13, fontWeight: 650, lineHeight: 1.8 }} />
       </label>
       <div style={{ ...muted, textAlign: 'right', fontSize: 11, marginTop: 5 }}>{note.length.toLocaleString()} / 4,000자</div>
       <p style={{ ...muted, fontSize: 11, margin: '12px 0 20px' }}>입력을 멈추면 1초 후 자동 저장됩니다. 저장 완료를 확인한 뒤 이동해주세요.<br />저장해도 문자나 자동 알림은 발송되지 않습니다.</p>
