@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
-import { conversionRate, koreaDay, type TrafficReport } from '@/lib/analytics';
+import { attributedConversion, conversionRate, koreaDay, type TrafficReport } from '@/lib/analytics';
 import { SOURCE_LABELS } from '@/lib/attribution';
 import { action, goldAction, muted, panel } from './adminStyles';
 import AdminFlowChart from './AdminFlowChart';
@@ -31,7 +31,8 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
   const totals = days.reduce((a, d) => ({ visitors: a.visitors + d.visitors, requests: a.requests + d.requests,
     converted: a.converted + d.converted, starts: a.starts + d.consult_starts, engine: a.engine + d.engine_starts }),
     { visitors: 0, requests: 0, converted: 0, starts: 0, engine: 0 });
-  const rate = conversionRate(totals.converted, totals.visitors);
+  const attributed = attributedConversion(data?.sources || []);
+  const rate = attributed.rate;
   const cell = { padding: '16px 12px', borderBottom: `1px solid ${C.admin.line}`, textAlign: 'left' as const };
   const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
   return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
@@ -53,17 +54,18 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
           {[
             [days.length > 1 ? '일별 방문자 합계' : '방문자', totals.visitors + '명'],
-            ['무료 견적 신청', totals.requests + '건'], ['신청 전환율', rate === null ? '—' : rate + '%'],
+            ['무료 견적 신청', totals.requests + '건'], ['신청 전환율 · 출처 있는 유입', rate === null ? '—' : rate + '%'],
             ['상담 입력 진입', totals.starts + '명'], ['상세견적 진입', totals.engine + '명'],
             ['신청 완료 방문', totals.converted + '명'],
           ].map(([label, value], index) => <div key={label} style={{ padding: 18, background: index === 0 ? C.admin.accentBg : C.admin.bg, borderTop: `3px solid ${index === 0 ? C.primary : C.admin.line}`, borderRadius: 10 }}>
             <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ display: 'block', fontSize: 28, fontWeight: 750, color: C.admin.text, marginTop: 12, fontVariantNumeric: 'tabular-nums' }}>{value}</strong>
           </div>)}
         </div>
+        <p style={{ ...muted, fontSize: 12 }}>전환율: 출처 있는 신청 완료 방문 {attributed.converted} ÷ 출처 있는 방문 {attributed.visitors}. 직접 방문·출처 확인 불가·미분류는 분자와 분모에서 모두 제외합니다. 전체 기준 전환율: {conversionRate(totals.converted, totals.visitors) === null ? '—' : `${conversionRate(totals.converted, totals.visitors)}%`}. 방문·신청 건수는 전체 기준이며, 이 제외 기준은 봇 판정이 아닙니다.</p>
         <AdminFlowChart details={data.details} />
         <details style={{ marginTop: 20 }}><summary style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '12px 0' }}>일별 수치 자세히 보기</summary>
         <div style={{ overflowX: 'auto' }}><table style={table}>
-          <thead><tr>{['날짜', '방문자', '상담 진입', '신청 건수', '전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
+          <thead><tr>{['날짜', '방문자', '상담 진입', '신청 건수', '전체 기준 전환율'].map(t => <th key={t} style={cell}>{t}</th>)}</tr></thead>
           <tbody>{days.map(d => <tr key={d.day}>
             <th scope="row" style={cell}>{d.day}</th><td style={cell}>{d.day < koreaDay(new Date(data.startedAt)) ? '수집 전' : d.visitors}</td>
             <td style={cell}>{d.consult_starts}</td><td style={cell}>{d.requests}</td><td style={cell}>{conversionRate(d.converted, d.visitors) ?? '—'}{d.visitors > 0 ? '%' : ''}</td>

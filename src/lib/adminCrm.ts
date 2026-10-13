@@ -31,10 +31,11 @@ export function crmPatch(body: Record<string, unknown>) {
   if (typeof body.status !== 'string' || !Object.hasOwn(CONSULT_STATUSES, body.status)) return null;
   if (typeof body.admin_note !== 'string' || body.admin_note.length > 4000) return null;
   if (typeof body.admin_version !== 'number' || !Number.isSafeInteger(body.admin_version) || body.admin_version < 0) return null;
-  if (body.next_contact_at !== null && (typeof body.next_contact_at !== 'string' ||
+  if (body.next_contact_at !== undefined && body.next_contact_at !== null && (typeof body.next_contact_at !== 'string' ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(body.next_contact_at) ||
     !Number.isFinite(Date.parse(body.next_contact_at)) || new Date(body.next_contact_at).toISOString() !== body.next_contact_at)) return null;
-  return { status: body.status, admin_note: body.admin_note.trim(), next_contact_at: body.status === 'lost' ? null : body.next_contact_at as string | null,
+  return { status: body.status, admin_note: body.admin_note.trim(),
+    ...(body.next_contact_at === undefined ? {} : { next_contact_at: body.status === 'lost' ? null : body.next_contact_at as string | null }),
     admin_version: body.admin_version + 1 };
 }
 export function kstInput(iso: string | null) {

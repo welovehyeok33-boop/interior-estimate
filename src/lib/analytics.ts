@@ -25,3 +25,8 @@ export function trafficKind(path: string): TrafficKind | null {
 export function conversionRate(converted: number, visitors: number) {
   return visitors > 0 ? Math.round(converted / visitors * 1000) / 10 : null;
 }
+export function attributedConversion(sources: TrafficReport['sources']) {
+  const included = sources.filter(row => row.source && !['direct', 'unknown'].includes(row.source));
+  const totals = included.reduce((sum, row) => ({ visitors: sum.visitors + row.visitors, converted: sum.converted + row.converted }), { visitors: 0, converted: 0 });
+  return { ...totals, rate: conversionRate(totals.converted, totals.visitors) };
+}
