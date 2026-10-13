@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { shareImage } from '@/lib/shareMetadata';
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { POSTS, getPostBySlug, getPublishedPosts } from "@/data/posts";
@@ -18,6 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${post.title} | 폼잇.`,
     description: post.description,
     openGraph: {
+      images: [shareImage],
       title: post.title,
       description: post.description,
       type: "article",
