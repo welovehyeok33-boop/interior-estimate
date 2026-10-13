@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
 import { action, field, goldAction, muted, panel, consultStatusStyle, consultStatusBadge } from './adminStyles';
-import { CONSULT_STATUSES, CONSULT_EDIT_STATUS_OPTIONS, fromKstInput, kstInput, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
+import { CONSULT_STATUSES, CONSULT_EDIT_STATUS_OPTIONS, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
 import { formatEstimateRegion } from '@/lib/estimateRegion';
 import { formatConsultBudget, formatConsultSchedule } from '@/lib/consultStore';
 import { INDUSTRY_LABELS } from '@/lib/intakeValidation';
@@ -13,7 +13,6 @@ const grades: Record<string, string> = { economy: '실속형', budget: '실속�
 function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Consultation) => void }) {
   const [status, setStatus] = useState(item.status || 'new');
   const [note, setNote] = useState(item.admin_note || '');
-  const [next, setNext] = useState(kstInput(item.next_contact_at));
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   async function save() {
@@ -21,13 +20,12 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
     setBusy(true); setError(''); setSaved(false);
     try {
       const r = await fetch('/api/admin/consultations', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, status, admin_note: note, next_contact_at: fromKstInput(next), admin_version: item.admin_version }) });
+        body: JSON.stringify({ id: item.id, status, admin_note: note, admin_version: item.admin_version }) });
       const body = await r.json();
       if (!r.ok) throw new Error(body.error || '저장 실패');
       const updated: Consultation = body.item;
       setStatus(updated.status);
       setNote(updated.admin_note || '');
-      setNext(kstInput(updated.next_contact_at));
       onSaved(updated);
       setSaved(true);
     } catch (e) { setError(e instanceof Error ? e.message : '저장하지 못했어요.'); }
@@ -58,7 +56,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
     </section>
     <section aria-label="상담 기록 편집" style={{ background: C.admin.bg, border: `1px solid ${C.admin.line}`, borderRadius: 14, padding: 20, minWidth: 0 }}>
     <h3 style={{ fontSize: 16, margin: '0 0 4px' }}>상담 기록</h3>
-    <p style={{ ...muted, fontSize: 12, margin: '0 0 20px' }}>진행 상황과 다음 연락을 기록하세요.</p>
+    <p style={{ ...muted, fontSize: 12, margin: '0 0 20px' }}>진행 상황과 상담 내용을 기록하세요.</p>
     <fieldset disabled={busy} onChange={() => setSaved(false)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <legend style={{ ...muted, fontSize: 11, marginBottom: 10 }}>관리자 전용 · 고객에게 공개되지 않음</legend>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
@@ -66,9 +64,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
           {!CONSULT_EDIT_STATUS_OPTIONS.some(([id]) => id === status) && <option value={status}>현재: {CONSULT_STATUSES[status] || status}</option>}
           {CONSULT_EDIT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
         </select></label>
-        <label style={{ fontSize: 12, fontWeight: 650 }}>다음 연락 일시 (한국시간)<input type="datetime-local" disabled={status === 'lost'} value={status === 'lost' ? '' : next} onInput={e => setNext(e.currentTarget.value)} onChange={e => setNext(e.target.value)} style={{ ...field, width: '100%', display: 'block', marginTop: 6 }} /></label>
       </div>
-      {status === 'lost' && <p style={muted}>무산으로 저장하면 다음 연락 일정이 해제됩니다. 기존 상담 기록과 메모는 유지됩니다.</p>}
       <label style={{ display: 'block', marginTop: 20, fontSize: 12, fontWeight: 650 }}>관리자 상담 메모
         <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, lineHeight: 1.8 }} />
       </label>
@@ -85,7 +81,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
 export default function AdminConsultations({ refresh, onSaved, initialStatus = 'all' }: { refresh: number; onSaved: (before: Consultation, after: Consultation) => void; initialStatus?: string }) {
   const [items, setItems] = useState<Consultation[]>([]), [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<{ status: string; count: number }[]>([]);
-  const [q, setQ] = useState(''), [filter, setFilter] = useState({ q: '', status: initialStatus, due: false, page: 1, month: '' });
+  const [q, setQ] = useState(''), [filter, setFilter] = useState({ q: '', status: initialStatus, page: 1, month: '' });
   const [open, setOpen] = useState<string | null>(null), [reload, setReload] = useState(0);
   const [loading, setLoading] = useState(true), [error, setError] = useState('');
   useEffect(() => {
@@ -93,7 +89,7 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
     async function read() {
       setLoading(true); setError('');
       try {
-        const params = new URLSearchParams({ q: filter.q, status: filter.status, due: filter.due ? '1' : '0', page: String(filter.page), month: filter.month });
+        const params = new URLSearchParams({ q: filter.q, status: filter.status, page: String(filter.page), month: filter.month });
         const r = await fetch(`/api/admin/consultations?${params}`, { cache: 'no-store', signal: controller.signal });
         const body = await r.json();
         if (!r.ok) throw new Error(body.error || '조회 실패');
@@ -124,7 +120,7 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
           <strong style={{ fontSize: 16, fontWeight: 750, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : s.count.toLocaleString()}<span style={{ fontSize: 10, marginLeft: 3, fontWeight: 400 }}>건</span></strong>
         </button>)}
       </div>
-      <details style={{ ...muted, marginTop: 8, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태·연락 예정 필터와 무관합니다. 과거 상태(연락 완료·견적 전달·종료 등)는 전체 상담에 포함되며 네 상태의 합계와 차이가 날 수 있습니다.</details>
+      <details style={{ ...muted, marginTop: 8, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태 필터와 무관합니다. 과거 상태(연락 완료·견적 전달·종료 등)는 전체 상담에 포함되며 네 상태의 합계와 차이가 날 수 있습니다.</details>
     </div>
     <form onSubmit={e => { e.preventDefault(); setFilter(v => ({ ...v, q, page: 1 })); setOpen(null); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       <label style={{ position: 'relative', flex: '1 1 220px' }}><IconSearch aria-hidden="true" size={18} style={{ position: 'absolute', top: 12, left: 13, color: C.admin.muted }} /><input aria-label="이름 또는 전화번호 검색" placeholder="이름 또는 전화번호 검색" maxLength={80} value={q} onChange={e => setQ(e.target.value)} style={{ ...field, paddingLeft: 40, width: '100%' }} /></label>
@@ -135,7 +131,6 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
       </select>
       <button type="button" style={action} onClick={() => { setOpen(null); setReload(v => v + 1); }}>목록 새로고침</button>
     </form>
-    <label style={muted}><input type="checkbox" checked={filter.due} onChange={e => { setOpen(null); setFilter(v => ({ ...v, due: e.target.checked, page: 1 })); }} /> 연락 예정 시간이 지난 미완료 상담만</label>
     {loading ? <p role="status" style={{ ...panel, textAlign: 'center', padding: 36 }}>상담 목록을 불러오고 있어요…</p> : error ? <p role="alert" style={panel}>{error}</p> : <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', margin: '24px 0 12px' }}><strong style={{ fontSize: 14 }}>상담 목록 <span style={{ color: C.admin.accentText, marginLeft: 4 }}>{total.toLocaleString()}</span></strong><span style={{ ...muted, fontSize: 12 }}>접수일 최신순 · 한국시간</span></div>
       {items.length === 0 && <div style={{ ...panel, textAlign: 'center', padding: '48px 20px' }}><strong>조건에 맞는 상담이 없어요</strong><p style={muted}>접수 월이나 검색 조건을 변경해보세요.</p></div>}
@@ -150,7 +145,7 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
             <span style={{ ...muted, fontSize: 11, fontWeight: 400 }}>접수 {dateLabel(item.created_at)}</span>
           </span>
           <span style={{ minWidth: 110 }}><span style={{ ...muted, display: 'block', fontSize: 11, fontWeight: 400 }}>희망 예산</span><strong style={{ display: 'block', marginTop: 6, fontSize: 15 }}>{formatConsultBudget(item.budget ?? undefined)}</strong></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 18 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span><span style={{ ...muted, display: 'block', fontSize: 11, marginTop: 8, fontWeight: 400 }}>다음 연락 · {dateLabel(item.next_contact_at)}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 18 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
         </button>
         {open === item.id && <Editor key={item.id} item={item} onSaved={updated => {
           setItems(current => current.map(row => row.id === updated.id ? updated : row));

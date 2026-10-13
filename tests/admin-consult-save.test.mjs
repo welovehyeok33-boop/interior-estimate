@@ -58,6 +58,14 @@ test('save keeps editor mounted, uses returned version on second save, and shows
   await find(render(props()), node => node.type === 'button').props.onClick();
   assert.deepEqual(requests.map(row => row.admin_version), [2, 3]);
   assert.equal(requests[1].admin_note, 'note');
+  assert.equal(Object.hasOwn(requests[1], 'next_contact_at'), false);
+  assert.equal(find(render(props()), node => node.props?.type === 'datetime-local'), undefined);
+});
+
+test('omitted next contact preserves existing stored schedules even when closing a lead', () => {
+  const patch = crm.crmPatch({ status: 'lost', admin_note: 'saved', admin_version: 2 });
+  assert.ok(patch);
+  assert.equal(Object.hasOwn(patch, 'next_contact_at'), false);
 });
 test('failed save preserves draft and does not call success callback', async () => {
   let called = false;
