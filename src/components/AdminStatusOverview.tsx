@@ -1,7 +1,8 @@
 "use client";
 
+import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import { C } from './EstimateLayout';
-import { CONSULT_STATUSES } from '@/lib/adminCrm';
+import { CONSULT_EDIT_STATUS_OPTIONS } from '@/lib/adminCrm';
 import { consultStatusStyle } from './adminStyles';
 
 export type StatusCount = { status: string; count: number };
@@ -10,7 +11,7 @@ export default function AdminStatusOverview({ consultation, engine, loading, err
   onOpen: (flow: 'consult' | 'engine', status: string) => void;
 }) {
   const groups = [
-    { id: 'consult' as const, number: '01', title: '무료견적 · 상담', description: '고객 문의와 상담 진행 현황', data: consultation, labels: CONSULT_STATUSES },
+    { id: 'consult' as const, number: '01', title: '무료견적 · 상담', description: '고객 문의와 상담 진행 현황', data: consultation, labels: Object.fromEntries(CONSULT_EDIT_STATUS_OPTIONS) },
     { id: 'engine' as const, number: '02', title: '상세견적', description: '견적엔진 신청과 계약 현황', data: engine, labels: { new: '신규', qualified: '판매가능', contracted: '계약' } as Record<string, string> },
   ];
   return <section aria-label="상담 및 상세견적 전체 현황" style={{ marginBottom: 32 }}>
@@ -19,7 +20,7 @@ export default function AdminStatusOverview({ consultation, engine, loading, err
       <span style={{ fontSize: 12, color: C.admin.muted }}>전체 기간 · 현재 상태 / 위 방문 통계 기간과 별도</span>
     </div>
     <div aria-busy={loading} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 16 }}>
-      {groups.map(group => <div key={group.id} style={{ background: C.admin.surface, border: `1px solid ${C.admin.line}`, borderRadius: 16, padding: 24, minWidth: 0 }}>
+      {groups.filter(group => DETAIL_ESTIMATE_ENABLED || group.id !== "engine").map(group => <div key={group.id} style={{ background: C.admin.surface, border: `1px solid ${C.admin.line}`, borderRadius: 16, padding: 24, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
           <div><span style={{ color: C.admin.muted, fontSize: 11 }}>{group.description}</span><h3 style={{ color: C.admin.text, fontSize: 18, margin: '8px 0 18px' }}>{group.title}</h3></div>
           <button onClick={() => onOpen(group.id, 'all')} style={{ background: C.admin.accentBg, color: C.admin.accentText, border: 0, borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap' }}>전체 보기 ↗</button>
