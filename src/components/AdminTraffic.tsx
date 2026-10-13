@@ -36,7 +36,7 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
   const rate = attributed.rate;
   const cell = { padding: '16px 12px', borderBottom: `1px solid ${C.admin.line}`, textAlign: 'left' as const };
   const table = { width: '100%', minWidth: 520, borderCollapse: 'collapse' as const, fontSize: 13 };
-  return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, marginBottom: 28 }}>
+  return <section aria-label="방문 및 신청 통계" aria-busy={loading} style={{ ...panel, minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', overflowWrap: 'anywhere', marginBottom: 28 }}>
     <h2 style={{ margin: '0 0 6px', fontSize: 20, letterSpacing: '-0.03em' }}>{view === 'overview' ? '방문 · 신청 분석' : '유입 트래픽'}</h2>
     <p style={{ ...muted, margin: '0 0 20px' }}>방문에서 신청까지, 폼잇의 흐름을 확인하세요.</p>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -52,7 +52,7 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
       <p style={muted}>{data.from} ~ {data.to} · 오늘 수치는 진행 중입니다.</p>
       {data.from <= koreaDay(new Date(data.startedAt)) && <p style={muted}>선택 기간에 집계 시작 전 또는 일부 시간만 집계된 날짜가 포함됩니다.</p>}
       {view === 'overview' ? <>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: 10 }}>
           {[
             ['출처 확인 불가', directVisitors + '명'],
             ['외부 유입', attributed.visitors + '명'],
