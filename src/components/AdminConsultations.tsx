@@ -15,6 +15,19 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
   const [note, setNote] = useState(item.admin_note || '');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const dirty = status !== (item.status || 'new') || note !== (item.admin_note || '');
+  useEffect(() => {
+    if (!dirty || busy || composing || error) return;
+    const timer = setTimeout(() => { void save(); }, 1000);
+    return () => clearTimeout(timer);
+  });
+  useEffect(() => {
+    if (!dirty && !busy) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, busy]);
   async function save() {
     if (busy) return;
     setBusy(true); setError(''); setSaved(false);
@@ -57,7 +70,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
     <section aria-label="상담 기록 편집" style={{ background: C.admin.bg, border: `1px solid ${C.admin.line}`, borderRadius: 14, padding: 20, minWidth: 0 }}>
     <h3 style={{ fontSize: 16, margin: '0 0 4px' }}>상담 기록</h3>
     <p style={{ ...muted, fontSize: 12, margin: '0 0 20px' }}>진행 상황과 상담 내용을 기록하세요.</p>
-    <fieldset disabled={busy} onChange={() => setSaved(false)} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+    <fieldset disabled={busy} onChange={() => { setSaved(false); setError(''); }} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <legend style={{ ...muted, fontSize: 11, marginBottom: 10 }}>관리자 전용 · 고객에게 공개되지 않음</legend>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
         <label style={{ fontSize: 12, fontWeight: 650 }}>상담 상태<select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status), width: '100%', display: 'block', marginTop: 6 }}>
@@ -66,13 +79,13 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
         </select></label>
       </div>
       <label style={{ display: 'block', marginTop: 20, fontSize: 12, fontWeight: 650 }}>관리자 상담 메모
-        <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, lineHeight: 1.8 }} />
+        <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, fontFamily: 'inherit', fontSize: 15, fontWeight: 500, lineHeight: 1.8 }} />
       </label>
       <div style={{ ...muted, textAlign: 'right', fontSize: 11, marginTop: 5 }}>{note.length.toLocaleString()} / 4,000자</div>
-      <p style={{ ...muted, fontSize: 11, margin: '12px 0 20px' }}>상담에 필요한 내용만 기록해주세요.<br />저장해도 문자나 자동 알림은 발송되지 않습니다.</p>
+      <p style={{ ...muted, fontSize: 11, margin: '12px 0 20px' }}>입력을 멈추면 1초 후 자동 저장됩니다. 저장 완료를 확인한 뒤 이동해주세요.<br />저장해도 문자나 자동 알림은 발송되지 않습니다.</p>
       {error && <p role="alert" style={{ color: C.consultStatus.lost.color }}>{error}</p>}
       <button type="button" onClick={save} style={{ ...goldAction, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconDeviceFloppy size={17} aria-hidden="true" />{busy ? '저장 중…' : '상담 내용 저장'}</button>
-      <p role="status" style={{ ...muted, minHeight: 22, margin: '8px 0 0', fontSize: 12 }}>{saved ? '상담 내용을 저장했어요.' : '\u00a0'}</p>
+      <p role="status" style={{ ...muted, minHeight: 22, margin: '8px 0 0', fontSize: 12 }}>{busy ? '저장 중…' : error ? '저장하지 못했어요. 저장 버튼을 눌러 다시 시도해주세요.' : dirty ? '변경 내용 저장 대기 중…' : saved ? '상담 내용을 저장했어요.' : '\u00a0'}</p>
     </fieldset>
     </section>
     </div>

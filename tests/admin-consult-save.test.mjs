@@ -19,14 +19,14 @@ test('status counts move between contract and lost without changing total', () =
   assert.equal(crm.updateConsultationCounts(updated, 'lost', 'lost'), updated);
 });
 
-function editorHarness(fetch, initial = [], root = false) {
+function editorHarness(fetch, initial = [], root = false, runtime = {}) {
   const state = [...initial]; let cursor = 0;
   const jsx = (type, props, key) => ({ type, props, key });
   const palette = new Proxy({}, { get: () => ({}) });
   const exports = {};
   const source = readFileSync(new URL('../src/components/AdminConsultations.tsx', import.meta.url), 'utf8') + '\nexport { Editor };';
   const dependencies = {
-    react: { useEffect: () => {}, useState: initial => { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; } },
+    react: { useEffect: runtime.effect || (() => {}), useState: initial => { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     './EstimateLayout': { C: { admin: palette, consultStatus: palette } },
     './adminStyles': { consultStatusStyle: () => ({}), consultStatusBadge: () => ({}) },
@@ -36,9 +36,28 @@ function editorHarness(fetch, initial = [], root = false) {
     '@/lib/intakeValidation': { INDUSTRY_LABELS: {} },
   };
   runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText,
-    { exports, require: name => dependencies[name] || {}, fetch });
+    { exports, require: name => dependencies[name] || {}, fetch, ...runtime.globals });
   return props => { cursor = 0; return (root ? exports.default : exports.Editor)(props); };
 }
+test('autosave waits one second, skips unchanged/composing/failed drafts, and cancels pending timer', async () => {
+  for (const [note, busy, error, composing, expected] of [['original', false, '', false, 0], ['edited', false, '', false, 1], ['edited', true, '', false, 0], ['edited', false, 'failed', false, 0], ['edited', false, '', true, 0]]) {
+    const effects = [], timers = [], cleared = [], requests = [];
+    const item = { id: 'test', status: 'new', admin_note: 'original', phone: '01000000000', admin_version: 1 };
+    const render = editorHarness(async (_url, options) => { requests.push(JSON.parse(options.body)); return { ok: true, json: async () => ({ item: { ...item, admin_note: note, admin_version: 2 } }) }; }, ['new', note, busy, error, false, composing], false, {
+      effect: effect => effects.push(effect), globals: { setTimeout: (fn, delay) => { timers.push({ fn, delay }); return 1; }, clearTimeout: id => cleared.push(id) },
+    });
+    render({ item, onSaved: () => {} });
+    const cleanup = effects[0]();
+    assert.equal(timers.length, expected);
+    if (expected) {
+      assert.equal(timers[0].delay, 1000);
+      cleanup(); assert.deepEqual(cleared, [1]);
+      timers[0].fn(); await new Promise(resolve => setImmediate(resolve));
+      assert.equal(requests[0].admin_note, 'edited');
+      assert.equal(requests[0].admin_version, 1);
+    }
+  }
+});
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return;
   if (predicate(node)) return node;
