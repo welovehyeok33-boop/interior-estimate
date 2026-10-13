@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
 import { action, field, goldAction, muted, panel, consultStatusStyle, consultStatusBadge } from './adminStyles';
-import { CONSULT_STATUSES, CONSULT_STATUS_OPTIONS, CONSULT_EDIT_STATUS_OPTIONS, fromKstInput, kstInput, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
+import { CONSULT_STATUSES, CONSULT_EDIT_STATUS_OPTIONS, fromKstInput, kstInput, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
 import { formatEstimateRegion } from '@/lib/estimateRegion';
 import { formatConsultBudget, formatConsultSchedule } from '@/lib/consultStore';
 import { INDUSTRY_LABELS } from '@/lib/intakeValidation';
@@ -119,19 +119,19 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
         </div>
       </div>
       <div aria-busy={loading} style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-        {(summary.length ? summary : ['all', ...CONSULT_STATUS_OPTIONS.map(([id]) => id)].map(status => ({ status, count: 0 }))).filter(s => s.status !== 'contact_attempted' || s.count > 0).map(s => <button type="button" disabled={loading || !!error} key={s.status} aria-pressed={filter.status === s.status} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minHeight: 42, whiteSpace: 'nowrap', cursor: loading ? 'wait' : 'pointer', padding: '8px 12px', borderRadius: 8, background: filter.status === s.status ? C.primary : C.admin.bg, border: `1px solid ${filter.status === s.status ? C.primary : C.admin.line}`, color: filter.status === s.status ? C.textDark : C.admin.text }} onClick={() => { setOpen(null); setFilter(v => ({ ...v, status: s.status, page: 1 })); }}>
+        {['all', ...CONSULT_EDIT_STATUS_OPTIONS.map(([id]) => id)].map(status => ({ status, count: summary.find(row => row.status === status)?.count ?? 0 })).map(s => <button type="button" disabled={loading || !!error} key={s.status} aria-pressed={filter.status === s.status} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minHeight: 42, whiteSpace: 'nowrap', cursor: loading ? 'wait' : 'pointer', padding: '8px 12px', borderRadius: 8, background: filter.status === s.status ? C.primary : C.admin.bg, border: `1px solid ${filter.status === s.status ? C.primary : C.admin.line}`, color: filter.status === s.status ? C.textDark : C.admin.text }} onClick={() => { setOpen(null); setFilter(v => ({ ...v, status: s.status, page: 1 })); }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: filter.status === s.status ? C.textDark : C.admin.muted }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 6, background: filter.status === s.status ? C.textDark : s.status === 'all' ? C.primary : consultStatusStyle(s.status).color }} />{s.status === 'all' ? '전체 상담' : CONSULT_STATUSES[s.status] || s.status}</span>
           <strong style={{ fontSize: 16, fontWeight: 750, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : s.count.toLocaleString()}<span style={{ fontSize: 10, marginLeft: 3, fontWeight: 400 }}>건</span></strong>
         </button>)}
       </div>
-      <details style={{ ...muted, marginTop: 8, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태·연락 예정 필터와 무관합니다.</details>
+      <details style={{ ...muted, marginTop: 8, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태·연락 예정 필터와 무관합니다. 과거 상태(연락 완료·견적 전달·종료 등)는 전체 상담에 포함되며 네 상태의 합계와 차이가 날 수 있습니다.</details>
     </div>
     <form onSubmit={e => { e.preventDefault(); setFilter(v => ({ ...v, q, page: 1 })); setOpen(null); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       <label style={{ position: 'relative', flex: '1 1 220px' }}><IconSearch aria-hidden="true" size={18} style={{ position: 'absolute', top: 12, left: 13, color: C.admin.muted }} /><input aria-label="이름 또는 전화번호 검색" placeholder="이름 또는 전화번호 검색" maxLength={80} value={q} onChange={e => setQ(e.target.value)} style={{ ...field, paddingLeft: 40, width: '100%' }} /></label>
       <button style={goldAction}>검색</button>
       <select aria-label="상담 상태 필터" value={filter.status} onChange={e => { setOpen(null); setFilter(v => ({ ...v, status: e.target.value, page: 1 })); }} style={{ ...field, ...(filter.status === 'all' ? {} : consultStatusStyle(filter.status)) }}>
-        {filter.status === 'contact_attempted' && <option value="contact_attempted">연락 시도 (기존)</option>}
-        <option value="all" style={field}>전체 상태</option>{CONSULT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
+        {filter.status !== 'all' && !CONSULT_EDIT_STATUS_OPTIONS.some(([id]) => id === filter.status) && <option value={filter.status}>기존: {CONSULT_STATUSES[filter.status] || filter.status}</option>}
+        <option value="all" style={field}>전체 상태</option>{CONSULT_EDIT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
       </select>
       <button type="button" style={action} onClick={() => { setOpen(null); setReload(v => v + 1); }}>목록 새로고침</button>
     </form>

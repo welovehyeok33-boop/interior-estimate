@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
 import AdminStatusOverview, { type StatusCount } from "@/components/AdminStatusOverview";
@@ -270,7 +271,7 @@ export default function AdminPage() {
             { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
-          ] as const).map(item => (
+          ] as const).filter(item => DETAIL_ESTIMATE_ENABLED || item.id !== "engine").map(item => (
             <button key={item.id} type="button" onClick={() => setFlow(item.id)} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
               style={{ flex: '1 1 140px', minHeight: 46, padding: '12px', borderRadius: 9, cursor: 'pointer', background: flow === item.id ? C.primary : 'transparent', border: 0, color: flow === item.id ? C.textDark : A.mid, fontSize: 14, fontWeight: flow === item.id ? 800 : 600 }}>
               {item.title}{item.count !== null && <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, background: flow === item.id ? C.primaryLight : A.hover }}>{item.count}</span>}
@@ -293,7 +294,7 @@ export default function AdminPage() {
             setConsultationSummary(current => updateConsultationCounts(current, before.status, after.status));
           }} />
         </div>
-        <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
+        {DETAIL_ESTIMATE_ENABLED && <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
         <p style={{ color: A.mid, fontSize: 13, margin: "0 0 20px" }}>2차 견적엔진용 · 현재 금액은 임시 계산값이며 확정 견적이 아닙니다.</p>
 
@@ -521,7 +522,7 @@ export default function AdminPage() {
             })}
           </div>
         )}
-        </section>
+        </section>}
       </div>
     </div>
   );

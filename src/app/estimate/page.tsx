@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import { motion, useReducedMotion } from "framer-motion";
 import { IconArrowLeft, IconArrowRight, IconCalculator, IconMessageCircle } from "@tabler/icons-react";
 import { C } from "@/components/EstimateLayout";
@@ -48,11 +49,11 @@ export default function EstimateChoicePage() {
         </Link>
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: "clamp(27px, 5vw, 36px)", fontWeight: 800, lineHeight: 1.35, letterSpacing: "-1px", margin: "0 0 10px", wordBreak: "keep-all" }}>어떤 방식으로 알아볼까요?</h1>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: C.home.muted, wordBreak: "keep-all" }}>간단한 견적 신청과 상세 견적 미리보기 중 선택해주세요.</p>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.8, color: C.home.muted, wordBreak: "keep-all" }}>{DETAIL_ESTIMATE_ENABLED ? "간단한 견적 신청과 상세 견적 미리보기 중 선택해주세요." : "무료 견적 신청으로 공사 계획을 알려주세요. 상세 견적 미리보기는 잠시 준비 중이에요."}</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
-          {OPTIONS.map(option => {
+          {OPTIONS.filter(option => DETAIL_ESTIMATE_ENABLED || option.id !== "engine").map(option => {
             const primary = option.id === "consult";
             const Icon = option.icon;
             return (
