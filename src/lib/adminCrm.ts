@@ -1,8 +1,10 @@
 export const CONSULT_STATUSES: Record<string, string> = {
-  new: '신규', contacted: '연락 완료 (기존)', consulting: '상담 중',
+  new: '신규', contacted: '연락 완료 (기존)', consulting: '진행 중',
   quoted: '견적 전달', lost: '무산', contracted: '계약', closed: '종료',
   contact_attempted: '연락 시도 (기존)',
 };
+// New edits use four choices; historical values remain valid and searchable.
+export const CONSULT_EDIT_STATUS_OPTIONS = ['new', 'consulting', 'contracted', 'lost'].map(id => [id, CONSULT_STATUSES[id]] as const);
 export const CONSULT_STATUS_OPTIONS = Object.entries(CONSULT_STATUSES).filter(([id]) => id !== 'contact_attempted');
 // A status edit moves one existing record; it never changes the overall count.
 export function updateConsultationCounts<T extends { status: string; count: number }>(counts: T[], before: string, after: string): T[] {

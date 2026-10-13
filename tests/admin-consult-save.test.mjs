@@ -5,6 +5,12 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as crm from '../src/lib/adminCrm.ts';
 
+test('editing offers four simple statuses while preserving historical values', () => {
+  assert.deepEqual(crm.CONSULT_EDIT_STATUS_OPTIONS.map(([id]) => id), ['new', 'consulting', 'contracted', 'lost']);
+  assert.ok(crm.CONSULT_STATUSES.closed);
+  assert.ok(crm.CONSULT_STATUSES.quoted);
+});
+
 test('status counts move between contract and lost without changing total', () => {
   const counts = [{ status: 'all', count: 4 }, { status: 'contracted', count: 1 }, { status: 'lost', count: 0 }];
   const updated = crm.updateConsultationCounts(counts, 'contracted', 'lost');

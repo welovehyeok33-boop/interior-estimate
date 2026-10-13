@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { C } from './EstimateLayout';
 import { action, field, goldAction, muted, panel, consultStatusStyle, consultStatusBadge } from './adminStyles';
-import { CONSULT_STATUSES, CONSULT_STATUS_OPTIONS, fromKstInput, kstInput, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
+import { CONSULT_STATUSES, CONSULT_STATUS_OPTIONS, CONSULT_EDIT_STATUS_OPTIONS, fromKstInput, kstInput, updateConsultationCounts, type Consultation } from '@/lib/adminCrm';
 import { formatEstimateRegion } from '@/lib/estimateRegion';
 import { formatConsultBudget, formatConsultSchedule } from '@/lib/consultStore';
 import { INDUSTRY_LABELS } from '@/lib/intakeValidation';
@@ -63,8 +63,8 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
       <legend style={{ ...muted, fontSize: 11, marginBottom: 10 }}>관리자 전용 · 고객에게 공개되지 않음</legend>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
         <label style={{ fontSize: 12, fontWeight: 650 }}>상담 상태<select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status), width: '100%', display: 'block', marginTop: 6 }}>
-          {!CONSULT_STATUS_OPTIONS.some(([id]) => id === status) && <option value={status}>{CONSULT_STATUSES[status] || `${status} (기존)`}</option>}
-          {CONSULT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
+          {!CONSULT_EDIT_STATUS_OPTIONS.some(([id]) => id === status) && <option value={status}>현재: {CONSULT_STATUSES[status] || status}</option>}
+          {CONSULT_EDIT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
         </select></label>
         <label style={{ fontSize: 12, fontWeight: 650 }}>다음 연락 일시 (한국시간)<input type="datetime-local" disabled={status === 'lost'} value={status === 'lost' ? '' : next} onInput={e => setNext(e.currentTarget.value)} onChange={e => setNext(e.target.value)} style={{ ...field, width: '100%', display: 'block', marginTop: 6 }} /></label>
       </div>
