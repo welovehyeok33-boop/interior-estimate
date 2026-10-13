@@ -4,6 +4,12 @@ export const CONSULT_STATUSES: Record<string, string> = {
   contact_attempted: '연락 시도 (기존)',
 };
 export const CONSULT_STATUS_OPTIONS = Object.entries(CONSULT_STATUSES).filter(([id]) => id !== 'contact_attempted');
+// A status edit moves one existing record; it never changes the overall count.
+export function updateConsultationCounts<T extends { status: string; count: number }>(counts: T[], before: string, after: string): T[] {
+  if (before === after) return counts;
+  return counts.map(row => ({ ...row, count: row.status === 'all' ? row.count :
+    row.status === before ? Math.max(0, row.count - 1) : row.status === after ? row.count + 1 : row.count }));
+}
 // Inclusive KST month start, exclusive next month start, serialized for timestamptz.
 export function consultationMonthRange(month: string) {
   if (!/^(20\d{2})-(0[1-9]|1[0-2])$/.test(month)) return null;

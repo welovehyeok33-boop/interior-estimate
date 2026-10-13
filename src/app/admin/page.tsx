@@ -8,6 +8,7 @@ import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
 import AdminStatusOverview, { type StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
+import { updateConsultationCounts } from "@/lib/adminCrm";
 import { C } from "@/components/EstimateLayout";
 
 import {
@@ -288,7 +289,9 @@ export default function AdminPage() {
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          <AdminConsultations key={consultTarget.revision} initialStatus={consultTarget.status} refresh={trafficRefresh} onSaved={fetchLeads} />
+          <AdminConsultations key={consultTarget.revision} initialStatus={consultTarget.status} refresh={trafficRefresh} onSaved={(before, after) => {
+            setConsultationSummary(current => updateConsultationCounts(current, before.status, after.status));
+          }} />
         </div>
         <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
