@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
+import { AdminThemeToggle } from "@/components/AdminTheme";
 import { motion, AnimatePresence } from "framer-motion";
 import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import AdminConsultations from "@/components/AdminConsultations";
@@ -186,6 +187,7 @@ export default function AdminPage() {
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: A.text, marginBottom: 6 }}>폼잇.</div>
             <div style={{ fontSize: 13, color: A.mid }}>관리자 페이지</div>
+            <div style={{ marginTop: 16 }}><AdminThemeToggle /></div>
           </div>
 
           <motion.div animate={pwError ? { x: [-6, 6, -4, 4, 0] } : {}} transition={{ duration: 0.3 }}>
@@ -245,12 +247,12 @@ export default function AdminPage() {
             <span style={{ fontSize: 12, color: A.mid, marginLeft: 14 }}>관리자</span>
             <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
-          <button
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><AdminThemeToggle /><button
             onClick={fetchLeads}
             style={{ display: "flex", alignItems: "center", gap: 6, background: A.card, border: `1px solid ${A.border}`, borderRadius: 8, padding: "7px 14px", cursor: "pointer", color: A.mid, fontSize: 13 }}
           >
             <IconRefresh size={14} /> 새로고침
-          </button>
+          </button></div>
         </div>
       </div>
 

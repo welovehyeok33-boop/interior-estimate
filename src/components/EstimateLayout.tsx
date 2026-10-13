@@ -23,8 +23,8 @@ export const C = {
   selectedBg: "#FFFBE8",
   selectedBorder: "#F5C200",
   admin: {
-    bg: "#F3F4F6", surface: "#FFFFFF", raised: "#EAEDF1", line: "#E3E6EB",
-    text: "#20242C", muted: "#626B79", subtle: "#707989", accentBg: "#FFF6CC", accentText: "#806100",
+    bg: "var(--admin-bg, #F3F4F6)", surface: "var(--admin-surface, #FFFFFF)", raised: "var(--admin-raised, #EAEDF1)", line: "var(--admin-line, #E3E6EB)",
+    text: "var(--admin-text, #20242C)", muted: "var(--admin-muted, #626B79)", subtle: "var(--admin-subtle, #707989)", accentBg: "var(--admin-accent-bg, #FFF6CC)", accentText: "var(--admin-accent-text, #806100)",
     chart: "#E3AC00", chartAlt: "#A3AED0",
   },
   consultStatus: {
