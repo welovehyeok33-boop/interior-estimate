@@ -7,9 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
-import AdminStatusOverview, { type StatusCount } from "@/components/AdminStatusOverview";
+import type { StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
-import { updateConsultationCounts } from "@/lib/adminCrm";
 import { C } from "@/components/EstimateLayout";
 
 import {
@@ -74,18 +73,11 @@ export default function AdminPage() {
   const [pwError, setPwError]   = useState(false);
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [consultationCount, setConsultationCount] = useState(0);
-  const [consultationSummary, setConsultationSummary] = useState<StatusCount[]>([]);
   const [leadSummary, setLeadSummary] = useState<StatusCount[]>([]);
   const [flow, setFlow] = useState<'overview' | 'sources' | 'consult' | 'engine'>('overview');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
-  const [consultTarget, setConsultTarget] = useState({ status: 'all', revision: 0 });
-  function openStatus(nextFlow: 'consult' | 'engine', status: string) {
-    if (nextFlow === 'consult') setConsultTarget(v => ({ status, revision: v.revision + 1 }));
-    else setTab(status);
-    setFlow(nextFlow);
-  }
   const [loading, setLoading]   = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -130,7 +122,6 @@ export default function AdminPage() {
       if (!response.ok) throw new Error(data.error);
       setLeads(data.leads ?? []);
       setConsultationCount(data.consultationCount ?? 0);
-      setConsultationSummary(data.consultationSummary ?? []);
       setLeadSummary(data.leadSummary ?? []);
     } catch (error) { setLoadError(error instanceof Error ? error.message : "신청 내역을 불러오지 못했어요."); }
     setLoading(false);
@@ -284,15 +275,12 @@ export default function AdminPage() {
           <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
 
-        {flow === 'overview' && <AdminStatusOverview consultation={consultationSummary} engine={leadSummary} loading={loading} error={loadError} onOpen={openStatus} />}
 
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          <AdminConsultations key={consultTarget.revision} initialStatus={consultTarget.status} refresh={trafficRefresh} onSaved={(before, after) => {
-            setConsultationSummary(current => updateConsultationCounts(current, before.status, after.status));
-          }} />
+          <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} />
         </div>
         {DETAIL_ESTIMATE_ENABLED && <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>
