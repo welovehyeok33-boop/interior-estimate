@@ -30,3 +30,8 @@ export function attributedConversion(sources: TrafficReport['sources']) {
   const totals = included.reduce((sum, row) => ({ visitors: sum.visitors + row.visitors, converted: sum.converted + row.converted }), { visitors: 0, converted: 0 });
   return { ...totals, rate: conversionRate(totals.converted, totals.visitors) };
 }
+// Counts are deduplicated per browser and Korea day by the details RPC.
+export function consultContactVisitors(details: Pick<TrafficDetails, 'pages'> | null | undefined) {
+  if (!details || !Array.isArray(details.pages)) return null;
+  return details.pages.find(page => page.path === '/consult/step4')?.visitors ?? 0;
+}
