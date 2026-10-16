@@ -33,25 +33,28 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     {error && <p role="alert">{error}</p>}
     {report && <>
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
-      <div style={{ display: 'grid', gap: 18 }}>
-        {report.rows.map(row => <article key={row.source} style={{ border: `1px solid ${C.admin.line}`, borderRadius: 14, padding: 20, minWidth: 0 }}>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {report.rows.map(row => <article key={row.source} style={{ border: `1px solid ${C.admin.line}`, borderRadius: 12, padding: '12px 16px', minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div><h2 style={{ margin: 0, fontSize: 18 }}>{row.name}</h2><a href={'https://' + row.host} target="_blank" rel="noopener noreferrer" style={{ ...muted, textDecoration: 'none' }}>{row.host} <IconExternalLink size={13} /></a></div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 10px', minWidth: 0 }}><h2 style={{ margin: 0, fontSize: 16 }}>{row.name}</h2><a href={'https://' + row.host} target="_blank" rel="noopener noreferrer" style={{ ...muted, fontSize: 12, textDecoration: 'none', overflowWrap: 'anywhere' }}>{row.host} <IconExternalLink size={12} /></a></div>
             <span style={{ ...muted, background: row.external.status === 'ready' ? C.admin.accentBg : C.admin.bg, borderRadius: 20, padding: '5px 12px' }}>{({ ready: '통계 연결됨', pending: '연결 대기', error: '연결 확인 필요', partial: '부분 집계' })[row.external.status]}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 10, margin: '18px 0' }}>
-            {[['사이트 방문', row.external.visitors], ['폼잇 유입', row.arrivals], ['연락처 페이지 도착', row.contacts], ['신청 완료 방문', row.converted]].map(([label, value], i) => <div key={String(label)} style={{ background: i === 1 || i === 3 ? C.admin.accentBg : C.admin.bg, borderRadius: 10, padding: 16 }}>
-              <div style={muted}>{label}</div><strong style={{ fontSize: 26, display: 'block', marginTop: 8 }}>{number(value as number | null)}</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: 6, margin: '10px 0' }}>
+            {[['사이트 방문', row.external.visitors], ['폼잇 유입', row.arrivals], ['연락처 페이지 도착', row.contacts], ['신청 완료 방문', row.converted]].map(([label, value], i) => <div key={String(label)} style={{ background: i === 1 || i === 3 ? C.admin.accentBg : C.admin.bg, borderRadius: 8, padding: '8px 12px' }}>
+              <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ fontSize: 21, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{number(value as number | null)}</strong>
             </div>)}
           </div>
-          <p style={muted}>폼잇 유입 비율 <strong style={{ color: C.admin.text }}>{row.rate === null ? '계산 대기' : row.rate + '%'}</strong> · 폼잇 버튼 클릭 {number(row.external.clickers)}{row.rate !== null && row.rate > 100 ? ' · 100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.' : ''}</p>
-          {row.external.status !== 'ready' && <p style={muted}>사이트 방문 합계가 완전하지 않아 유입 비율을 계산하지 않습니다. 폼잇에서 확인된 유입은 별도로 표시됩니다.</p>}
+          <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>폼잇 유입 비율 <strong style={{ color: C.admin.text }}>{row.rate === null ? '계산 대기' : row.rate + '%'}</strong> · 폼잇 버튼 클릭 {number(row.external.clickers)}{row.rate !== null && row.rate > 100 ? ' · 100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.' : ''}</p>
+          {row.external.status !== 'ready' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>부분·미연결 통계는 비율 계산 제외 · 폼잇 유입은 별도 표시</p>}
+          <details style={{ marginTop: 6 }}>
+          <summary style={{ ...muted, fontSize: 12, cursor: 'pointer', width: 'fit-content', padding: '4px 0' }}>홍보 링크 보기·복사</summary>
           <label style={{ ...muted, display: 'block' }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
             <input id={'link-' + row.source} readOnly value={row.link} style={{ ...field, flex: '1 1 260px', width: '100%' }} onFocus={e => e.currentTarget.select()} />
             <button style={action} onClick={async () => { try { await navigator.clipboard.writeText(row.link); setCopied(row.source); } catch { setCopied('failed'); } }}><IconCopy size={15} /> 링크 복사</button>
           </div>
           {copied === row.source && <p role="status" style={muted}>링크를 복사했어요.</p>}
+          </details>
         </article>)}
       </div>
     </>}
