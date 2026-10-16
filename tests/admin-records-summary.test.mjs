@@ -24,7 +24,7 @@ function setup(auth = true, failed = false) {
   };
   const source = readFileSync(new URL('../src/app/api/admin/records/route.ts', import.meta.url), 'utf8');
   const exports = {};
-  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports, require: name => deps[name] });
+  runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { exports, URL, require: name => deps[name] });
   return { ...exports, calls };
 }
 test('separate exact summaries include zero states and are not capped to the list limit', async () => {
@@ -43,4 +43,16 @@ test('summary queries require admin authentication', async () => {
 });
 test('count failures are surfaced instead of displaying fake zero counts', async () => {
   assert.equal((await setup(true, true).GET()).status, 503);
+});
+
+test('summary-only reads one exact count without downloading paused leads', async () => {
+  const api = setup();
+  const request = new Request('https://form.it.kr/api/admin/records?summary=1');
+  assert.deepEqual(await (await api.GET(request)).json(), { consultationCount: 1200 });
+  assert.equal(api.calls.length, 1);
+  assert.equal(api.calls[0].table, 'consultations');
+  assert.equal(api.calls[0].head, true);
+  const blocked = setup(false);
+  assert.equal((await blocked.GET(request)).status, 401); assert.equal(blocked.calls.length, 0);
+  assert.equal((await setup(true, true).GET(request)).status, 503);
 });

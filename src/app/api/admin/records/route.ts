@@ -2,10 +2,16 @@ import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
 import { CONSULT_STATUSES } from '@/lib/adminCrm';
 
-export async function GET() {
+export async function GET(request?: Request) {
   try {
     if (!await isAdmin()) return apiJson({ error: '로그인이 필요합니다.' }, 401);
     const db = serverDb();
+    // The paused detail-estimate tab needs no lead rows or per-status summaries.
+    if (request && new URL(request.url).searchParams.get('summary') === '1') {
+      const result = await db.from('consultations').select('id', { count: 'exact', head: true });
+      if (result.error || result.count === null) throw new Error('Summary failed');
+      return apiJson({ consultationCount: result.count });
+    }
     const summaryFor = async (table: 'leads' | 'consultations', statuses: string[]) => {
       return Promise.all(['all', ...statuses].map(async status => {
         let query = db.from(table).select('id', { count: 'exact', head: true });

@@ -8,12 +8,13 @@ import AdminFlowChart from './AdminFlowChart';
 import TrafficPreference from './TrafficPreference';
 import AdminTrafficDetails, { DETAIL_TABS, type DetailTab } from './AdminTrafficDetails';
 
-export default function AdminTraffic({ refresh, view }: { refresh: number; view: 'overview' | 'sources' }) {
+export default function AdminTraffic({ refresh, view, active = true }: { refresh: number; view: 'overview' | 'sources'; active?: boolean }) {
   const [range, setRange] = useState('7');
   const [detailTab, setDetailTab] = useState<DetailTab>('sources');
   const [data, setData] = useState<TrafficReport | null>(null);
   const [error, setError] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0);
   useEffect(() => {
+    if (!active) return;
     const controller = new AbortController();
     async function read() {
       setLoading(true); setError('');
@@ -26,7 +27,7 @@ export default function AdminTraffic({ refresh, view }: { refresh: number; view:
       finally { if (!controller.signal.aborted) setLoading(false); }
     }
     void read(); return () => controller.abort();
-  }, [range, refresh, retry]);
+  }, [range, refresh, retry, active]);
   const days = data?.days.filter(d => d.day >= data.from && d.day <= data.to) || [];
   const totals = days.reduce((a, d) => ({ visitors: a.visitors + d.visitors, requests: a.requests + d.requests,
     converted: a.converted + d.converted, starts: a.starts + d.consult_starts, engine: a.engine + d.engine_starts }),
