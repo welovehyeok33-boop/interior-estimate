@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DETAIL_ESTIMATE_ENABLED } from "@/lib/features";
 import AdminConsultations from "@/components/AdminConsultations";
 import AdminTraffic from "@/components/AdminTraffic";
+import AdminReferralSites from "@/components/AdminReferralSites";
 import type { StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
@@ -75,7 +76,7 @@ export default function AdminPage() {
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [consultationCount, setConsultationCount] = useState(0);
   const [leadSummary, setLeadSummary] = useState<StatusCount[]>([]);
-  const [flow, setFlow] = useState<'overview' | 'sources' | 'consult' | 'engine'>('overview');
+  const [flow, setFlow] = useState<'overview' | 'sources' | 'referrals' | 'consult' | 'engine'>('overview');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
@@ -262,6 +263,7 @@ export default function AdminPage() {
           {([
             { id: 'overview', title: '대시보드', count: null },
             { id: 'sources', title: '유입 트래픽', count: null },
+            { id: 'referrals', title: '유입처 관리', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
           ] as const).filter(item => DETAIL_ESTIMATE_ENABLED || item.id !== "engine").map(item => (
@@ -276,6 +278,7 @@ export default function AdminPage() {
         <div id="admin-traffic" hidden={flow !== 'overview' && flow !== 'sources'}>
           <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
+        {flow === 'referrals' && <div id="admin-referrals"><AdminReferralSites refresh={trafficRefresh} /></div>}
 
 
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
