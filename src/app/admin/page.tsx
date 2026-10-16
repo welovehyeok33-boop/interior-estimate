@@ -77,6 +77,7 @@ export default function AdminPage() {
   const [consultationCount, setConsultationCount] = useState(0);
   const [leadSummary, setLeadSummary] = useState<StatusCount[]>([]);
   const [flow, setFlow] = useState<'overview' | 'sources' | 'referrals' | 'consult' | 'engine'>('overview');
+  const [consultOpened, setConsultOpened] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [tab, setTab]           = useState("all");
@@ -113,12 +114,12 @@ export default function AdminPage() {
   };
 
   // ── 리드 불러오기 ─────────────────────────────────────────
-  const fetchLeads = useCallback(async () => {
-    setTrafficRefresh(v => v + 1);
+  const fetchLeads = useCallback(async (refreshTraffic = true) => {
+    if (refreshTraffic) setTrafficRefresh(v => v + 1);
     setLoading(true);
     setLoadError(null);
     try {
-      const response = await fetch("/api/admin/records", { cache: "no-store" });
+      const response = await fetch(DETAIL_ESTIMATE_ENABLED ? "/api/admin/records" : "/api/admin/records?summary=1", { cache: "no-store" });
       if (response.status === 401) { setAuthed(false); setLeads([]); setConsultationCount(0); throw new Error("로그인이 만료됐어요."); }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -132,7 +133,7 @@ export default function AdminPage() {
   useEffect(() => {
     // Authentication gates the first remote data load.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (authed) fetchLeads();
+    if (authed) void fetchLeads(false);
   }, [authed, fetchLeads]);
 
   // ── 삭제 ──────────────────────────────────────────────────
@@ -249,7 +250,7 @@ export default function AdminPage() {
             <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><AdminThemeToggle /><button
-            onClick={fetchLeads}
+            onClick={() => void fetchLeads()}
             style={{ display: "flex", alignItems: "center", gap: 6, background: A.card, border: `1px solid ${A.border}`, borderRadius: 8, padding: "7px 14px", cursor: "pointer", color: A.mid, fontSize: 13 }}
           >
             <IconRefresh size={14} /> 새로고침
@@ -267,7 +268,7 @@ export default function AdminPage() {
             { id: 'consult', title: '상담 관리', count: consultationCount },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
           ] as const).filter(item => DETAIL_ESTIMATE_ENABLED || item.id !== "engine").map(item => (
-            <button key={item.id} type="button" onClick={() => setFlow(item.id)} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
+            <button key={item.id} type="button" onClick={() => { if (item.id === 'consult') setConsultOpened(true); setFlow(item.id); }} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
               style={{ flex: '1 1 140px', minHeight: 46, padding: '12px', borderRadius: 9, cursor: 'pointer', background: flow === item.id ? C.primary : 'transparent', border: 0, color: flow === item.id ? C.textDark : A.mid, fontSize: 14, fontWeight: flow === item.id ? 800 : 600 }}>
               {item.title}{item.count !== null && <span style={{ marginLeft: 8, fontSize: 11, padding: '2px 7px', borderRadius: 5, background: flow === item.id ? C.primaryLight : A.hover }}>{item.count}</span>}
             </button>
@@ -276,7 +277,7 @@ export default function AdminPage() {
 
 
         <div id="admin-traffic" hidden={flow !== 'overview' && flow !== 'sources'}>
-          <AdminTraffic refresh={trafficRefresh} view={flow === 'sources' ? 'sources' : 'overview'} />
+          <AdminTraffic refresh={trafficRefresh} active={flow === 'overview' || flow === 'sources'} view={flow === 'sources' ? 'sources' : 'overview'} />
         </div>
         {flow === 'referrals' && <div id="admin-referrals"><AdminReferralSites refresh={trafficRefresh} /></div>}
 
@@ -285,7 +286,7 @@ export default function AdminPage() {
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} />
+          {consultOpened && <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} />}
         </div>
         {DETAIL_ESTIMATE_ENABLED && <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>

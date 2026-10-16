@@ -32,33 +32,29 @@ export async function GET(request: Request) {
     try { const value: unknown = JSON.parse(process.env.FORMIT_REFERRAL_TOKENS || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) tokens = value as Record<string, unknown>; } catch { /* pending, never expose credentials */ }
     const externalPromise = Promise.all(REFERRAL_SITES.map(site => externalStats(site, dates, tokens)));
     const db = serverDb();
-    const summary = await db.rpc('admin_dashboard', { p_days: dates.length, p_offset: range === 'yesterday' ? 1 : 0 });
+    // Count in the database instead of downloading and scanning up to 50,000 visits.
+    // Independent counts also keep one source's failure from blanking every source.
+    const contactsPromise = Promise.all(REFERRAL_SITES.map(async site => {
+      try {
+        const result = await db.from('traffic_details').select('traffic_daily!inner(source)', { count: 'exact', head: true })
+          .gte('day', from).lte('day', to).eq('traffic_daily.source', site.source)
+          .contains('pages', ['/consult/step4']);
+        return result.error ? null : result.count;
+      } catch { return null; }
+    }));
+    const [summary, contacts, external] = await Promise.all([
+      db.rpc('admin_dashboard', { p_days: dates.length, p_offset: range === 'yesterday' ? 1 : 0 }),
+      contactsPromise, externalPromise,
+    ]);
     if (summary.error) throw new Error('Stats unavailable');
     const report = summary.data as TrafficReport;
-    // Query aggregate inputs only on the server, never send daily visitor IDs.
-    const contacts: Record<string, number> = {};
-    let contactsAvailable = true;
-    for (let offset = 0; ; offset += 1000) {
-      if (offset >= 50000) { contactsAvailable = false; break; }
-      const result = await db.from('traffic_details').select('pages,traffic_daily!inner(source)')
-        .gte('day', from).lte('day', to).in('traffic_daily.source', REFERRAL_SITES.map(s => s.source))
-        .order('day').order('visitor').range(offset, offset + 999);
-      if (result.error) { contactsAvailable = false; break; }
-      for (const row of result.data || []) {
-        const related = row.traffic_daily as unknown as { source: string } | { source: string }[];
-        const source = Array.isArray(related) ? related[0]?.source : related?.source;
-        if (source && Array.isArray(row.pages) && row.pages.includes('/consult/step4')) contacts[source] = (contacts[source] || 0) + 1;
-      }
-      if ((result.data?.length || 0) < 1000) break;
-    }
-    const external = await externalPromise;
     const rows = REFERRAL_SITES.map((site, i): ReferralRow => {
       const matches = report.sources.filter(s => s.source === site.source);
       const arrivals = matches.reduce((sum, s) => sum + s.visitors, 0);
       const converted = matches.reduce((sum, s) => sum + s.converted, 0);
       const visitors = external[i].visitors;
       return { source: site.source, name: site.name, host: site.host, link: referralLink(site.source, site.destination), external: external[i],
-        arrivals, contacts: contactsAvailable ? contacts[site.source] || 0 : null, converted,
+        arrivals, contacts: contacts[i], converted,
         rate: external[i].status === 'ready' && visitors !== null && visitors > 0 ? Math.round(arrivals / visitors * 1000) / 10 : null };
     });
     return apiJson({ from, to, rows, updatedAt: new Date().toISOString() });
