@@ -94,6 +94,9 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
 export default function AdminConsultations({ refresh, onSaved, initialStatus = 'all' }: { refresh: number; onSaved: (before: Consultation, after: Consultation) => void; initialStatus?: string }) {
   const [items, setItems] = useState<Consultation[]>([]), [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<{ status: string; count: number }[]>([]);
+  const consultationTotal = summary.find(row => row.status === 'all')?.count ?? 0;
+  const contractedTotal = summary.find(row => row.status === 'contracted')?.count ?? 0;
+  const contractRate = consultationTotal > 0 ? `${(contractedTotal / consultationTotal * 100).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%` : '—';
   const [q, setQ] = useState(''), [filter, setFilter] = useState({ q: '', status: initialStatus, page: 1, month: '' });
   const [open, setOpen] = useState<string | null>(null), [reload, setReload] = useState(0);
   const [loading, setLoading] = useState(true), [error, setError] = useState('');
@@ -132,7 +135,12 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: filter.status === s.status ? C.textDark : C.admin.muted }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 6, background: filter.status === s.status ? C.textDark : s.status === 'all' ? C.primary : consultStatusStyle(s.status).color }} />{s.status === 'all' ? '전체 상담' : CONSULT_STATUSES[s.status] || s.status}</span>
           <strong style={{ fontSize: 16, fontWeight: 750, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : s.count.toLocaleString()}<span style={{ fontSize: 10, marginLeft: 3, fontWeight: 400 }}>건</span></strong>
         </button>)}
+        <div aria-label="상담 계약률" title="선택 기간에 접수된 전체 상담 중 현재 계약 상태인 상담 비율" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minHeight: 42, padding: '8px 12px', borderRadius: 8, background: C.admin.accentBg, border: `1px solid ${C.primary}`, color: C.admin.text, boxSizing: 'border-box' }}>
+          <span style={{ fontSize: 12, color: C.admin.accentText }}>계약률</span>
+          <strong style={{ fontSize: 16, fontWeight: 750, fontVariantNumeric: 'tabular-nums' }}>{loading || error ? '—' : contractRate}</strong>
+        </div>
       </div>
+      <p style={{ ...muted, margin: '8px 0 0', fontSize: 11 }}>계약률 = 계약 ÷ 전체 상담 · 선택한 접수 기간 기준 · 상담이 없으면 — 표시</p>
       <details style={{ ...muted, marginTop: 8, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 안내</summary>선택 기간에 접수된 상담의 현재 상태입니다. 월말 당시 상태가 아니며, 상태별 건수는 아래 검색·상태 필터와 무관합니다. 과거 상태(연락 완료·견적 전달·종료 등)는 전체 상담에 포함되며 네 상태의 합계와 차이가 날 수 있습니다.</details>
     </div>
     <form onSubmit={e => { e.preventDefault(); setFilter(v => ({ ...v, q, page: 1 })); setOpen(null); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
