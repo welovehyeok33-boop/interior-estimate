@@ -5,6 +5,14 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as crm from '../src/lib/adminCrm.ts';
 
+test('contract rate uses period summary, not filtered rows, and handles empty/loading/error states', () => {
+  for (const [total, contracts, loading, error, expected] of [[6, 2, false, '', '33.3%'], [4, 0, false, '', '0%'], [4, 4, false, '', '100%'], [0, 0, false, '', '—'], [6, 2, true, '', '—'], [6, 2, false, 'failed', '—']]) {
+    const render = editorHarness(() => {}, [[], 0, [{ status: 'all', count: total }, { status: 'contracted', count: contracts }], '', { status: 'lost', page: 1, month: '2026-10', q: 'filtered' }, null, 0, loading, error], true);
+    const card = find(render({ refresh: 0, onSaved: () => {} }), node => node.props?.['aria-label'] === '상담 계약률');
+    assert.equal(find(card, node => node.type === 'strong').props.children, expected);
+  }
+});
+
 test('editing offers four simple statuses while preserving historical values', () => {
   assert.deepEqual(crm.CONSULT_EDIT_STATUS_OPTIONS.map(([id]) => id), ['new', 'consulting', 'contracted', 'lost']);
   assert.ok(crm.CONSULT_STATUSES.closed);
