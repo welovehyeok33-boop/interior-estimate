@@ -66,7 +66,7 @@ export default function AdminTraffic({ refresh, view, active = true }: { refresh
           </div>)}
         </div>
         <p style={{ ...muted, fontSize: 12 }}>전체 방문 {totals.visitors}명 · 출처 확인 불가에는 직접 접속, 출처가 전달되지 않은 방문과 미분류 기록이 포함됩니다. 외부 유입은 검색·외부 링크·캠페인 등 출처가 기록된 방문입니다. 여러 날짜를 선택하면 일별 방문자 합계로 표시됩니다.</p>
-        <p style={{ ...muted, fontSize: 12 }}>전환율: 출처 있는 신청 완료 방문 {attributed.converted} ÷ 출처 있는 방문 {attributed.visitors}. 직접 방문·출처 확인 불가·미분류는 분자와 분모에서 모두 제외합니다. 전체 기준 전환율: {conversionRate(totals.converted, totals.visitors) === null ? '—' : `${conversionRate(totals.converted, totals.visitors)}%`}. 방문·신청 건수는 전체 기준이며, 이 제외 기준은 봇 판정이 아닙니다.</p>
+        <p style={{ ...muted, fontSize: 12 }}>전환율: 출처 있는 유효한 신청 완료 방문 {attributed.converted} ÷ 출처 있는 방문 {attributed.visitors}. 삭제된 상담은 전환에서 제외하며 같은 브라우저의 하루 신청은 1명으로 집계합니다. 직접 방문·출처 확인 불가·미분류는 분자와 분모에서 모두 제외합니다. 전체 기준 전환율: {conversionRate(totals.converted, totals.visitors) === null ? '—' : `${conversionRate(totals.converted, totals.visitors)}%`}. 방문·신청 건수는 전체 기준이며, 이 제외 기준은 봇 판정이 아닙니다.</p>
         <AdminFlowChart details={data.details} />
         <p style={{ ...muted, fontSize: 12 }}>상담 입력 진입은 마지막 연락처 입력 페이지 도착 기준입니다. 전화번호 입력·신청 완료 여부와 무관하며, 같은 브라우저는 하루 1회 집계합니다. 최근 30일의 수집된 단계 기록을 사용하며, 수집 제외·중단 기간은 포함되지 않습니다.</p>
         <details style={{ marginTop: 20 }}><summary style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '12px 0' }}>일별 수치 자세히 보기</summary>
@@ -103,7 +103,7 @@ export default function AdminTraffic({ refresh, view, active = true }: { refresh
         </> : data.details ? <AdminTrafficDetails data={data.details} tab={detailTab} onSaved={() => setRetry(v => v + 1)} /> : <p role="alert">상세 통계 설정을 불러오지 못했어요. 새로고침해주세요.</p>}
       </>}
       <details style={{ ...muted, marginTop: 16, fontSize: 11 }}><summary style={{ cursor: 'pointer' }}>집계 기준 및 마지막 갱신</summary><p>방문자는 브라우저별 하루 1회입니다. 여러 날의 합계는 기간 전체 순방문자가 아닙니다.
-        신청 전환율은 일별 신청 완료 방문 ÷ 일별 방문의 합계입니다. 쿠키 없는 신청·집계 제외 방문의 신청도 접수 건수에는 포함됩니다.
+        신청 전환율은 현재 저장된 상담으로 이어진 일별 신청 완료 방문 ÷ 일별 방문의 합계입니다. 삭제된 상담만 남은 방문은 전환에서 제외됩니다. 쿠키 없는 신청·집계 제외 방문의 신청도 접수 건수에는 포함됩니다.
         관리자 로그인 중 방문, 방문 제외 설정, 알려진 봇, 추적 거부 설정은 제외합니다. 브라우저·기기를 바꾸면 별도 집계될 수 있습니다.<br />
         마지막 갱신: {new Date(data.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</p></details>
     </>}
