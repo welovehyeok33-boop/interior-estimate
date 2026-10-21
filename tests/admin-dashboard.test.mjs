@@ -20,6 +20,15 @@ test('server sanitizes metadata and groups article paths', () => {
   assert.deepEqual(normalizeAttribution({ source: 'bad email@test', medium: {}, campaign: 'ok', landing: '/private/user' }),
     { source: 'direct', medium: '', campaign: 'ok', landing: 'unknown' });
 });
+
+test('residential referral domains retain distinct attribution without UTM parameters', () => {
+  for (const type of ['apt','villa']) {
+    const result=captureAttribution('https://form.it.kr/consult','https://'+type+'.interiorhub.kr/regions/seoul/');
+    assert.equal(result.source,'interiorhub_'+type);assert.equal(result.medium,'referral');
+  }
+  assert.equal(captureAttribution('https://form.it.kr/consult','https://apt.interiorhub.kr.attacker.test/').source,'other');
+  assert.equal(captureAttribution('https://form.it.kr/consult?utm_source=custom','https://apt.interiorhub.kr/').source,'custom');
+});
 const patch = { status: 'consulting', admin_note: ' 메모 ', next_contact_at: null, admin_version: 0 };
 test('lost sits between quote and contract; retired attempts remain editable but not selectable', () => {
   const ids = CONSULT_STATUS_OPTIONS.map(([id]) => id);

@@ -9,8 +9,8 @@ test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('30').dates.length,30);
   assert.throws(()=>referralDates('999'));
 });
-test('four distinct safe source links retain destination',()=>{
-  assert.equal(new Set(REFERRAL_SITES.map(s=>s.source)).size,4);
+test('six distinct safe source links retain destination',()=>{
+  assert.equal(new Set(REFERRAL_SITES.map(s=>s.source)).size,6);
   for(const s of REFERRAL_SITES){const u=new URL(referralLink(s.source,s.destination));assert.equal(u.origin,'https://form.it.kr');assert.equal(u.searchParams.get('utm_source'),s.source);assert.equal(u.pathname,s.destination);}
 });
 test('complete daily aggregates sum but incomplete counts never become zero',()=>{
