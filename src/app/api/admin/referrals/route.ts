@@ -6,7 +6,8 @@ import type { TrafficReport } from '@/lib/analytics';
 export const dynamic = 'force-dynamic';
 
 async function externalStats(site: typeof REFERRAL_SITES[number], dates: string[], tokens: Record<string, unknown>): Promise<ReferralRow['external']> {
-  const empty = { visitors: null, clickers: null, partial: false, updatedAt: null };
+  const empty = { visitors: null, clickers: null, partial: false, updatedAt: null,
+    recordedVisitors: null, recordedClickers: null, visitorDays: 0, clickerDays: 0, totalDays: dates.length };
   const token = tokens[site.source];
   if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
   try {

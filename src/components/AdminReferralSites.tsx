@@ -22,6 +22,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     return () => controller.abort();
   }, [range, requestKey]);
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString() + '명';
+  const dateTime = (value: string) => new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
   return <section style={panel} aria-label="외부 유입처 관리" aria-busy={loading}>
     <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>유입처 관리</h1>
     <p style={muted}>외부 사이트에서 폼잇 상담까지, 같은 기간의 흐름을 비교하세요.</p>
@@ -33,6 +34,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     {error && <p role="alert">{error}</p>}
     {report && <>
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
+      <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 누락된 날짜가 있으면 수집된 날짜의 합계를 표시합니다.</p>
       <div style={{ display: 'grid', gap: 10 }}>
         {report.rows.map(row => <article key={row.source} style={{ border: `1px solid ${C.admin.line}`, borderRadius: 12, padding: '12px 16px', minWidth: 0 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -40,12 +42,16 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
             <span style={{ ...muted, background: row.external.status === 'ready' ? C.admin.accentBg : C.admin.bg, borderRadius: 20, padding: '5px 12px' }}>{({ ready: '통계 연결됨', pending: '연결 대기', error: '연결 확인 필요', partial: '부분 집계' })[row.external.status]}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap: 6, margin: '10px 0' }}>
-            {[['사이트 방문', row.external.visitors], ['폼잇 유입', row.arrivals], ['연락처 페이지 도착', row.contacts], ['신청 완료 방문', row.converted]].map(([label, value], i) => <div key={String(label)} style={{ background: i === 1 || i === 3 ? C.admin.accentBg : C.admin.bg, borderRadius: 8, padding: '8px 12px' }}>
-              <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ fontSize: 21, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{number(value as number | null)}</strong>
+            {[{ label: '사이트 방문', value: row.external.visitors ?? row.external.recordedVisitors, note: row.external.visitors === null && row.external.visitorDays > 0 ? `부분 합계 · ${row.external.visitorDays}/${row.external.totalDays}일` : '' },
+              { label: '폼잇 유입', value: row.arrivals, note: '' }, { label: '연락처 페이지 도착', value: row.contacts, note: '' }, { label: '신청 완료 방문', value: row.converted, note: '' }].map(({ label, value, note }, i) => <div key={label} style={{ background: i === 1 || i === 3 ? C.admin.accentBg : C.admin.bg, borderRadius: 8, padding: '8px 12px' }}>
+              <div style={{ ...muted, fontSize: 12 }}>{label}</div><strong style={{ fontSize: 21, lineHeight: 1.3, display: 'block', marginTop: 2 }}>{number(value)}</strong>
+              {note && <span style={{ ...muted, display: 'block', fontSize: 11, marginTop: 3 }}>{note}</span>}
             </div>)}
           </div>
-          <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>폼잇 유입 비율 <strong style={{ color: C.admin.text }}>{row.rate === null ? '계산 대기' : row.rate + '%'}</strong> · 폼잇 버튼 클릭 {number(row.external.clickers)}{row.rate !== null && row.rate > 100 ? ' · 100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.' : ''}</p>
-          {row.external.status !== 'ready' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>부분·미연결 통계는 비율 계산 제외 · 폼잇 유입은 별도 표시</p>}
+          <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>폼잇 유입 비율 <strong style={{ color: C.admin.text }}>{row.rate === null ? '계산 대기' : row.rate + '%'}</strong> · 폼잇 버튼 클릭 {number(row.external.clickers ?? row.external.recordedClickers)}{row.external.clickers === null && row.external.clickerDays > 0 ? ` (부분 합계 · ${row.external.clickerDays}/${row.external.totalDays}일)` : ''}{row.rate !== null && row.rate > 100 ? ' · 100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.' : ''}</p>
+          {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 클릭 기록 {row.external.clickerDays}/{row.external.totalDays}일 · 미수집 날짜나 집계 진행 중인 기간이 있어 비율은 계산하지 않습니다.</p>}
+          {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
+          {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
           <details style={{ marginTop: 6 }}>
           <summary style={{ ...muted, fontSize: 12, cursor: 'pointer', width: 'fit-content', padding: '4px 0' }}>홍보 링크 보기·복사</summary>
           <label style={{ ...muted, display: 'block' }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
