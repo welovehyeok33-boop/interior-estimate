@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as referrals from '../src/lib/referralSites.ts';
 
-function setup({ admin = true, token = false, upstreamFails = false, contactsFail = false, missingDays = 0 } = {}) {
+function setup({ admin = true, token = false, allTokens = false, upstreamFails = false, contactsFail = false, missingDays = 0 } = {}) {
   const calls = [];
   const counts = [];
   const query = () => {
@@ -26,12 +26,14 @@ function setup({ admin = true, token = false, upstreamFails = false, contactsFai
   const source = readFileSync(new URL('../src/app/api/admin/referrals/route.ts',import.meta.url),'utf8');
   const output = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const exports={};
-  runInNewContext(output,{exports,URL,AbortSignal,process:{env:{FORMIT_REFERRAL_TOKENS:token?JSON.stringify({interiorfree:'x'.repeat(40)}):'{}'}},require:n=>deps[n],fetch:async(url,opts)=>{
+  const tokens=allTokens?Object.fromEntries(referrals.REFERRAL_SITES.map(site=>[site.source,'x'.repeat(40)])):token?{interiorfree:'x'.repeat(40)}:{};
+  runInNewContext(output,{exports,URL,AbortSignal,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n],fetch:async(url,opts)=>{
     calls.push({url:String(url),opts});
     if(upstreamFails) throw new Error('private upstream error');
     const from=new URL(url).searchParams.get('from'),to=new URL(url).searchParams.get('to');
     const dates=[];for(let stamp=Date.parse(from);stamp<=Date.parse(to);stamp+=86400000)dates.push(new Date(stamp).toISOString().slice(0,10));
-    return Response.json({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:10,clickers:i<missingDays?null:4}))});
+    const source=referrals.REFERRAL_SITES.find(site=>site.host===new URL(url).hostname).source;
+    return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:10,clickers:i<missingDays?null:4}))});
   }});
   return {...exports,calls,counts};
 }
@@ -43,7 +45,7 @@ test('referrals reject unauthenticated and invalid requests before any data acce
 test('referrals combine daily aggregates with fixed private upstream and no token in response',async()=>{
   const s=setup({token:true});const r=await (await s.GET(request())).json();
   assert.equal(r.rows[0].external.visitors,10);assert.equal(r.rows[0].rate,30);assert.equal(r.rows[0].contacts,60001);
-  assert.equal(s.counts.length,4);
+  assert.equal(s.counts.length,6);
   for (const c of s.counts) { assert.equal(c.options.head,true);assert.equal(c.options.count,'exact');assert.equal(c.filter,'traffic_daily.source');assert.equal(c.contains.column,'pages');assert.equal(c.contains.value[0],'/consult/step4');assert.equal(c.from,c.to); }
   assert.equal(r.rows[1].external.status,'pending');assert.equal(r.rows[1].external.visitors,null);
   const f=s.calls.find(c=>typeof c==='object');assert.equal(new URL(f.url).hostname,'interiorfree.kr');assert.equal(f.opts.redirect,'error');assert.equal(f.opts.cache,'no-store');
@@ -53,6 +55,21 @@ test('upstream or detail failure does not fabricate zeros or hide Formit arrival
   const s=setup({token:true,upstreamFails:true,contactsFail:true});const r=await(await s.GET(request())).json();
   assert.equal(r.rows[0].external.status,'error');assert.equal(r.rows[0].arrivals,3);assert.equal(r.rows[0].rate,null);assert.equal(r.rows[0].contacts,null);
   assert.equal(r.rows[1].contacts,0);
+});
+
+test('apartment and villa use their own allowlisted upstream and matching source',async()=>{
+  const s=setup({allTokens:true});const r=await(await s.GET(request())).json();
+  assert.equal(r.rows.length,6);
+  for(const source of ['interiorhub_apt','interiorhub_villa']) {
+    const row=r.rows.find(row=>row.source===source);
+    assert.equal(row.external.status,'ready');assert.equal(row.external.visitors,10);
+    assert.equal(new URL(row.link).searchParams.get('utm_source'),source);
+    const upstream=s.calls.find(c=>typeof c==='object'&&new URL(c.url).hostname===row.host);
+    assert.equal(new URL(upstream.url).pathname,'/wp-json/ih-admin/v1/formit-stats');
+    assert.equal(upstream.opts.headers.Authorization,'Bearer '+'x'.repeat(40));
+    assert.ok(s.counts.some(c=>c.source===source));
+  }
+  assert.ok(!JSON.stringify(r).includes('x'.repeat(40)));
 });
 
 test('seven and thirty day reports expose partial sums without creating misleading conversion rates',async()=>{

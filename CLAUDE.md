@@ -1,3 +1,7 @@
+## 2026-10-21 아파트·빌라 유입처
+
+REFERRAL_SITES는 기존 4곳에 apt.interiorhub.kr/interiorhub_apt 및 villa.interiorhub.kr/interiorhub_villa를 더해 6곳이다. /consult UTM 링크와 UTM 없는 referrer 분류를 지원한다. 고정 HTTPS API, 서버 전용 토큰, 기존 관리자 인증을 유지한다. 두 사이트에 별도 WordPress bridge 1.0.1을 활성화하고 원래 Residential Launch 플러그인·페이지는 보존했다. 최초 설치일은 부분 일자라 null이며 다음 온전한 KST일부터 정상 일일 집계된다. 로컬 소스/ZIP과 외부 사이트 작업 기록은 output/formit-bridge-20261021/README.md(Interior HUB 작업공간)에 기록했다. 새 폼잇 DB 마이그레이션 없음.
+
 ## 2026-10-16 유입처 통합
 - 2026-10-21 전환 집계는 현재 저장된 상담 기준. 20261021_sync_deleted_consultation_conversion.sql 운영 적용: 삭제 시 동일 브라우저/KST일의 다른 상담이 남으면 전환 유지, 없으면 해제. 방문/출처/페이지 기록 보존. supabase/tests/consultation_conversion_delete.sql은 격리된 로컬 DB 전용.
 - 2026-10-21 유입처 기간 통계 점검: 외부 4곳 오늘/어제/7일/30일 API 모두 정상 응답. 일부 날짜 null이면 전체 방문·클릭 합계가 숨겨지던 문제 확인. 전체 기간 값과 수집된 날짜 합계를 분리하고 UI에 부분 합계·방문/클릭 집계 일수·조회/원본 갱신 시각 표시. 불완전한 기간 비율 계산 차단 유지. 기간/API 테스트 10개 통과.
