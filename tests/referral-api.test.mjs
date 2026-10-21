@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as referrals from '../src/lib/referralSites.ts';
 
-function setup({ admin = true, token = false, upstreamFails = false, contactsFail = false } = {}) {
+function setup({ admin = true, token = false, upstreamFails = false, contactsFail = false, missingDays = 0 } = {}) {
   const calls = [];
   const counts = [];
   const query = () => {
@@ -29,8 +29,9 @@ function setup({ admin = true, token = false, upstreamFails = false, contactsFai
   runInNewContext(output,{exports,URL,AbortSignal,process:{env:{FORMIT_REFERRAL_TOKENS:token?JSON.stringify({interiorfree:'x'.repeat(40)}):'{}'}},require:n=>deps[n],fetch:async(url,opts)=>{
     calls.push({url:String(url),opts});
     if(upstreamFails) throw new Error('private upstream error');
-    const {dates,from,to}=referrals.referralDates('today');
-    return Response.json({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:4}))});
+    const from=new URL(url).searchParams.get('from'),to=new URL(url).searchParams.get('to');
+    const dates=[];for(let stamp=Date.parse(from);stamp<=Date.parse(to);stamp+=86400000)dates.push(new Date(stamp).toISOString().slice(0,10));
+    return Response.json({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:10,clickers:i<missingDays?null:4}))});
   }});
   return {...exports,calls,counts};
 }
@@ -52,4 +53,17 @@ test('upstream or detail failure does not fabricate zeros or hide Formit arrival
   const s=setup({token:true,upstreamFails:true,contactsFail:true});const r=await(await s.GET(request())).json();
   assert.equal(r.rows[0].external.status,'error');assert.equal(r.rows[0].arrivals,3);assert.equal(r.rows[0].rate,null);assert.equal(r.rows[0].contacts,null);
   assert.equal(r.rows[1].contacts,0);
+});
+
+test('seven and thirty day reports expose partial sums without creating misleading conversion rates',async()=>{
+  for(const [range,days,missing] of [['7',7,2],['30',30,25]]) {
+    const s=setup({token:true,missingDays:missing});const r=await(await s.GET(request(range))).json();
+    const row=r.rows[0];assert.equal(row.external.status,'partial');assert.equal(row.external.visitors,null);
+    assert.equal(row.external.recordedVisitors,(days-missing)*10);assert.equal(row.external.recordedClickers,(days-missing)*4);
+    assert.equal(row.external.visitorDays,days-missing);assert.equal(row.external.totalDays,days);
+    assert.equal(row.rate,null);assert.equal(row.arrivals,3);
+    for(const c of s.counts) {assert.equal(c.from,r.from);assert.equal(c.to,r.to);}
+    const upstream=new URL(s.calls.find(c=>typeof c==='object').url);
+    assert.equal(upstream.searchParams.get('from'),r.from);assert.equal(upstream.searchParams.get('to'),r.to);
+  }
 });

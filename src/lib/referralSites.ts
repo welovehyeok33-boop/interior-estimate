@@ -18,26 +18,30 @@ export function referralDates(range: string, now = new Date()) {
   const dates = Array.from({length}, (_, i) => new Date(end - (length - 1 - i) * 86400000).toISOString().slice(0, 10));
   return { from: dates[0], to: dates[dates.length - 1], dates };
 }
-type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null };
+type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null;
+  recordedVisitors: number | null; recordedClickers: number | null; visitorDays: number; clickerDays: number; totalDays: number };
 export function validateReferralStats(raw: unknown, source: string, dates: string[]): Aggregate {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid report');
   const r = raw as Record<string, unknown>;
   if (r.version !== 1 || r.source !== source || r.timezone !== 'Asia/Seoul' || r.metric !== 'daily_unique_browser' ||
       r.from !== dates[0] || r.to !== dates[dates.length - 1] || !Array.isArray(r.days) || r.days.length !== dates.length ||
       !['complete', 'partial'].includes(String(r.coverage))) throw new Error('Invalid report');
-  const seen = new Set<string>(); let visitors = 0, clickers = 0, missingVisitors = false, missingClicks = false;
+  const seen = new Set<string>(); let visitors = 0, clickers = 0, visitorDays = 0, clickerDays = 0;
   for (const item of r.days) {
     if (!item || typeof item !== 'object') throw new Error('Invalid day');
     const d = item as Record<string, unknown>;
     if (typeof d.day !== 'string' || !dates.includes(d.day) || seen.has(d.day)) throw new Error('Invalid day');
     seen.add(d.day);
     for (const key of ['visitors', 'clickers']) if (d[key] !== null && (typeof d[key] !== 'number' || !Number.isSafeInteger(d[key]) || (d[key] as number) < 0)) throw new Error('Invalid count');
-    if (d.visitors === null) missingVisitors = true; else visitors += d.visitors as number;
-    if (d.clickers === null) missingClicks = true; else clickers += d.clickers as number;
+    if (d.visitors !== null) { visitors += d.visitors as number; visitorDays++; }
+    if (d.clickers !== null) { clickers += d.clickers as number; clickerDays++; }
   }
-  const partial = r.coverage === 'partial' || missingVisitors;
+  const partial = r.coverage === 'partial' || visitorDays < dates.length || clickerDays < dates.length;
   if (!Number.isSafeInteger(visitors) || !Number.isSafeInteger(clickers)) throw new Error('Invalid total');
-  return { visitors: missingVisitors ? null : visitors, clickers: missingClicks ? null : clickers, partial,
+  // Keep full-period totals unknown when days are missing. Recorded totals are separately labelled in the UI.
+  return { visitors: visitorDays < dates.length ? null : visitors, clickers: clickerDays < dates.length ? null : clickers, partial,
+    recordedVisitors: visitorDays > 0 ? visitors : null, recordedClickers: clickerDays > 0 ? clickers : null,
+    visitorDays, clickerDays, totalDays: dates.length,
     updatedAt: typeof r.dateUpdatedAt === 'string' && Number.isFinite(Date.parse(r.dateUpdatedAt)) ? r.dateUpdatedAt : null };
 }
 export type ReferralRow = { source: string; name: string; host: string; link: string;

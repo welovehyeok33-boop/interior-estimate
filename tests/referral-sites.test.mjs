@@ -25,3 +25,24 @@ test('reject source mismatch, duplicate dates, negative counts and session metri
   const n=report();n.days[0].visitors=-1;assert.throws(()=>validateReferralStats(n,'interiorfree',dates));
   const s=report();s.metric='sessions';assert.throws(()=>validateReferralStats(s,'interiorfree',dates));
 });
+
+test('missing dates preserve recorded totals and coverage separately from full-period totals',()=>{
+  const r=report();r.days[0].visitors=null;r.days[0].clickers=null;r.coverage='partial';
+  const stats=validateReferralStats(r,'interiorfree',dates);
+  assert.equal(stats.visitors,null);assert.equal(stats.clickers,null);
+  assert.equal(stats.recordedVisitors,10);assert.equal(stats.recordedClickers,2);
+  assert.equal(stats.visitorDays,1);assert.equal(stats.clickerDays,1);assert.equal(stats.totalDays,2);
+  r.days[1].visitors=0;r.days[1].clickers=0;
+  const zero=validateReferralStats(r,'interiorfree',dates);
+  assert.equal(zero.recordedVisitors,0);assert.equal(zero.recordedClickers,0);
+  r.days[1].visitors=null;r.days[1].clickers=null;
+  const missing=validateReferralStats(r,'interiorfree',dates);
+  assert.equal(missing.recordedVisitors,null);assert.equal(missing.visitorDays,0);
+});
+
+test('missing click days prevent complete status even when visitor totals are complete',()=>{
+  const r=report();r.days[0].clickers=null;
+  const stats=validateReferralStats(r,'interiorfree',dates);
+  assert.equal(stats.visitors,20);assert.equal(stats.recordedClickers,2);
+  assert.equal(stats.partial,true);assert.equal(stats.visitorDays,2);assert.equal(stats.clickerDays,1);
+});
