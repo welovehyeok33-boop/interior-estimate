@@ -41,7 +41,7 @@ test('six sites use one table row each in three ordered groups with details clos
   assert.deepEqual(rows.map(row=>row.props['aria-label']),['인테리어프리','오피스 인테리어','학원 인테리어','아파트 인테리어','빌라 인테리어','아파트 길잡이']);
   for(const row of rows) {
     assert.equal(all(row,n=>n.type==='strong').length,5);
-    assert.equal(all(row,n=>n.type==='td').length,7);
+    assert.equal(all(row,n=>n.type==='td').length,6);
     const button=all(row,n=>n.type==='button')[0];assert.equal(button.props['aria-expanded'],false);
     assert.equal(all(row,n=>n.type==='a')[0].props.rel,'noopener noreferrer');
   }
@@ -55,7 +55,7 @@ test('unknown and partial data remain distinct from zero with coverage available
   assert.equal(text(all(rows[2],n=>n.type==='strong')[0]),'—');
   assert.match(text(rows[2]),/연결 확인 필요/);assert.match(text(rows.at(-1)),/연결 대기/);
   all(rows[1],n=>n.type==='button')[0].props.onClick();
-  assert.match(text(h.render()),/방문 기록 5\/7일 · 클릭 기록 5\/7일/);
+  assert.match(text(h.render()),/방문 기록 5\/7일 · 미수집 날짜를 0명으로 간주하지 않습니다/);
   all(siteRows(h.render())[2],n=>n.type==='button')[0].props.onClick();
   assert.match(text(h.render()),/사이트 통계를 확인할 수 없습니다/);
 });
@@ -74,13 +74,27 @@ test('link copy still uses the individual site URL and reports success',async()=
   const h=harness(),tree=h.render();const row=siteRows(tree).find(row=>row.props['aria-label']==='빌라 인테리어');
   all(row,n=>n.type==='button')[0].props.onClick();
   const detail=all(h.render(),n=>n.props?.id==='referral-detail-interiorhub_villa')[0];
-  assert.equal(all(detail,n=>n.type==='td')[0].props.colSpan,8);
+  assert.equal(all(detail,n=>n.type==='td')[0].props.colSpan,7);
   assert.equal(all(detail,n=>n.type==='input')[0].props.readOnly,true);
   await all(detail,n=>n.type==='button')[0].props.onClick();
   assert.equal(h.copied[0],h.report.rows.at(-1).link);
   assert.match(text(h.render()),/링크를 복사했어요/);
   all(siteRows(h.render()).find(row=>row.props['aria-label']==='빌라 인테리어'),n=>n.type==='button')[0].props.onClick();
   assert.equal(all(h.render(),n=>n.type==='input').length,0);
+});
+
+test('click metrics are hidden while seven-column summaries and details stay aligned',()=>{
+  const h=harness(),tree=h.render();
+  const headings=all(tree,n=>n.type==='th'&&n.props.scope==='col').map(text);
+  assert.deepEqual(headings,['사이트','사이트 방문','폼잇 유입','연락처 도착','신청 완료 방문','유입 비율','상세']);
+  for(const heading of all(tree,n=>n.type==='th'&&n.props.scope==='rowgroup'))assert.equal(heading.props.colSpan,headings.length);
+  assert.equal(all(tree,n=>n.type==='table')[0].props.style.minWidth,780);
+  for(const row of siteRows(tree)) {
+    all(row,n=>n.type==='button')[0].props.onClick();
+    const expanded=h.render();
+    assert.doesNotMatch(text(expanded),/버튼 클릭|클릭 기록/);
+    assert.equal(all(expanded,n=>n.type==='td'&&n.props.colSpan)[0].props.colSpan,headings.length);
+  }
 });
 
 test('period changes and refresh retain cancellable no-store reads',()=>{
