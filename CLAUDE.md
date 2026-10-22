@@ -1,4 +1,12 @@
+## 2026-10-22 아파트 길잡이 유입처 제외
+
+REFERRAL_SITES에서 buildhyeok_apt/apt.buildhyeok.com만 제외하여 유입처 관리/API 활성 목록은 인테리어프리와 Interior HUB 4곳(총 5곳)이다. 해당 외부 API와 연락처 집계 조회도 더 이상 실행하지 않는다. 기존 traffic_daily/상담/UTM 인식/일반 대시보드의 과거 데이터·서버 환경변수·외부 사이트는 삭제/변경하지 않았다. 남은 5곳의 링크/유입 비율/부분 집계/표 구성은 유지한다. 관련 테스트 25개·ESLint·소스 타입 검사 통과.
+
+인테리어프리 읽기 전용 점검(2026-10-22 11:13 KST): API HTTP 200, 오늘 visitors/recordedVisitors=null 및 visitorDays=0/1, 어제 1명, 최근 7일 알려진 6일 합계 13명. 외부 api/formit-stats.js는 Redis counts와 중복 제거 집합의 합계를 검증할 수 없는 날짜에 null을 반환한다. 오늘이 항상 차단되는 코드는 아니다. 이번 작업은 표시 원인 진단만 수행하며 미제공을 0으로 바꾸거나 외부 수집을 수정하지 않는다.
+
 ## 2026-10-22 상담 목록 높이 압축
+
+PR #49 / main f3f8e82c68abe7cd4097d046c0b79e77eca6d9c2 운영 반영 완료. primary/duplicate Vercel 검토·운영 success. /admin HTTP 200 및 공개 JS의 압축 간격/기존 편집·계약률 코드, consultations 비로그인 401/no-store 확인. 실제 인증 화면/모바일 픽셀 검수는 미수행.
 
 AdminConsultations의 목록 카드만 상하 여백 20→12px/좌우 20→16px, 카드 사이 12→8px, 업종 행 margin 7→3px로 압축했다. 버튼은 8px/16px 간격으로 줄바꿈을 유지한다. 이름 17px·업종 13px·접수일/희망 예산/상태·노란 테두리·테마는 보존한다. Editor와 자동 저장/상태/계약률/조회/API/DB는 변경하지 않았다. 관련 테스트 19개·변경 파일 ESLint·소스 타입 검사 통과. browser inventory가 비어 있어 실제 화면/모바일 픽셀 검수는 미수행.
 

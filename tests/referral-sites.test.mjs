@@ -9,18 +9,19 @@ test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('30').dates.length,30);
   assert.throws(()=>referralDates('999'));
 });
-test('six distinct safe source links retain destination',()=>{
-  assert.equal(new Set(REFERRAL_SITES.map(s=>s.source)).size,6);
+test('five active safe source links retain destination and exclude the retired apartment guide',()=>{
+  assert.equal(new Set(REFERRAL_SITES.map(s=>s.source)).size,5);
+  assert.ok(!REFERRAL_SITES.some(s=>s.source==='buildhyeok_apt'||s.host==='apt.buildhyeok.com'));
   for(const s of REFERRAL_SITES){const u=new URL(referralLink(s.source,s.destination));assert.equal(u.origin,'https://form.it.kr');assert.equal(u.searchParams.get('utm_source'),s.source);assert.equal(u.pathname,s.destination);}
 });
 
 test('display groups keep Interiorfree first and the four HUB sites together without changing API order',()=>{
   const rows=REFERRAL_SITES.map(site=>({...site}));
   const before=rows.map(row=>row.source);const groups=groupReferralRows(rows);
-  assert.deepEqual(groups.map(group=>group.id),['interiorfree','interiorhub','other']);
+  assert.deepEqual(groups.map(group=>group.id),['interiorfree','interiorhub']);
   assert.equal(groups[0].rows[0].source,'interiorfree');
   assert.deepEqual(groups[1].rows.map(row=>row.source),['interiorhub_office','interiorhub_academy','interiorhub_apt','interiorhub_villa']);
-  assert.equal(groups[2].rows[0].source,'buildhyeok_apt');
+  assert.equal(groups.length,2);
   assert.deepEqual(rows.map(row=>row.source),before);
   assert.deepEqual(groupReferralRows([]),[]);
   assert.equal(groupReferralRows([{source:'other',host:'fakeinteriorhub.kr'}])[0].id,'other');

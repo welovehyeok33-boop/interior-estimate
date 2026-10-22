@@ -21,13 +21,13 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
   };
   const deps = {
     '@/lib/serverAuth': {isAdmin: async()=>admin, apiJson:(b,s=200)=>Response.json(b,{status:s})},
-    '@/lib/serverDb': {serverDb:()=>({rpc:async()=>{calls.push('db');return {data:{sources:[{source:'interiorfree',visitors:3,converted:1}]}};},from:query})},
+    '@/lib/serverDb': {serverDb:()=>({rpc:async()=>{calls.push('db');return {data:{sources:[{source:'interiorfree',visitors:3,converted:1},{source:'buildhyeok_apt',visitors:2,converted:1}]}};},from:query})},
     '@/lib/referralSites': referrals,
   };
   const source = readFileSync(new URL('../src/app/api/admin/referrals/route.ts',import.meta.url),'utf8');
   const output = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const exports={};
-  const tokens=allTokens?Object.fromEntries(referrals.REFERRAL_SITES.map(site=>[site.source,'x'.repeat(40)])):token?{interiorfree:'x'.repeat(40)}:{};
+  const tokens=allTokens?{...Object.fromEntries(referrals.REFERRAL_SITES.map(site=>[site.source,'x'.repeat(40)])),buildhyeok_apt:'x'.repeat(40)}:token?{interiorfree:'x'.repeat(40)}:{};
   runInNewContext(output,{exports,URL,AbortSignal,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n],fetch:async(url,opts)=>{
     calls.push({url:String(url),opts});
     if(upstreamFails) throw new Error('private upstream error');
@@ -47,7 +47,7 @@ test('referrals combine daily aggregates with fixed private upstream and no toke
   const s=setup({token:true});const r=await (await s.GET(request())).json();
   assert.equal(r.rows[0].external.visitors,10);assert.equal(r.rows[0].rate,30);assert.equal(r.rows[0].contacts,60001);
   assert.equal(r.rows[0].rateBasis.state,'ready');assert.equal(r.rows[0].rateBasis.arrivals,3);assert.equal(r.rows[0].rateBasis.visitors,10);
-  assert.equal(s.counts.length,6);
+  assert.equal(s.counts.length,5);
   for (const c of s.counts) { assert.equal(c.options.head,true);assert.equal(c.options.count,'exact');assert.equal(c.filter,'traffic_daily.source');assert.equal(c.contains.column,'pages');assert.equal(c.contains.value[0],'/consult/step4');assert.equal(c.from,c.to); }
   assert.equal(r.rows[1].external.status,'pending');assert.equal(r.rows[1].external.visitors,null);
   assert.equal(r.rows[1].rateBasis.state,'not_connected');
@@ -63,7 +63,7 @@ test('upstream or detail failure does not fabricate zeros or hide Formit arrival
 
 test('apartment and villa use their own allowlisted upstream and matching source',async()=>{
   const s=setup({allTokens:true});const r=await(await s.GET(request())).json();
-  assert.equal(r.rows.length,6);
+  assert.equal(r.rows.length,5);
   for(const source of ['interiorhub_apt','interiorhub_villa']) {
     const row=r.rows.find(row=>row.source===source);
     assert.equal(row.external.status,'ready');assert.equal(row.external.visitors,10);
@@ -74,6 +74,16 @@ test('apartment and villa use their own allowlisted upstream and matching source
     assert.ok(s.counts.some(c=>c.source===source));
   }
   assert.ok(!JSON.stringify(r).includes('x'.repeat(40)));
+});
+
+test('retired source history and an old token do not add a row or upstream/count queries',async()=>{
+  const s=setup({allTokens:true});const r=await(await s.GET(request())).json();
+  assert.deepEqual(r.rows.map(row=>row.source),referrals.REFERRAL_SITES.map(site=>site.source));
+  assert.equal(s.calls.filter(call=>typeof call==='object').length,5);
+  assert.ok(!s.calls.some(call=>typeof call==='object'&&new URL(call.url).hostname==='apt.buildhyeok.com'));
+  assert.ok(!s.counts.some(count=>count.source==='buildhyeok_apt'));
+  assert.equal(s.counts.length,5);
+  assert.equal(r.rows[0].arrivals,3);assert.equal(r.rows[0].converted,1);
 });
 
 test('seven and thirty day ratios compare only matching known visitor dates with exact HEAD counts',async()=>{
@@ -97,9 +107,9 @@ test('seven and thirty day ratios compare only matching known visitor dates with
 
 test('ongoing today and missing click logs do not block traffic-based ratios or add count queries',async()=>{
   const today=setup({token:true,inProgress:true});const row=(await(await today.GET(request())).json()).rows[0];
-  assert.equal(row.rate,30);assert.equal(row.rateBasis.state,'provisional');assert.equal(today.counts.length,6);
+  assert.equal(row.rate,30);assert.equal(row.rateBasis.state,'provisional');assert.equal(today.counts.length,5);
   const clicks=setup({token:true,missingClickDays:1});const c=(await(await clicks.GET(request('7'))).json()).rows[0];
-  assert.equal(c.rate,4.3);assert.equal(c.rateBasis.visitors,70);assert.equal(c.rateBasis.arrivals,3);assert.equal(clicks.counts.length,6);
+  assert.equal(c.rate,4.3);assert.equal(c.rateBasis.visitors,70);assert.equal(c.rateBasis.arrivals,3);assert.equal(clicks.counts.length,5);
 });
 
 test('zero arrivals produce zero percent, while zero visitors, missing data and count errors remain distinct',async()=>{
@@ -108,7 +118,8 @@ test('zero arrivals produce zero percent, while zero visitors, missing data and 
   const zero=setup({token:true,upstreamVisitors:0});const z=(await(await zero.GET(request())).json()).rows[0];
   assert.equal(z.rate,null);assert.equal(z.rateBasis.state,'no_visitors');
   const empty=setup({token:true,missingDays:1});const e=(await(await empty.GET(request())).json()).rows[0];
-  assert.equal(e.rate,null);assert.equal(e.rateBasis.state,'no_data');assert.equal(empty.counts.length,6);
+  assert.equal(e.rate,null);assert.equal(e.rateBasis.state,'no_data');assert.equal(empty.counts.length,5);
+  assert.equal(e.external.visitors,null);assert.equal(e.external.recordedVisitors,null);assert.equal(e.external.visitorDays,0);
   const failed=setup({token:true,missingDays:2,rateCountFails:true});const f=(await(await failed.GET(request('7'))).json()).rows[0];
   assert.equal(f.arrivals,3);assert.equal(f.external.recordedVisitors,50);assert.equal(f.rate,null);assert.equal(f.rateBasis.state,'unavailable');
 });
