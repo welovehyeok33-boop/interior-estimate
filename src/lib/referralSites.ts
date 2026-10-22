@@ -87,6 +87,13 @@ export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTot
   ];
 }
 
+export function referralTotalRate(totals: readonly ReferralTotal[]): number | null {
+  const visitors = totals[0]?.value, arrivals = totals[1]?.value;
+  if (visitors == null || arrivals == null || !Number.isSafeInteger(visitors) || !Number.isSafeInteger(arrivals) || visitors <= 0 || arrivals < 0) return null;
+  // Use displayed aggregate counts, never an average or sum of individual site percentages.
+  return Math.round(arrivals / visitors * 1000) / 10;
+}
+
 export type ReferralRateBasis = {
   state: 'ready' | 'provisional' | 'no_visitors' | 'no_data' | 'not_connected' | 'unavailable';
   arrivals: number | null; visitors: number | null; days: number; totalDays: number;
