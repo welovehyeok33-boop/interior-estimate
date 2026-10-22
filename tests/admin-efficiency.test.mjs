@@ -19,6 +19,7 @@ function harness(path, authenticated = false, body = {consultationCount:4}) {
     'framer-motion':{motion:{},AnimatePresence:'animate'},
     '@/components/AdminConsultations':{default:'consultations'},
     '@/components/AdminTraffic':{default:'traffic'},
+    './AdminFlowChart':{default:'flow-chart'},
   };
   const colors={C:{admin:palette,consultStatus:palette}};
   deps['./EstimateLayout']=colors;deps['@/components/EstimateLayout']=colors;
@@ -95,4 +96,17 @@ test('expired monthly contact records show unknown without hiding preserved visi
   const metric=label=>find(tree,n=>n.type==='div'&&n.props?.children?.[0]?.props?.children===label)?.props.children[1].props.children;
   assert.equal(metric('상담 입력 진입'),'—');assert.equal(metric('외부 유입'),'8명');assert.equal(metric('무료 견적 신청'),'2건');assert.equal(metric('신청 전환율'),'25%');
   assert.ok(find(tree,n=>n.type==='p'&&JSON.stringify(n.props.children).includes('30일 보관 기한')));
+  const chart=find(tree,n=>n.type==='flow-chart');assert.equal(chart.props.requests,2);assert.equal(chart.props.details,undefined);
+});
+
+test('the fifth flow bar uses the same selected-date application total as the summary card',async()=>{
+  const body={from:'2026-10-15',to:'2026-10-16',startedAt:'2026-10-01T00:00:00Z',updatedAt:'2026-10-22T00:00:00Z',
+    totalRequests:999,days:[{day:'2026-10-14',visitors:9,requests:99,converted:8,consult_starts:8,engine_starts:0},
+      {day:'2026-10-15',visitors:4,requests:2,converted:1,consult_starts:3,engine_starts:0},
+      {day:'2026-10-16',visitors:3,requests:1,converted:0,consult_starts:2,engine_starts:0}],sources:[],landings:[],details:{pages:[]}};
+  const h=harness('../src/components/AdminTraffic.tsx',false,body),props={refresh:0,view:'overview',active:true};
+  h.render(props);h.effects[0]();await new Promise(resolve=>setImmediate(resolve));const tree=h.render(props);
+  const chart=find(tree,n=>n.type==='flow-chart');assert.equal(chart.props.requests,3);assert.equal(chart.props.details,body.details);
+  const card=find(tree,n=>n.type==='div'&&n.props?.children?.[0]?.props?.children==='무료 견적 신청');
+  assert.equal(card.props.children[1].props.children,'3건');
 });

@@ -76,7 +76,7 @@ export default function AdminTraffic({ refresh, view, active = true }: { refresh
         </div>
         <p style={{ ...muted, fontSize: 12 }}>전체 방문 {totals.visitors}명 · 출처 확인 불가에는 직접 접속, 출처가 전달되지 않은 방문과 미분류 기록이 포함됩니다. 외부 유입은 검색·외부 링크·캠페인 등 출처가 기록된 방문입니다. 여러 날짜를 선택하면 일별 방문자 합계로 표시됩니다.</p>
         <p style={{ ...muted, fontSize: 12 }}>전환율: 출처 있는 유효한 신청 완료 방문 {attributed.converted} ÷ 출처 있는 방문 {attributed.visitors}. 삭제된 상담은 전환에서 제외하며 같은 브라우저의 하루 신청은 1명으로 집계합니다. 직접 방문·출처 확인 불가·미분류는 분자와 분모에서 모두 제외합니다. 전체 기준 전환율: {conversionRate(totals.converted, totals.visitors) === null ? '—' : `${conversionRate(totals.converted, totals.visitors)}%`}. 방문·신청 건수는 전체 기준이며, 이 제외 기준은 봇 판정이 아닙니다.</p>
-        {data.detailCoverage?.complete === false && !data.detailCoverage.from ? null : <AdminFlowChart details={data.details} />}
+        <AdminFlowChart details={data.detailCoverage?.complete === false && !data.detailCoverage.from ? undefined : data.details} requests={totals.requests} />
         <p style={{ ...muted, fontSize: 12 }}>상담 입력 진입은 마지막 연락처 입력 페이지 도착 기준입니다. 전화번호 입력·신청 완료 여부와 무관하며, 같은 브라우저는 하루 1회 집계합니다. 최근 30일의 수집된 단계 기록을 사용하며, 수집 제외·중단 기간은 포함되지 않습니다.</p>
         <details style={{ marginTop: 20 }}><summary style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '12px 0' }}>일별 수치 자세히 보기</summary>
         <div style={{ overflowX: 'auto' }}><table style={table}>
