@@ -1,8 +1,16 @@
+## 2026-10-22 유입처 표 총합
+
+AdminReferralSites tfoot에 사이트 방문/폼잇 유입/연락처 도착/신청 완료 방문 네 표시값 합계 추가. 비율은 더하지 않는다. summarizeReferralRows는 실제 0과 null/부분 합계/안전한 정수 범위를 구분하며 기존 행을 변경하지 않는다. 전부 미확인은 —, 일부만 확인되면 부분 합계와 사이트 범위를 표시. 사이트 간 중복 제거 수치가 아님을 안내한다. C.admin.totalBg는 밝은 #FFEB99/어두운 #4A3D15의 평면색으로 기존 연노랑보다 강조하며 홈 사용처는 없다. API/DB/수집/인증 변경 없음. 전체 회귀 133개·소스 타입 검사 통과, 기존 AdminTheme set-state-in-effect 오류 1건 외 새 린트 오류 없음. 배포/인증 화면 검수 후 상태 갱신 예정.
+
+## 2026-10-22 인테리어프리 오늘 방문 — 해결
+
+외부 static-interior-site/api/formit-stats.js만 운영 소스 변경. 첫 이벤트 전에는 일별 Redis 키가 없어 오늘 0명과 누락을 구분하지 못했던 원인 확인. 인증된 원자적 조회에서 counts/visitors/clickers 세 키가 모두 없는 현재일이고 수집 설정/시작일이 유효할 때만 0으로 보고한다. 과거 빈 날짜·불일치·설정 누락·저장소 실패는 null/오류 유지, 현재일 coverage=partial 유지. DB/수집기/동의/봇 필터/폼잇 앱 수정 없음. 37개 회귀, 빌드/881 HTML 검사 및 폼잇 응답 계약 통과. 외부 Vercel dpl_8RMVokhy79yCDKReYGEcsNA37H6G production READY 배포. 운영 API 오늘 0/no_events·어제 1·7일 13·10/1 null, 비인증 401 확인. 인증된 폼잇 오늘 화면도 0명/방문 없음 확인, output/interiorfree-visitors-20261022/today.jpg 보관.
+
 ## 2026-10-22 관리자 월별 통계
 
 AdminTraffic(대시보드/유입 트래픽)와 AdminReferralSites의 최근 30일 옆 월 입력을 추가. adminStatsPeriod가 KST 달력월/현재월 오늘까지/윤년/31일 및 입력 검증을 공유한다. presets RPC는 보존하고 월별만 새 admin_dashboard_range/admin_traffic_details_range(date,date)를 호출한다. 20261022_admin_monthly_statistics.sql 운영 Formit DB 적용 완료, 읽기 전용 SQL 테스트로 실제 방문/신청/출처/전환 합계·윤년/말일·범위/권한/30일 상세 보관 확인 PASS. 두 함수는 service_role 전용이며 기존 함수/테이블/기록/설정은 수정하지 않는다.
 
-외부 API는 최대 30일씩 조회하여 31일 달을 30+1로 검증·합산한다. null/부분 집계와 동일 날짜 유입 비율 기준 유지. 상세 보관 기한이 지난 날이 포함되면 상담 입력 진입/연락처 도착은 부분값이나 0 대신 —, 남아 있는 상세 기록만 범위를 밝혀 표시한다. month를 요청 키에 포함해 유입처 월 변경 시 이전 결과를 숨긴다. 전체 회귀 129개·ESLint·소스 타입 검사 통과. 운영 앱 배포/실제 UI 확인은 후속 기록 참조.
+외부 API는 최대 30일씩 조회하여 31일 달을 30+1로 검증·합산한다. null/부분 집계와 동일 날짜 유입 비율 기준 유지. 상세 보관 기한이 지난 날이 포함되면 상담 입력 진입/연락처 도착은 부분값이나 0 대신 —, 남아 있는 상세 기록만 범위를 밝혀 표시한다. month를 요청 키에 포함해 유입처 월 변경 시 이전 결과를 숨긴다. 전체 회귀 129개·ESLint·소스 타입 검사 통과. PR #53 / main 548dc9e51f9049b2fc594b71ce1568ac65eaab7d 운영 반영, Vercel 2곳 success. 인증된 두 화면에서 현재월/31일 과거월/기간 전환·새로고침 및 밝은 390px 모바일 확인, 뷰포트 복구. 사용자 테마 설정은 변경하지 않았다. 새/기존 API 4개 비인증 401/no-store 확인, 로컬 관련 40개 회귀/소스 타입 검사 통과.
 
 ## 2026-10-22 관리자 탭 순서
 

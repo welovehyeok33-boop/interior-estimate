@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
-import { REFERRAL_SITES, referralLink, groupReferralRows, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralLink, groupReferralRows, summarizeReferralRows, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
 import * as periods from '../src/lib/adminStatsPeriod.ts';
 
 function harness() {
@@ -18,9 +18,9 @@ function harness() {
   const source=readFileSync(new URL('../src/components/AdminReferralSites.tsx',import.meta.url),'utf8');
   const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useEffect:fn=>effects.push(fn)},
     'react/jsx-runtime':{jsx,jsxs:jsx},'@tabler/icons-react':{IconCopy:'copy-icon',IconExternalLink:'external-icon',IconChevronDown:'chevron-icon'},
-    '@/lib/referralSites':{groupReferralRows,REFERRAL_RATE_LABELS},
+    '@/lib/referralSites':{groupReferralRows,summarizeReferralRows,REFERRAL_RATE_LABELS},
     '@/lib/adminStatsPeriod':periods,
-    './EstimateLayout':{C:{admin:{line:'line',accentBg:'accent',bg:'background',text:'text'}}},
+    './EstimateLayout':{C:{primary:'gold',admin:{line:'line',accentBg:'accent',totalBg:'total-accent',bg:'background',text:'text'}}},
     './adminStyles':{action:{},goldAction:{},muted:{},panel:{},field:{}}};
   const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
   runInNewContext(output,{exports,AbortController,navigator:{clipboard:{writeText:async value=>copied.push(value)}},fetch:async(url,options)=>{requests.push({url,options});return{ok:true,json:async()=>report};},require:name=>deps[name]});
@@ -107,7 +107,7 @@ test('click metrics are hidden while seven-column summaries and details stay ali
     all(row,n=>n.type==='button')[0].props.onClick();
     const expanded=h.render();
     assert.doesNotMatch(text(expanded),/버튼 클릭|클릭 기록/);
-    assert.equal(all(expanded,n=>n.type==='td'&&n.props.colSpan)[0].props.colSpan,headings.length);
+    assert.equal(all(expanded,n=>n.type==='td'&&n.props.colSpan===headings.length)[0].props.colSpan,headings.length);
   }
 });
 
@@ -142,4 +142,25 @@ test('unretained monthly contact totals stay unknown while site traffic and arri
   const tree=h.render();assert.match(text(tree),/연락처 도착은 —로 표시/);
   const first=siteRows(tree)[0];assert.equal(text(all(first,n=>n.type==='strong')[0]),'10명');
   assert.equal(text(all(first,n=>n.type==='strong')[1]),'0명');assert.equal(text(all(first,n=>n.type==='strong')[2]),'—');
+});
+
+test('a darker yellow total footer keeps four metrics aligned, labels partials and does not sum percentages',()=>{
+  const h=harness(),tree=h.render(),footer=all(tree,n=>n.type==='tfoot')[0];
+  assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/총합.*5곳/);
+  const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['13명','2명','0명','0명']);
+  assert.match(text(footer),/부분 합계 · 3\/5곳/);assert.match(text(footer),/부분 합계 · 4\/5곳/);
+  assert.doesNotMatch(text(footer),/%/);
+  const cells=all(footer,n=>n.type==='th'||n.type==='td');assert.equal(cells.reduce((sum,n)=>sum+(n.props.colSpan||1),0),7);
+  assert.ok(cells.every(n=>n.props.style.background==='total-accent'));
+  assert.match(text(tree),/사이트 간 중복 방문자는 제거하지 않습니다/);
+  h.report.rows.forEach(row=>{row.contacts=null;});
+  assert.equal(text(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='strong')[2]),'—');
+  h.state[0]='30';assert.equal(all(h.render(),n=>n.type==='tfoot').length,0);
+});
+
+test('footer color is admin-scoped, theme-aware and flat in both modes',()=>{
+  const theme=readFileSync(new URL('../src/components/AdminTheme.tsx',import.meta.url),'utf8');
+  const colors=readFileSync(new URL('../src/components/EstimateLayout.tsx',import.meta.url),'utf8');
+  assert.match(theme,/'--admin-total-bg': dark \? '#4A3D15' : '#FFEB99'/);
+  assert.match(colors,/totalBg: "var\(--admin-total-bg, #FFEB99\)"/);
 });
