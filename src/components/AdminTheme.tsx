@@ -33,6 +33,7 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
     '--admin-muted': dark ? '#B4BCC7' : '#626B79',
     '--admin-subtle': dark ? '#A4AEBB' : '#707989',
     '--admin-accent-bg': dark ? '#393218' : '#FFF6CC',
+    '--admin-total-bg': dark ? '#4A3D15' : '#FFEB99',
     '--admin-accent-text': dark ? '#F5D66C' : '#806100',
     '--admin-metric-edge': dark ? 'transparent' : '#E3E6EB',
     '--admin-metric-accent-edge': dark ? 'transparent' : C.primary,

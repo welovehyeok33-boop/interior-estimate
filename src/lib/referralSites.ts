@@ -68,6 +68,25 @@ export type ReferralRow = { source: string; name: string; host: string; link: st
   arrivals: number; contacts: number | null; converted: number; rate: number | null; rateBasis: ReferralRateBasis };
 export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string; detailCoverage?: DetailCoverage };
 
+type ReferralTotal = { value: number | null; knownSites: number; totalSites: number; partial: boolean };
+export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTotal[] {
+  const sum = (values: { value: number | null; partial?: boolean }[]): ReferralTotal => {
+    const known = values.filter(item => item.value !== null && Number.isSafeInteger(item.value) && item.value >= 0);
+    const total = known.reduce((result, item) => result + item.value!, 0);
+    const valid = known.length > 0 && Number.isSafeInteger(total);
+    return { value: valid ? total : null, knownSites: known.length, totalSites: values.length,
+      partial: !valid || known.length < values.length || values.some(item => item.partial) };
+  };
+  // Match the displayed site values; partial/unknown dates must not become full-period zeroes.
+  return [
+    sum(rows.map(row => ({ value: row.external.visitors ?? row.external.recordedVisitors,
+      partial: row.external.status !== 'ready' || row.external.visitors === null }))),
+    sum(rows.map(row => ({ value: row.arrivals }))),
+    sum(rows.map(row => ({ value: row.contacts }))),
+    sum(rows.map(row => ({ value: row.converted }))),
+  ];
+}
+
 export type ReferralRateBasis = {
   state: 'ready' | 'provisional' | 'no_visitors' | 'no_data' | 'not_connected' | 'unavailable';
   arrivals: number | null; visitors: number | null; days: number; totalDays: number;
