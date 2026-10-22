@@ -7,7 +7,7 @@ import { groupReferralRows, REFERRAL_RATE_LABELS, type ReferralReport } from '@/
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
-const columns = ['사이트', '사이트 방문', '폼잇 유입', '연락처 도착', '신청 완료 방문', '유입 비율', '버튼 클릭', '상세'];
+const columns = ['사이트', '사이트 방문', '폼잇 유입', '연락처 도착', '신청 완료 방문', '유입 비율', '상세'];
 
 export default function AdminReferralSites({ refresh }: { refresh: number }) {
   const [range, setRange] = useState('7'), [retry, setRetry] = useState(0);
@@ -41,10 +41,10 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
       <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 누락된 날짜가 있으면 수집된 날짜의 합계를 표시합니다.</p>
       <div role="region" aria-label="사이트별 유입 요약" tabIndex={0} style={{ maxWidth: '100%', overflowX: 'auto', border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
-        <table style={{ width: '100%', minWidth: 880, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
+        <table style={{ width: '100%', minWidth: 780, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
           <thead><tr>{columns.map((label, i) => <th key={label} scope="col" style={{ padding: '11px 12px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600, color: C.admin.muted, background: i === 2 || i === 4 ? C.admin.accentBg : C.admin.bg, ...(i === 0 ? { minWidth: 230 } : {}) }}>{label}</th>)}</tr></thead>
           {groupReferralRows(report.rows).map(group => <tbody key={group.id} aria-label={group.name}>
-            {group.id !== 'interiorfree' && <tr><th scope="rowgroup" colSpan={8} style={{ ...cell, padding: '7px 12px', background: C.admin.bg, color: C.admin.muted, fontSize: 11, fontWeight: 600, textAlign: 'left' }}>{group.name} <span style={{ marginLeft: 4, fontWeight: 400 }}>{group.rows.length}곳</span></th></tr>}
+            {group.id !== 'interiorfree' && <tr><th scope="rowgroup" colSpan={columns.length} style={{ ...cell, padding: '7px 12px', background: C.admin.bg, color: C.admin.muted, fontSize: 11, fontWeight: 600, textAlign: 'left' }}>{group.name} <span style={{ marginLeft: 4, fontWeight: 400 }}>{group.rows.length}곳</span></th></tr>}
             {group.rows.map(row => <Fragment key={row.source}>
               <tr aria-label={row.name}>
                 <th scope="row" style={{ ...cell, textAlign: 'left', fontWeight: 600 }}>
@@ -62,10 +62,9 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   <strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{row.rate === null ? REFERRAL_RATE_LABELS[row.rateBasis.state] : row.rate + '%'}</strong>
                   {row.rate !== null && row.rateBasis.state === 'provisional' && <span style={{ ...muted, display: 'block', fontSize: 10, lineHeight: 1.4, whiteSpace: 'nowrap' }}>{row.rateBasis.days < row.rateBasis.totalDays ? `잠정 · ${row.rateBasis.days}/${row.rateBasis.totalDays}일` : '집계 중'}</span>}
                 </td>
-                <td style={metricCell}><span style={{ whiteSpace: 'nowrap' }}>{number(row.external.clickers ?? row.external.recordedClickers)}</span>{row.external.clickers === null && row.external.clickerDays > 0 && <span style={{ ...muted, display: 'block', fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.4 }}>부분 · {row.external.clickerDays}/{row.external.totalDays}일</span>}</td>
                 <td style={{ ...cell, textAlign: 'right' }}><button type="button" aria-label={row.name + ' 상세·홍보 링크'} aria-expanded={expanded === row.source} aria-controls={'referral-detail-' + row.source} onClick={() => setExpanded(current => current === row.source ? null : row.source)} style={{ ...action, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 34, minWidth: 34, padding: 6, borderRadius: 8 }}><IconChevronDown size={16} aria-hidden="true" style={{ transform: expanded === row.source ? 'rotate(180deg)' : 'none' }} /></button></td>
               </tr>
-              {expanded === row.source && <tr id={'referral-detail-' + row.source}><td colSpan={8} style={{ ...cell, padding: '14px 16px' }}>
+              {expanded === row.source && <tr id={'referral-detail-' + row.source}><td colSpan={columns.length} style={{ ...cell, padding: '14px 16px' }}>
                 <div style={{ maxWidth: 720 }}>
                   <p style={{ ...muted, margin: '0 0 6px' }}>{row.host}</p>
                   <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>
@@ -75,7 +74,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   </p>
                   {row.rateBasis.state === 'provisional' && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>집계 중인 수치 또는 방문 기록이 있는 같은 날짜만 비교한 잠정 비율입니다. 위 폼잇 유입 열은 선택 기간 전체 합계이므로 계산에 사용한 수치와 다를 수 있습니다.</p>}
                   {row.rate !== null && row.rate > 100 && <p style={{ ...muted, fontSize: 12 }}>100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.</p>}
-                  {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 클릭 기록 {row.external.clickerDays}/{row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다. 클릭 기록 누락은 유입 비율 계산을 막지 않습니다.</p>}
+                  {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다.</p>}
                   {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
                   {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
                   <label style={{ ...muted, display: 'block', marginTop: 10 }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
