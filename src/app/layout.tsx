@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import VisitTracker from "@/components/VisitTracker";
-import { shareImage, shareTitle, shareDescription } from '@/lib/shareMetadata';
+import { SITE_URL, PUBLIC_SEARCH_PAGES, pageMetadata, searchVerification, jsonLd, websiteStructuredData } from '@/lib/siteMetadata';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://form.it.kr'),
-  openGraph: { title: shareTitle, description: shareDescription, siteName: '폼잇.', locale: 'ko_KR', type: 'website', images: [shareImage] },
-  twitter: { card: 'summary_large_image', title: shareTitle, description: shareDescription, images: [shareImage] },
-  title: "폼잇. — 인테리어 견적 상담",
-  description: "지역과 공간, 공사 계획을 간단히 입력하고 무료 견적 상담을 신청하세요. 상세 견적 미리보기도 확인할 수 있습니다.",
+  ...pageMetadata(PUBLIC_SEARCH_PAGES[0]),
+  metadataBase: new URL(SITE_URL),
+  verification: searchVerification(),
   icons: {
     icon: "/formit-icon-transparent-64.png",
     apple: "/formit-apple-v2.png",
@@ -25,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body style={{ margin: 0, fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif" }}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(websiteStructuredData) }} />
         {children}
         <Suspense fallback={null}><VisitTracker /></Suspense>
       </body>

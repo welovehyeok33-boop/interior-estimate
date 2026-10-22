@@ -8,6 +8,9 @@ export type Post = {
   subcategory: string;
   publishedAt: string;
   content: string;
+  // Existing material is held for review by default. Publishing requires an explicit review record.
+  status?: 'draft' | 'published';
+  review?: { reviewer: string; reviewedAt: string; sources: { title: string; url: string }[] };
 };
 
 export const POSTS: Post[] = [
@@ -1321,16 +1324,33 @@ A. 숯, 식물, 공기청정기를 활용하고 충분한 환기를 하세요. �
   },
 ];
 
-// 오늘 날짜 기준으로 발행된 글만 반환
-export function getPublishedPosts(): Post[] {
-  const today = new Date().toISOString().split("T")[0];
-  return POSTS.filter((p) => p.publishedAt <= today).sort(
+function validDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+
+export function isPostPublished(post: Post, now = new Date()): boolean {
+  const today = new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+  const review = post.review;
+  return post.status === 'published' && !!post.title.trim() && !!post.description.trim() && !!post.content.trim() && validDate(post.publishedAt) && post.publishedAt <= today && !!review &&
+    !!review.reviewer.trim() && validDate(review.reviewedAt) && review.reviewedAt <= today && review.sources.length > 0 &&
+    review.sources.every(source => {
+      if (!source.title.trim()) return false;
+      try { const url = new URL(source.url); return url.protocol === 'https:' && !url.username && !url.password; } catch { return false; }
+    });
+}
+
+// Only explicitly published, reviewed material may enter public listings, sitemaps or Article markup.
+export function getPublishedPosts(now = new Date()): Post[] {
+  return POSTS.filter((p) => isPostPublished(p, now)).sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
-  return POSTS.find((p) => p.slug === slug);
+  try {
+    const normalized = decodeURIComponent(slug).normalize('NFC');
+    return POSTS.find((p) => p.slug.normalize('NFC') === normalized);
+  } catch { return undefined; }
 }
 
 export const FINISH_SUBCATEGORIES = [
