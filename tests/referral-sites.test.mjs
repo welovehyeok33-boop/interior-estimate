@@ -5,35 +5,35 @@ const dates = ['2026-10-15', '2026-10-16'];
 const report = () => ({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from:dates[0],to:dates[1],coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:2}))});
 
 test('site footer sums only its four displayed metrics without mutating rows or adding rates',()=>{
-  const rows=[{external:{status:'ready',visitors:10,recordedVisitors:10},arrivals:3,contacts:2,converted:1},
-    {external:{status:'ready',visitors:20,recordedVisitors:20},arrivals:5,contacts:4,converted:2}];
+  const rows=[{external:{status:'ready',visitors:10,recordedVisitors:10,visitorDays:2,totalDays:2},arrivals:3,contacts:2,converted:1},
+    {external:{status:'ready',visitors:20,recordedVisitors:20,visitorDays:2,totalDays:2},arrivals:5,contacts:4,converted:2}];
   const before=JSON.stringify(rows),totals=summarizeReferralRows(rows);
   assert.equal(totals.length,4);assert.deepEqual(totals.map(item=>item.value),[30,8,6,3]);
   assert.ok(totals.every(item=>!item.partial&&item.knownSites===2&&item.totalSites===2));
   assert.equal(JSON.stringify(rows),before);
 });
 
-test('footer keeps partial known values, unknown totals, zero and unsafe totals distinct',()=>{
+test('footer never labels a subset of sites as a full total and keeps missing dates, zero and unsafe totals distinct',()=>{
   const rows=[{external:{status:'partial',visitors:null,recordedVisitors:13},arrivals:2,contacts:null,converted:1},
     {external:{status:'error',visitors:null,recordedVisitors:null},arrivals:0,contacts:null,converted:0}];
   const totals=summarizeReferralRows(rows);
-  assert.deepEqual(totals[0],{value:13,knownSites:1,totalSites:2,partial:true});
-  assert.deepEqual(totals[2],{value:null,knownSites:0,totalSites:2,partial:true});
+  assert.deepEqual(totals[0],{value:null,knownSites:1,totalSites:2,partial:true,periodComplete:false});
+  assert.deepEqual(totals[2],{value:null,knownSites:0,totalSites:2,partial:true,periodComplete:false});
   assert.equal(totals[1].value,2);assert.equal(totals[1].partial,false);
-  rows[0].external.recordedVisitors=0;assert.equal(summarizeReferralRows(rows)[0].value,0);
-  rows[1].external={status:'partial',visitors:0,recordedVisitors:0};assert.equal(summarizeReferralRows(rows)[0].partial,true);
+  rows[0].external.recordedVisitors=0;assert.equal(summarizeReferralRows(rows)[0].value,null);
+  rows[1].external={status:'partial',visitors:0,recordedVisitors:0};assert.equal(summarizeReferralRows(rows)[0].value,0);assert.equal(summarizeReferralRows(rows)[0].partial,true);
   assert.ok(summarizeReferralRows([]).every(item=>item.value===null));
   rows.forEach(row=>{row.arrivals=Number.MAX_SAFE_INTEGER;});assert.equal(summarizeReferralRows(rows)[1].value,null);
 });
 
 test('overall referral percentage divides displayed arrival totals by displayed visitor totals',()=>{
-  const rows=[{external:{status:'partial',visitors:null,recordedVisitors:13},arrivals:0,contacts:0,converted:0},
-    {external:{status:'partial',visitors:null,recordedVisitors:14},arrivals:4,contacts:3,converted:2}];
+  const rows=[{external:{status:'partial',visitors:13,recordedVisitors:13,visitorDays:1,totalDays:1},arrivals:0,contacts:0,converted:0},
+    {external:{status:'partial',visitors:14,recordedVisitors:14,visitorDays:1,totalDays:1},arrivals:4,contacts:3,converted:2}];
   const before=JSON.stringify(rows);assert.equal(referralTotalRate(summarizeReferralRows(rows)),14.8);assert.equal(JSON.stringify(rows),before);
-  rows[0].external.recordedVisitors=100;rows[0].arrivals=50;rows[1].external.recordedVisitors=1;rows[1].arrivals=1;
+  rows[0].external.visitors=100;rows[0].arrivals=50;rows[1].external.visitors=1;rows[1].arrivals=1;
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),50.5); // Not the 75% unweighted average.
   rows.forEach(row=>{row.arrivals=0;});assert.equal(referralTotalRate(summarizeReferralRows(rows)),0);
-  rows[0].external.recordedVisitors=0;rows[1].external.recordedVisitors=1;rows[1].arrivals=2;
+  rows[0].external.visitors=0;rows[1].external.visitors=1;rows[1].arrivals=2;
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),200); // No artificial 100% cap.
 });
 
@@ -42,8 +42,18 @@ test('overall ratio cannot turn zero, missing or unsafe denominators into a perc
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),null);
   rows[0].external.recordedVisitors=0;assert.equal(referralTotalRate(summarizeReferralRows(rows)),null);
   assert.equal(referralTotalRate([]),null);
-  for(const value of [null,-1,NaN,Number.MAX_SAFE_INTEGER+1])assert.equal(referralTotalRate([{value:1},{value}]),null);
-  assert.equal(referralTotalRate([{value:Number.MAX_SAFE_INTEGER+1},{value:1}]),null);
+  for(const value of [null,-1,NaN,Number.MAX_SAFE_INTEGER+1])assert.equal(referralTotalRate([{value:1,periodComplete:true},{value,periodComplete:true}]),null);
+  assert.equal(referralTotalRate([{value:Number.MAX_SAFE_INTEGER+1,periodComplete:true},{value:1,periodComplete:true}]),null);
+});
+
+test('missing sites or historical dates cannot inflate the overall rate while ongoing complete-day counts may be provisional',()=>{
+  const rows=[{external:{status:'partial',visitors:13,recordedVisitors:13,visitorDays:7,totalDays:7},arrivals:0,contacts:0,converted:0},
+    {external:{status:'partial',visitors:14,recordedVisitors:14,visitorDays:7,totalDays:7},arrivals:4,contacts:3,converted:2}];
+  assert.equal(referralTotalRate(summarizeReferralRows(rows)),14.8);
+  rows[1].external={...rows[1].external,status:'error',visitors:null,recordedVisitors:null,visitorDays:0};
+  assert.equal(summarizeReferralRows(rows)[0].value,null);assert.equal(referralTotalRate(summarizeReferralRows(rows)),null); // Never 4/13 = 30.8%.
+  rows[1].external={...rows[1].external,status:'partial',visitors:null,recordedVisitors:14,visitorDays:6};
+  const partial=summarizeReferralRows(rows);assert.equal(partial[0].value,27);assert.equal(partial[0].periodComplete,false);assert.equal(referralTotalRate(partial),null);
 });
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('today',new Date('2026-10-15T15:00:00Z')).from,'2026-10-16');
