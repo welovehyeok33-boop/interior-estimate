@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, groupReferralRows, calculateReferralRate } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, combineReferralStats, groupReferralRows, calculateReferralRate } from '../src/lib/referralSites.ts';
 const dates = ['2026-10-15', '2026-10-16'];
 const report = () => ({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from:dates[0],to:dates[1],coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:2}))});
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
@@ -71,4 +71,14 @@ test('missing click days prevent complete status even when visitor totals are co
   const stats=validateReferralStats(r,'interiorfree',dates);
   assert.equal(stats.visitors,20);assert.equal(stats.recordedClickers,2);
   assert.equal(stats.partial,true);assert.equal(stats.visitorDays,2);assert.equal(stats.clickerDays,1);
+});
+
+test('calendar chunks combine known dates, preserve nulls and do not overflow or double count',()=>{
+  const first=validateReferralStats(report(),'interiorfree',dates);
+  const day='2026-10-17';const second=validateReferralStats({...report(),from:day,to:day,days:[{day,visitors:null,clickers:0}],coverage:'partial'},'interiorfree',[day]);
+  const combined=combineReferralStats([first,second]);
+  assert.equal(combined.totalDays,3);assert.equal(combined.visitors,null);assert.equal(combined.recordedVisitors,20);assert.equal(combined.visitorDays,2);
+  assert.equal(combined.clickers,4);assert.equal(combined.partial,true);assert.deepEqual(combined.visitorDates,dates);
+  assert.throws(()=>combineReferralStats([first,first]));assert.throws(()=>combineReferralStats([]));
+  assert.throws(()=>combineReferralStats([{...first,recordedVisitors:Number.MAX_SAFE_INTEGER},second,{...first,visitorDates:['2026-10-18','2026-10-19']}]));
 });

@@ -1,6 +1,14 @@
+## 2026-10-22 관리자 월별 통계
+
+AdminTraffic(대시보드/유입 트래픽)와 AdminReferralSites의 최근 30일 옆 월 입력을 추가. adminStatsPeriod가 KST 달력월/현재월 오늘까지/윤년/31일 및 입력 검증을 공유한다. presets RPC는 보존하고 월별만 새 admin_dashboard_range/admin_traffic_details_range(date,date)를 호출한다. 20261022_admin_monthly_statistics.sql 운영 Formit DB 적용 완료, 읽기 전용 SQL 테스트로 실제 방문/신청/출처/전환 합계·윤년/말일·범위/권한/30일 상세 보관 확인 PASS. 두 함수는 service_role 전용이며 기존 함수/테이블/기록/설정은 수정하지 않는다.
+
+외부 API는 최대 30일씩 조회하여 31일 달을 30+1로 검증·합산한다. null/부분 집계와 동일 날짜 유입 비율 기준 유지. 상세 보관 기한이 지난 날이 포함되면 상담 입력 진입/연락처 도착은 부분값이나 0 대신 —, 남아 있는 상세 기록만 범위를 밝혀 표시한다. month를 요청 키에 포함해 유입처 월 변경 시 이전 결과를 숨긴다. 전체 회귀 129개·ESLint·소스 타입 검사 통과. 운영 앱 배포/실제 UI 확인은 후속 기록 참조.
+
 ## 2026-10-22 관리자 탭 순서
 
 관리자 카테고리 배열만 대시보드 → 유입처 관리 → 유입 트래픽 → 상담 관리 순서로 변경. flow ID/패널 연결·조회/갱신·테마·반응형·상담 상태·통계는 유지한다. admin-efficiency 회귀에 순서/aria-controls/실제 클릭 패널 전환 검증 추가.
+
+PR #52 / main 57d200074a0799fb9d6e4a90e882a927148fc9e3 운영 반영 완료. Vercel 2곳 운영 success, 관련 10개 회귀·ESLint·소스 타입 검사 통과. 운영 공개 JS에서 새 순서, /admin HTTP 200/noindex와 비인증 API 401/no-store 확인. 로컬 두 파일 동기화 후 3개 회귀 통과. 실제 인증 화면 시각 검수는 미수행.
 
 ## 2026-10-22 SEO 기반 및 기존 글 보류
 

@@ -1,4 +1,5 @@
 import type { TrafficDetails } from './trafficDetails';
+import type { DetailCoverage } from './adminStatsPeriod';
 export type TrafficKind = "visit" | "consult" | "engine";
 export type TrafficDay = {
   day: string; visitors: number; consult_starts: number; engine_starts: number;
@@ -6,6 +7,7 @@ export type TrafficDay = {
 };
 export type TrafficReport = {
   details: TrafficDetails;
+  detailCoverage?: DetailCoverage;
   days: TrafficDay[]; startedAt: string; updatedAt: string;
   totalRequests: number; pendingRequests: number;
   attributionStartedAt: string; from: string; to: string; dueRequests: number;

@@ -4,9 +4,11 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as referrals from '../src/lib/referralSites.ts';
+import * as periods from '../src/lib/adminStatsPeriod.ts';
 
-function setup({ admin = true, token = false, allTokens = false, upstreamFails = false, contactsFail = false, missingDays = 0, missingClickDays = 0, inProgress = false, upstreamVisitors = 10, matchedArrivals = 1, rateCountFails = false } = {}) {
+function setup({ admin = true, token = false, allTokens = false, upstreamFails = false, contactsFail = false, missingDays = 0, missingClickDays = 0, inProgress = false, upstreamVisitors = 10, matchedArrivals = 1, rateCountFails = false, now } = {}) {
   const calls = [];
+  const rpcs = [];
   const counts = [];
   const query = table => {
     const entry = {table}; counts.push(entry);
@@ -21,8 +23,9 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
   };
   const deps = {
     '@/lib/serverAuth': {isAdmin: async()=>admin, apiJson:(b,s=200)=>Response.json(b,{status:s})},
-    '@/lib/serverDb': {serverDb:()=>({rpc:async()=>{calls.push('db');return {data:{sources:[{source:'interiorfree',visitors:3,converted:1},{source:'buildhyeok_apt',visitors:2,converted:1}]}};},from:query})},
+    '@/lib/serverDb': {serverDb:()=>({rpc:async(name,args)=>{calls.push('db');rpcs.push({name,args});return {data:{sources:[{source:'interiorfree',visitors:3,converted:1},{source:'buildhyeok_apt',visitors:2,converted:1}]}};},from:query})},
     '@/lib/referralSites': referrals,
+    '@/lib/adminStatsPeriod': { ...periods, parseStatsPeriod: params => periods.parseStatsPeriod(params, now) },
   };
   const source = readFileSync(new URL('../src/app/api/admin/referrals/route.ts',import.meta.url),'utf8');
   const output = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -36,9 +39,34 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
     const source=referrals.REFERRAL_SITES.find(site=>site.host===new URL(url).hostname).source;
     return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays||missingClickDays||inProgress?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:upstreamVisitors,clickers:i<Math.max(missingDays,missingClickDays)?null:4}))});
   }});
-  return {...exports,calls,counts};
+  return {...exports,calls,counts,rpcs};
 }
 const request=(range='today')=>new Request('https://form.it.kr/api/admin/referrals?range='+range);
+
+test('31-day referral months split upstream requests without truncating Formit dates or fabricating old contacts',async()=>{
+  const s=setup({allTokens:true});const response=await s.GET(request('month&month=2000-01'));
+  assert.equal(response.status,200);const report=await response.json();
+  assert.equal(report.from,'2000-01-01');assert.equal(report.to,'2000-01-31');
+  assert.equal(s.rpcs[0].name,'admin_dashboard_range');assert.deepEqual({...s.rpcs[0].args},{p_from:'2000-01-01',p_to:'2000-01-31'});
+  assert.equal(s.calls.filter(call=>typeof call==='object').length,10);assert.equal(s.counts.length,0);
+  for(const row of report.rows){assert.equal(row.external.visitors,310);assert.equal(row.external.totalDays,31);assert.equal(row.external.visitorDays,31);assert.equal(row.contacts,null);}
+  assert.deepEqual(report.detailCoverage,{complete:false,from:null,to:null});
+  const requests=s.calls.filter(call=>typeof call==='object').map(call=>new URL(call.url));
+  assert.ok(requests.every(url=>Date.parse(url.searchParams.get('to'))-Date.parse(url.searchParams.get('from'))<=29*86400000));
+  assert.equal(requests.filter(url=>url.searchParams.get('to')==='2000-01-31').length,5);
+  assert.ok(!JSON.stringify(report).includes('x'.repeat(40)));
+});
+
+test('current referral month stops today and invalid or unauthenticated months do not read data',async()=>{
+  const s=setup({token:true,now:new Date('2026-10-22T03:00:00Z')});
+  const report=await(await s.GET(request('month&month=2026-10'))).json();
+  assert.equal(report.from,'2026-10-01');assert.equal(report.to,'2026-10-22');assert.equal(report.detailCoverage.complete,true);
+  assert.equal(s.counts.length,5);assert.equal(report.rows[0].contacts,60001);
+  const invalid=setup({token:true,now:new Date('2026-10-22T03:00:00Z')});
+  for(const range of ['month','month&month=2026-11','month&month=2026-00','month&month=2026-10&month=2026-09'])assert.equal((await invalid.GET(request(range))).status,400);
+  assert.equal(invalid.calls.length,0);assert.equal(invalid.counts.length,0);
+  const blocked=setup({admin:false,token:true});assert.equal((await blocked.GET(request('month&month=2000-01'))).status,401);assert.equal(blocked.calls.length,0);
+});
 test('referrals reject unauthenticated and invalid requests before any data access',async()=>{
   const s=setup({admin:false,token:true});assert.equal((await s.GET(request())).status,401);assert.equal(s.calls.length,0);
   const a=setup();assert.equal((await a.GET(request('all'))).status,400);assert.equal(a.calls.length,0);
@@ -98,7 +126,7 @@ test('seven and thirty day ratios compare only matching known visitor dates with
     assert.equal(rateCount[0].filter,'source');assert.equal(rateCount[0].source,'interiorfree');
     assert.equal(rateCount[0].columns,'day');assert.equal(rateCount[0].options.head,true);assert.equal(rateCount[0].options.count,'exact');
     assert.equal(rateCount[0].in.column,'day');
-    assert.deepEqual(rateCount[0].in.value,referrals.referralDates(range).dates.slice(missing));
+    assert.deepEqual(Array.from(rateCount[0].in.value),referrals.referralDates(range).dates.slice(missing));
     for(const c of s.counts) {assert.equal(c.from,r.from);assert.equal(c.to,r.to);}
     const upstream=new URL(s.calls.find(c=>typeof c==='object').url);
     assert.equal(upstream.searchParams.get('from'),r.from);assert.equal(upstream.searchParams.get('to'),r.to);

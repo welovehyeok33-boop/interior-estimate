@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { REFERRAL_SITES, referralLink, groupReferralRows, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
+import * as periods from '../src/lib/adminStatsPeriod.ts';
 
 function harness() {
   const report={from:'2026-10-16',to:'2026-10-22',updatedAt:'2026-10-21T15:00:00Z',rows:REFERRAL_SITES.map((site,i)=>({
@@ -18,6 +19,7 @@ function harness() {
   const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useEffect:fn=>effects.push(fn)},
     'react/jsx-runtime':{jsx,jsxs:jsx},'@tabler/icons-react':{IconCopy:'copy-icon',IconExternalLink:'external-icon',IconChevronDown:'chevron-icon'},
     '@/lib/referralSites':{groupReferralRows,REFERRAL_RATE_LABELS},
+    '@/lib/adminStatsPeriod':periods,
     './EstimateLayout':{C:{admin:{line:'line',accentBg:'accent',bg:'background',text:'text'}}},
     './adminStyles':{action:{},goldAction:{},muted:{},panel:{},field:{}}};
   const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -46,7 +48,7 @@ test('five active sites use one table row each in two ordered groups with detail
     const button=all(row,n=>n.type==='button')[0];assert.equal(button.props['aria-expanded'],false);
     assert.equal(all(row,n=>n.type==='a')[0].props.rel,'noopener noreferrer');
   }
-  assert.equal(all(tree,n=>n.type==='input').length,0);
+  assert.equal(all(tree,n=>n.type==='input'&&n.props.readOnly).length,0);
 });
 
 test('unknown and partial data remain distinct from zero with coverage available',()=>{
@@ -92,7 +94,7 @@ test('link copy still uses the individual site URL and reports success',async()=
   assert.equal(h.copied[0],h.report.rows.at(-1).link);
   assert.match(text(h.render()),/링크를 복사했어요/);
   all(siteRows(h.render()).find(row=>row.props['aria-label']==='빌라 인테리어'),n=>n.type==='button')[0].props.onClick();
-  assert.equal(all(h.render(),n=>n.type==='input').length,0);
+  assert.equal(all(h.render(),n=>n.type==='input'&&n.props.readOnly).length,0);
 });
 
 test('click metrics are hidden while seven-column summaries and details stay aligned',()=>{
@@ -117,4 +119,27 @@ test('period changes and refresh retain cancellable no-store reads',()=>{
   assert.equal(h.requests[0].options.cache,'no-store');cancel();assert.equal(h.requests[0].options.signal.aborted,true);
   all(tree,n=>n.type==='button'&&text(n)==='새로고침')[0].props.onClick();
   assert.equal(h.state[1],1);
+});
+
+test('referral month picker follows the presets and its month participates in loading, reads and refresh',async()=>{
+  const h=harness();let tree=h.render();
+  const input=()=>all(tree,n=>n.type==='input'&&n.props.type==='month')[0];
+  assert.equal(input().props['aria-label'],'유입처 조회 월 선택');assert.equal(input().props.min,'2000-01');
+  input().props.onChange({target:{value:'2000-01'}});tree=h.render();
+  assert.equal(input().props.value,'2000-01');assert.equal(tree.props['aria-busy'],true);assert.equal(siteRows(tree).length,0);
+  const cancel=h.effects[0]();assert.equal(h.requests[0].url,'/api/admin/referrals?range=month&month=2000-01');
+  await new Promise(resolve=>setImmediate(resolve));tree=h.render();assert.equal(tree.props['aria-busy'],false);
+  input().props.onChange({target:{value:'2000-02'}});tree=h.render();assert.equal(siteRows(tree).length,0);assert.equal(tree.props['aria-busy'],true);
+  cancel();assert.equal(h.requests[0].options.signal.aborted,true);
+  all(tree,n=>n.type==='button'&&text(n)==='최근 30일')[0].props.onClick();tree=h.render();h.effects[0]();
+  assert.equal(h.requests.at(-1).url,'/api/admin/referrals?range=30');assert.equal(input().props.value,'');
+  input().props.onChange({target:{value:'2000-02'}});tree=h.render();
+  input().props.onChange({target:{value:''}});tree=h.render();assert.equal(h.state[0],'7');
+});
+
+test('unretained monthly contact totals stay unknown while site traffic and arrivals remain visible',()=>{
+  const h=harness();h.report.detailCoverage={complete:false,from:null,to:null};h.report.rows.forEach(row=>{row.contacts=null;});
+  const tree=h.render();assert.match(text(tree),/연락처 도착은 —로 표시/);
+  const first=siteRows(tree)[0];assert.equal(text(all(first,n=>n.type==='strong')[0]),'10명');
+  assert.equal(text(all(first,n=>n.type==='strong')[1]),'0명');assert.equal(text(all(first,n=>n.type==='strong')[2]),'—');
 });

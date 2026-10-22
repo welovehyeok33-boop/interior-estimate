@@ -4,6 +4,7 @@ import { IconChevronDown, IconCopy, IconExternalLink } from '@tabler/icons-react
 import { C } from './EstimateLayout';
 import { action, goldAction, muted, panel, field } from './adminStyles';
 import { groupReferralRows, REFERRAL_RATE_LABELS, type ReferralReport } from '@/lib/referralSites';
+import { statsMonth, statsQuery, validStatsMonth } from '@/lib/adminStatsPeriod';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
@@ -11,21 +12,23 @@ const columns = ['사이트', '사이트 방문', '폼잇 유입', '연락처 �
 
 export default function AdminReferralSites({ refresh }: { refresh: number }) {
   const [range, setRange] = useState('7'), [retry, setRetry] = useState(0);
-  const requestKey = `${range}:${retry}:${refresh}`;
   const [result, setResult] = useState<{ key: string; report: ReferralReport | null; error: string } | null>(null);
   const [copied, setCopied] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [month, setMonth] = useState('');
+  const query = statsQuery(range, month);
+  const requestKey = `${range === 'month' ? `${range}:${month}` : range}:${retry}:${refresh}`;
   const loading = result?.key !== requestKey;
   const report = loading ? null : result?.report;
   const error = loading ? '' : result?.error;
   useEffect(() => {
     const controller = new AbortController();
-    void fetch('/api/admin/referrals?range=' + range, { signal: controller.signal, cache: 'no-store' }).then(async r => {
+    void fetch('/api/admin/referrals?' + query, { signal: controller.signal, cache: 'no-store' }).then(async r => {
       const data = await r.json(); if (!r.ok) throw new Error(data.error || '조회 실패');
       if (!controller.signal.aborted) setResult({ key: requestKey, report: data, error: '' });
     }).catch(e => { if (!controller.signal.aborted) setResult({ key: requestKey, report: null, error: e instanceof Error ? e.message : '조회 실패' }); });
     return () => controller.abort();
-  }, [range, requestKey]);
+  }, [query, requestKey]);
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString() + '명';
   const dateTime = (value: string) => new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
   return <section style={panel} aria-label="외부 유입처 관리" aria-busy={loading}>
@@ -33,12 +36,18 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     <p style={muted}>폼잇 유입 비율 = 해당 사이트에서 온 폼잇 유입자 ÷ 해당 사이트 방문자 × 100</p>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '16px 0' }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) => <button key={id} style={range === id ? goldAction : action} aria-pressed={range === id} onClick={() => setRange(id)}>{label}</button>)}
+      <label style={{ ...(range === 'month' ? goldAction : action), display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 12px', maxWidth: '100%' }}>월별
+        <input type="month" aria-label="유입처 조회 월 선택" min="2000-01" max={statsMonth()} value={range === 'month' ? month : ''}
+          onChange={event => { const value = event.target.value; if (!value) { setMonth(''); setRange('7'); } else if (validStatsMonth(value)) { setMonth(value); setRange('month'); } }}
+          style={{ minWidth: 0, width: 132, minHeight: 40, border: 0, background: 'transparent', color: 'inherit', colorScheme: 'inherit', font: 'inherit' }} />
+      </label>
       <button style={action} disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button>
     </div>
     {loading && <p role="status" style={muted}>사이트별 집계를 확인하는 중…</p>}
     {error && <p role="alert">{error}</p>}
     {report && <>
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
+      {report.detailCoverage?.complete === false && <p style={{ ...muted, fontSize: 12 }}>선택 기간에 30일 보관 기한이 지난 상세 기록이 있어 연락처 도착은 —로 표시합니다. 사이트 방문·폼잇 유입·신청 완료 방문은 선택 기간 기준이며, 유입 비율은 방문 기록이 있는 같은 날짜끼리 비교합니다.</p>}
       <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 누락된 날짜가 있으면 수집된 날짜의 합계를 표시합니다.</p>
       <div role="region" aria-label="사이트별 유입 요약" tabIndex={0} style={{ maxWidth: '100%', overflowX: 'auto', border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
         <table style={{ width: '100%', minWidth: 780, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
