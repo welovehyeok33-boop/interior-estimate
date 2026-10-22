@@ -1,9 +1,17 @@
+# 2026-10-22 상담 목록 카드 압축
+
+- 상담 목록 카드 여백과 정보 간격만 축소: padding 20→12px 16px, 카드 사이 12→8px, 업종 행 margin 7→3px. 읽는 글자 크기/정보와 노란 테두리·밝은/어두운 테마 토큰 유지.
+- 펼친 Editor/메모 폰트/자동 저장/상태 변경/계약률/필터/페이지네이션/DB/API 변경 없음. 관리자 외의 화면 변경 없음.
+- compact 카드 스타일·내용·줄바꿈·테두리·펼침/닫힘 및 저장/계약률/API 회귀 포함 관련 테스트 19개·ESLint·소스 타입 검사 통과. 브라우저 inventory가 비어 실제 픽셀/모바일 시각 검수는 미수행. 검토/운영 배포는 진행 후 기록.
+- 변경 파일: src/components/AdminConsultations.tsx, tests/admin-consult-save.test.mjs, CLAUDE.md, STATUS.md, TODO.md.
+
 # 2026-10-22 유입처 클릭 항목 제거
 
+- 운영 배포 완료: PR #48 / main 9f18ff4efd2006c7d80b9a2ee047cd142962fa4e. primary/duplicate Vercel 검토·운영 success. /admin HTTP 200, 공개 코드의 클릭 UI 제거·780px 폭·유입 지표 유지 및 referrals 비로그인 401/no-store 확인. 로컬 작업공간에도 해당 UI/테스트만 동기화하고 23개 테스트 통과.
 - 사용자 요청에 따라 유입처 관리의 버튼 클릭 열과 상세 클릭 집계 안내만 제거. 사이트별 한 줄/그룹/실제 폼잇 유입·유입 비율·링크 복사 유지.
 - 8열→7열, 그룹/상세 colspan 공유 및 최소 표 폭 880→780px. 좁은 화면의 표 영역 가로 스크롤/키보드 접근 유지.
 - 클릭 수집/외부 API/서버 응답/집계 계산/DB 변경 없음. 테스트는 클릭 정보 미노출·7열 정렬·모든 사이트 상세·기존 비율/복사/기간 조회를 확인.
-- 관련 회귀 23개·변경 파일 ESLint·소스 타입 검사 통과. 운영 배포 결과는 진행 후 기록. 실제 인증 화면/모바일 픽셀 검수는 미수행.
+- 관련 회귀 23개·변경 파일 ESLint·소스 타입 검사 통과. 실제 인증 화면/모바일 픽셀 검수는 미수행.
 - 변경 파일: src/components/AdminReferralSites.tsx, tests/admin-referrals-layout.test.mjs, CLAUDE.md, STATUS.md, TODO.md.
 
 # 2026-10-22 트래픽 대비 폼잇 유입 비율
