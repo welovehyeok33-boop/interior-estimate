@@ -1,5 +1,13 @@
+# 2026-10-22 유입처 카드 한눈에 보기
+
+- AdminReferralSites만 변경: 전체 폭 한 줄 카드 대신 화면 폭에 따른 2~3열 소형 카드, 좁은 화면 1열. 사이트별 4개 지표와 유입 비율·버튼 클릭은 유지한다.
+- 부분 집계 상태/알려진 합계/수집 일수와 미연결 상태는 요약에 유지. 반복 안내·원본 갱신 시각·홍보 링크는 카드별 details로 접고 전체 집계 설명도 접었다. 통계 계산·조회·서버/DB·소비자 홈 변경 없음.
+- 카드 6개·미수집/0 구분·부분 집계 안내·링크 복사·기간/새로고침 회귀 포함 테스트 17개, 변경 파일 ESLint 및 소스 타입 검사 통과. 브라우저 inventory가 비어 있어 시각 검수는 아직 미수행.
+
 # 2026-10-21 아파트·빌라 유입처 추가
 
+- 2026-10-22 운영 배포 완료: PR #44 / main a4ee7730ca750c5901e973cc8bf76a524b1a5708. primary Vercel 검토/운영 빌드 모두 성공(24초), form.it.kr에 Current/Production 연결 확인. 자동 Git 배포가 생성되지 않아 Vercel의 Create Deployment에서 같은 브랜치/병합 커밋을 직접 지정했다.
+- 사용자 로그인 후 운영 유입처 관리에서 총 6개, 신규 아파트·빌라 모두 부분 집계(1/7일)·원본 갱신 시각을 실제 확인. 기존 apt.buildhyeok.com은 로컬 인증 API 200이나 폼잇 운영 서버 조회에서 연결 확인 필요로 표시돼 별도 점검 대상이다. 해당 기존 연결 값은 보존했으며 이번 변경으로 원인을 추정하거나 기존 사이트를 수정하지 않았다.
 - apt.interiorhub.kr(interiorhub_apt), villa.interiorhub.kr(interiorhub_villa)를 등록해 총 6개 유입처 표시. 각 사이트 UTM 링크와 UTM 없는 referrer 자동 분류를 추가했으며 기존 4개 연결은 유지한다.
 - 두 WordPress 사이트에 별도 Interior HUB Formit Residential Bridge 1.0.1 활성화. 기존 Residential Launch 소스·공개 콘텐츠를 덮어쓰지 않고 추적 자산만 확장했다. 브라우저별 KST 일일 방문·클릭 중복 제거, opt-out/DNT/GPC 존중, 날짜별 HMAC 및 90일 정리. 폼잇에는 인증된 날짜별 합계만 제공한다.
 - 운영 Vercel의 기존 FORMIT_REFERRAL_TOKENS 4개 값을 확인·보존하며 신규 2개 추가. 토큰 원문은 Git·응답에 포함하지 않는다. 연결 전 날짜와 첫 부분 집계일은 null을 유지하며 소급 수치를 만들지 않는다.
