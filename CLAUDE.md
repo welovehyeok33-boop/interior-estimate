@@ -1,3 +1,7 @@
+## 2026-10-22 유입처 카드 압축
+
+AdminReferralSites의 사이트 grid는 repeat(auto-fit, minmax(min(100%, 340px), 1fr))로 2~3열/좁은 화면 1열이다. 각 카드에 4개 요약 지표, 상태, 부분 합계 범위, 유입 비율·버튼 클릭을 유지하고, 긴 안내/원본 갱신/홍보 링크는 닫힌 details로 제공한다. 링크 복사·기간·취소 가능한 no-store 조회 동작은 그대로다. API/DB/집계 계산 변경 없음. tests/admin-referrals-layout.test.mjs에 표시/기능 회귀 4개 추가.
+
 ## 2026-10-21 아파트·빌라 유입처
 
 REFERRAL_SITES는 기존 4곳에 apt.interiorhub.kr/interiorhub_apt 및 villa.interiorhub.kr/interiorhub_villa를 더해 6곳이다. /consult UTM 링크와 UTM 없는 referrer 분류를 지원한다. 고정 HTTPS API, 서버 전용 토큰, 기존 관리자 인증을 유지한다. 두 사이트에 별도 WordPress bridge 1.0.1을 활성화하고 원래 Residential Launch 플러그인·페이지는 보존했다. 최초 설치일은 부분 일자라 null이며 다음 온전한 KST일부터 정상 일일 집계된다. 로컬 소스/ZIP과 외부 사이트 작업 기록은 output/formit-bridge-20261021/README.md(Interior HUB 작업공간)에 기록했다. 새 폼잇 DB 마이그레이션 없음.
