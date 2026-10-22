@@ -155,20 +155,20 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
     {loading ? <p role="status" style={{ ...panel, textAlign: 'center', padding: 36 }}>상담 목록을 불러오고 있어요…</p> : error ? <p role="alert" style={panel}>{error}</p> : <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', margin: '24px 0 12px' }}><strong style={{ fontSize: 14 }}>상담 목록 <span style={{ color: C.admin.accentText, marginLeft: 4 }}>{total.toLocaleString()}</span></strong><span style={{ ...muted, fontSize: 12 }}>접수일 최신순 · 한국시간</span></div>
       {items.length === 0 && <div style={{ ...panel, textAlign: 'center', padding: '48px 20px' }}><strong>조건에 맞는 상담이 없어요</strong><p style={muted}>접수 월이나 검색 조건을 변경해보세요.</p></div>}
-      {items.map(item => <article key={item.id} style={{ ...panel, padding: 20, marginBottom: 12,
+      {items.map(item => <article key={item.id} style={{ ...panel, padding: '12px 16px', marginBottom: 8,
         borderColor: C.primary,
       }}>
-        <button type="button" aria-expanded={open === item.id} onClick={() => setOpen(open === item.id ? null : item.id)} style={{ ...action, width: '100%', border: 0, background: 'transparent', textAlign: 'left', padding: 0, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <button type="button" aria-expanded={open === item.id} onClick={() => setOpen(open === item.id ? null : item.id)} style={{ ...action, width: '100%', border: 0, background: 'transparent', textAlign: 'left', padding: 0, display: 'flex', alignItems: 'center', gap: '8px 16px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <span style={{ minWidth: 0, flex: '1 1 240px', overflowWrap: 'anywhere' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}><strong style={{ fontSize: 17 }}>{item.name}</strong><span style={{ fontSize: 12, color: C.admin.muted }}>{formatEstimateRegion(item.region)}</span></span>
-            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', margin: '7px 0', fontSize: 13, lineHeight: 1.6, color: C.admin.text }}>
+            <span style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', margin: '3px 0', fontSize: 13, lineHeight: 1.6, color: C.admin.text }}>
               <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><IconBuildingStore size={14} aria-hidden="true" color={C.admin.muted} />{item.building_type === 'residential' ? '주거' : `${INDUSTRY_LABELS[item.commercial_type || ''] || item.commercial_type || '업종 미입력'}${item.commercial_sub?.trim() && !['unknown', 'etc'].includes(item.commercial_type || '') ? ` · ${item.commercial_sub.trim()}` : ''}`}</span>
               <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><IconRulerMeasure size={14} aria-hidden="true" color={C.admin.muted} />{typeof item.area === 'number' && Number.isFinite(item.area) && item.area > 0 ? `${item.area.toLocaleString('ko-KR')}평` : '평수 미입력'}</span>
             </span>
             <span style={{ ...muted, fontSize: 11, fontWeight: 400 }}>접수 {dateLabel(item.created_at)}</span>
           </span>
-          <span style={{ minWidth: 110 }}><span style={{ ...muted, display: 'block', fontSize: 11, fontWeight: 400 }}>희망 예산</span><strong style={{ display: 'block', marginTop: 6, fontSize: 15 }}>{formatConsultBudget(item.budget ?? undefined)}</strong></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 18 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
+          <span style={{ minWidth: 110 }}><span style={{ ...muted, display: 'block', fontSize: 11, fontWeight: 400 }}>희망 예산</span><strong style={{ display: 'block', marginTop: 3, fontSize: 15 }}>{formatConsultBudget(item.budget ?? undefined)}</strong></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
         </button>
         {open === item.id && <Editor key={item.id} item={item} onSaved={updated => {
           setItems(current => current.map(row => row.id === updated.id ? updated : row));

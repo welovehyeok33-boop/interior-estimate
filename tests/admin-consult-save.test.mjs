@@ -36,7 +36,7 @@ function editorHarness(fetch, initial = [], root = false, runtime = {}) {
   const dependencies = {
     react: { useEffect: runtime.effect || (() => {}), useState: initial => { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    './EstimateLayout': { C: { admin: palette, consultStatus: palette } },
+    './EstimateLayout': { C: { primary: 'brand', admin: palette, consultStatus: palette } },
     './adminStyles': { consultStatusStyle: () => ({}), consultStatusBadge: () => ({}) },
     '@/lib/estimateRegion': { formatEstimateRegion: () => '' },
     '@/lib/adminCrm': crm,
@@ -71,6 +71,39 @@ function find(node, predicate) {
   if (predicate(node)) return node;
   for (const child of [node.props?.children].flat(Infinity)) { const found = find(child, predicate); if (found) return found; }
 }
+function text(node) {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (!node || typeof node !== 'object') return '';
+  return [node?.props?.children].flat(Infinity).map(child => text(child)).join('');
+}
+
+test('compact cards retain readable content, yellow borders, wrapping and the same expandable editor', () => {
+  const item = { id: 'compact-fixture', name: '테스트 고객', region: '서울', building_type: 'commercial', commercial_type: 'unknown', area: 28, created_at: '2026-10-20T01:02:37Z', status: 'consulting', phone: '', admin_note: '', admin_version: 1 };
+  const render = editorHarness(() => {}, [[item], 1, [{ status: 'all', count: 1 }], '', { status: 'all', page: 1, month: '', q: '' }, null, 0, false, ''], true);
+  const props = { refresh: 0, onSaved: () => {} };
+  const article = find(render(props), node => node.type === 'article');
+  assert.equal(article.props.style.padding, '12px 16px');
+  assert.equal(article.props.style.marginBottom, 8);
+  assert.equal(article.props.style.borderColor, 'brand');
+  const toggle = find(article, node => node.type === 'button');
+  assert.equal(toggle.props.style.flexWrap, 'wrap');
+  assert.equal(toggle.props.style.gap, '8px 16px');
+  assert.equal(toggle.props['aria-expanded'], false);
+  assert.match(text(toggle), /테스트 고객.*28평.*접수.*37.*희망 예산.*진행 중/);
+  const heading = find(toggle, node => node.type === 'strong');
+  assert.equal(heading.props.style.fontSize, 17);
+  assert.ok(find(toggle, node => node.props?.style?.overflowWrap === 'anywhere'));
+  const metadata = find(toggle, node => node.props?.style?.margin === '3px 0');
+  assert.equal(metadata.props.style.flexWrap, 'wrap');
+  assert.equal(metadata.props.style.fontSize, 13);
+  toggle.props.onClick();
+  const opened = find(render(props), node => node.type === 'article');
+  assert.equal(find(opened, node => node.type === 'button').props['aria-expanded'], true);
+  assert.equal(find(opened, node => node.type?.name === 'Editor').props.item, item);
+  find(opened, node => node.type === 'button').props.onClick();
+  assert.equal(find(render(props), node => node.type?.name === 'Editor'), undefined);
+});
+
 test('save keeps editor mounted, uses returned version on second save, and shows inline success', async () => {
   const requests = [];
   let item = { id: 'test', status: 'lost', phone: '01000000000', admin_note: ' note ', next_contact_at: null, admin_version: 2 };
