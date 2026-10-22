@@ -153,7 +153,7 @@ test('a compact yellow footer shows four totals and their weighted ratio without
   assert.doesNotMatch(text(footer),/부분 합계/);
   const metricCells=all(footer,n=>n.type==='td');
   assert.match(metricCells[0].props.title,/3\/5곳만 확인/);assert.match(metricCells[2].props.title,/4\/5곳만 확인/);
-  assert.match(metricCells[4].props.title,/조회 오류·누락된 날짜/);
+  assert.match(metricCells[4].props.title,/합계가 없거나 0명/);
   assert.ok(metricCells.every(cell=>all(cell,n=>n.type==='span').length===0));
   const cells=all(footer,n=>n.type==='th'||n.type==='td');assert.equal(cells.reduce((sum,n)=>sum+(n.props.colSpan||1),0),7);
   assert.ok(cells.every(n=>n.props.style.background==='total-accent'));
@@ -172,9 +172,11 @@ test('footer ratio stays unknown for missing or zero visitor totals, but zero ar
   h.report.rows.forEach(row=>{row.arrivals=0;row.external={...row.external,status:'partial',visitors:0,recordedVisitors:0,visitorDays:7,totalDays:7};});
   h.report.rows[0].external.visitors=27;assert.equal(rate(),'0%');
   h.report.rows[1].arrivals=4;assert.equal(rate(),'14.8%');
-  const footer=all(h.render(),n=>n.type==='tfoot')[0];assert.match(all(footer,n=>n.type==='td')[4].props.title,/폼잇 유입 총합 4명 ÷ 사이트 방문 총합 27명/);
+  const footer=all(h.render(),n=>n.type==='tfoot')[0];assert.match(all(footer,n=>n.type==='td')[4].props.title,/폼잇 유입 합계 4명 ÷ 확인된 사이트 방문 합계 27명/);
   h.report.rows[1].external={...h.report.rows[1].external,visitors:null,recordedVisitors:0,visitorDays:6};
-  assert.equal(rate(),'—');assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계/);
+  assert.equal(rate(),'14.8%');assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계/);
+  assert.match(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='td')[4].props.title,/확인된 기록 기준의 참고 비율/);
+  assert.match(text(h.render()),/폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100/);
   h.report.rows[1].external.status='error';assert.equal(rate(),'—');
 });
 

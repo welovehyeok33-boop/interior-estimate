@@ -105,14 +105,14 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
             {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? `${total.knownSites}/${total.totalSites}곳만 확인되어 전체 합계는 표시하지 않습니다.` : !total.periodComplete ? '누락된 날짜를 제외한 확인된 기록의 합계입니다.' : total.partial ? '오늘 진행 중인 집계를 포함한 합계입니다.' : '전체 합계'}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{number(total.value)}</strong>
             </td>)}
-            <td style={totalCell} title={totalRate === null ? '사이트 조회 오류·누락된 날짜·방문 0명이 있으면 총합 유입 비율을 계산하지 않습니다.' : `폼잇 유입 총합 ${number(totals[1].value)} ÷ 사이트 방문 총합 ${number(totals[0].value)} × 100${totalRatePartial ? ' · 오늘 집계 중인 잠정 비율입니다.' : ''}`}>
+            <td style={totalCell} title={totalRate === null ? '확인된 사이트 방문 합계가 없거나 0명이면 비율을 계산하지 않습니다.' : `폼잇 유입 합계 ${number(totals[1].value)} ÷ 확인된 사이트 방문 합계 ${number(totals[0].value)} × 100${!totals[0].periodComplete ? ' · 확인된 기록 기준의 참고 비율이며 전체 기간의 완전한 비율과 다를 수 있습니다.' : totalRatePartial ? ' · 오늘 집계 중인 잠정 비율입니다.' : ''}`}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{totalRate === null ? '—' : totalRate + '%'}</strong>
             </td>
             <td style={totalCell} />
           </tr></tfoot>
         </table>
       </div>
-      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>사이트 간 중복 방문자는 제거하지 않습니다. 조회에 실패한 사이트가 있으면 해당 총합은 —로 표시합니다. 날짜가 누락되면 확인된 합계만 표시하며, 총합 유입 비율은 모든 사이트의 같은 기간 방문 수가 확인됐을 때만 폼잇 유입 총합 ÷ 사이트 방문 총합 × 100으로 계산합니다. 오늘 수치는 집계 중입니다.</p>
+      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합 유입 비율은 폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100입니다. 날짜가 누락되면 확인된 기록 기준의 참고 비율입니다. 사이트 조회 실패로 합계를 확인할 수 없거나 방문이 0명이면 —로 표시합니다. 사이트 간 중복 방문자는 제거하지 않습니다. 오늘 수치는 집계 중입니다.</p>
       <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>좁은 화면에서는 표를 좌우로 밀어 볼 수 있어요. 행 끝의 화살표를 누르면 집계 상세와 홍보 링크가 열립니다.</p>
     </>}
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}

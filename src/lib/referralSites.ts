@@ -96,9 +96,9 @@ export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTot
 
 export function referralTotalRate(totals: readonly ReferralTotal[]): number | null {
   const visitors = totals[0]?.value, arrivals = totals[1]?.value;
-  if (!totals[0]?.periodComplete || !totals[1]?.periodComplete) return null;
   if (visitors == null || arrivals == null || !Number.isSafeInteger(visitors) || !Number.isSafeInteger(arrivals) || visitors <= 0 || arrivals < 0) return null;
-  // Use displayed aggregate counts, never an average or sum of individual site percentages.
+  // Use the displayed known totals even with historical gaps, labelled as a reference rate in the UI.
+  // An unavailable site still makes the visitor total null; never average individual percentages.
   return Math.round(arrivals / visitors * 1000) / 10;
 }
 

@@ -46,14 +46,18 @@ test('overall ratio cannot turn zero, missing or unsafe denominators into a perc
   assert.equal(referralTotalRate([{value:Number.MAX_SAFE_INTEGER+1,periodComplete:true},{value:1,periodComplete:true}]),null);
 });
 
-test('missing sites or historical dates cannot inflate the overall rate while ongoing complete-day counts may be provisional',()=>{
+test('unknown sites block the overall rate but known historical partial sums provide a reference percentage',()=>{
   const rows=[{external:{status:'partial',visitors:13,recordedVisitors:13,visitorDays:7,totalDays:7},arrivals:0,contacts:0,converted:0},
     {external:{status:'partial',visitors:14,recordedVisitors:14,visitorDays:7,totalDays:7},arrivals:4,contacts:3,converted:2}];
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),14.8);
   rows[1].external={...rows[1].external,status:'error',visitors:null,recordedVisitors:null,visitorDays:0};
   assert.equal(summarizeReferralRows(rows)[0].value,null);assert.equal(referralTotalRate(summarizeReferralRows(rows)),null); // Never 4/13 = 30.8%.
   rows[1].external={...rows[1].external,status:'partial',visitors:null,recordedVisitors:14,visitorDays:6};
-  const partial=summarizeReferralRows(rows);assert.equal(partial[0].value,27);assert.equal(partial[0].periodComplete,false);assert.equal(referralTotalRate(partial),null);
+  const partial=summarizeReferralRows(rows);assert.equal(partial[0].value,27);assert.equal(partial[0].periodComplete,false);assert.equal(referralTotalRate(partial),14.8);
+  rows[1].arrivals=0;assert.equal(referralTotalRate(summarizeReferralRows(rows)),0);
+  rows[0].external={...rows[0].external,status:'partial',visitors:null,recordedVisitors:37,visitorDays:18,totalDays:22};
+  rows[1].external={...rows[1].external,recordedVisitors:14,visitorDays:6,totalDays:22};rows[1].arrivals=4;
+  assert.equal(referralTotalRate(summarizeReferralRows(rows)),7.8);
 });
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('today',new Date('2026-10-15T15:00:00Z')).from,'2026-10-16');
