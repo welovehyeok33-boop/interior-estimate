@@ -63,24 +63,31 @@ export function combineReferralStats(parts: Aggregate[]): Aggregate {
     updatedAt: parts.every(part => part.updatedAt) ? parts.map(part => part.updatedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] : null };
 }
 
+export type ReferralIssue = 'timeout' | 'network' | 'auth' | 'upstream' | 'invalid';
+export const REFERRAL_ISSUE_LABELS: Record<ReferralIssue, string> = {
+  timeout: '사이트 응답이 지연되어 재시도 후에도 조회하지 못했습니다.',
+  network: '사이트 통계 서버에 연결하지 못했습니다.', auth: '사이트 통계 인증 연결을 확인해주세요.',
+  upstream: '사이트 통계 서버가 오류를 반환했습니다.', invalid: '사이트 통계 응답의 기간 또는 형식을 확인할 수 없습니다.',
+};
 export type ReferralRow = { source: string; name: string; host: string; link: string;
-  external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial' };
+  external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial'; fetchedAt?: string; cached?: boolean; issue?: ReferralIssue };
   arrivals: number; contacts: number | null; converted: number; rate: number | null; rateBasis: ReferralRateBasis };
 export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string; detailCoverage?: DetailCoverage };
 
-type ReferralTotal = { value: number | null; knownSites: number; totalSites: number; partial: boolean };
+type ReferralTotal = { value: number | null; knownSites: number; totalSites: number; partial: boolean; periodComplete: boolean };
 export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTotal[] {
-  const sum = (values: { value: number | null; partial?: boolean }[]): ReferralTotal => {
+  const sum = (values: { value: number | null; partial?: boolean; periodComplete?: boolean }[]): ReferralTotal => {
     const known = values.filter(item => item.value !== null && Number.isSafeInteger(item.value) && item.value >= 0);
     const total = known.reduce((result, item) => result + item.value!, 0);
-    const valid = known.length > 0 && Number.isSafeInteger(total);
+    const valid = known.length > 0 && known.length === values.length && Number.isSafeInteger(total);
     return { value: valid ? total : null, knownSites: known.length, totalSites: values.length,
-      partial: !valid || known.length < values.length || values.some(item => item.partial) };
+      partial: !valid || values.some(item => item.partial), periodComplete: valid && values.every(item => item.periodComplete !== false) };
   };
   // Match the displayed site values; partial/unknown dates must not become full-period zeroes.
   return [
-    sum(rows.map(row => ({ value: row.external.visitors ?? row.external.recordedVisitors,
-      partial: row.external.status !== 'ready' || row.external.visitors === null }))),
+    sum(rows.map(row => ({ value: row.external.status === 'error' || row.external.status === 'pending' ? null : row.external.visitors ?? row.external.recordedVisitors,
+      partial: row.external.status !== 'ready' || row.external.visitors === null,
+      periodComplete: row.external.visitors !== null && row.external.visitorDays > 0 && row.external.visitorDays === row.external.totalDays }))),
     sum(rows.map(row => ({ value: row.arrivals }))),
     sum(rows.map(row => ({ value: row.contacts }))),
     sum(rows.map(row => ({ value: row.converted }))),
@@ -89,6 +96,7 @@ export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTot
 
 export function referralTotalRate(totals: readonly ReferralTotal[]): number | null {
   const visitors = totals[0]?.value, arrivals = totals[1]?.value;
+  if (!totals[0]?.periodComplete || !totals[1]?.periodComplete) return null;
   if (visitors == null || arrivals == null || !Number.isSafeInteger(visitors) || !Number.isSafeInteger(arrivals) || visitors <= 0 || arrivals < 0) return null;
   // Use displayed aggregate counts, never an average or sum of individual site percentages.
   return Math.round(arrivals / visitors * 1000) / 10;

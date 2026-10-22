@@ -1,32 +1,12 @@
 import { apiJson, isAdmin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
-import { REFERRAL_SITES, referralLink, validateReferralStats, combineReferralStats, calculateReferralRate, type ReferralRow } from '@/lib/referralSites';
+import { REFERRAL_SITES, referralLink, calculateReferralRate, type ReferralRow } from '@/lib/referralSites';
+import { loadReferralStats } from '@/lib/serverReferralStats';
 import { parseStatsPeriod } from '@/lib/adminStatsPeriod';
 import type { TrafficReport } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
-
-async function externalStats(site: typeof REFERRAL_SITES[number], dates: string[], tokens: Record<string, unknown>): Promise<ReferralRow['external']> {
-  const empty = { visitors: null, clickers: null, partial: false, updatedAt: null,
-    recordedVisitors: null, recordedClickers: null, visitorDays: 0, visitorDates: [], clickerDays: 0, totalDays: dates.length };
-  const token = tokens[site.source];
-  if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
-  try {
-    // Fixed allowlist: neither host nor path may be supplied by the client.
-    const chunks = [dates.slice(0, 30), ...(dates.length > 30 ? [dates.slice(30)] : [])];
-    const parts = await Promise.all(chunks.map(async chunk => {
-      const url = new URL(site.endpoint, 'https://' + site.host);
-      url.searchParams.set('from', chunk[0]); url.searchParams.set('to', chunk[chunk.length - 1]);
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8000) });
-      if (!response.ok) throw new Error('Upstream unavailable');
-      const text = await response.text();
-      if (text.length > 32000) throw new Error('Invalid response');
-      return validateReferralStats(JSON.parse(text), site.source, chunk);
-    }));
-    const aggregate = combineReferralStats(parts);
-    return { ...aggregate, status: aggregate.partial ? 'partial' : 'ready' };
-  } catch { return { ...empty, status: 'error' }; }
-}
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   try {
@@ -36,7 +16,7 @@ export async function GET(request: Request) {
     const { range, from, to, dates, detailCoverage } = period;
     let tokens: Record<string, unknown> = {};
     try { const value: unknown = JSON.parse(process.env.FORMIT_REFERRAL_TOKENS || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) tokens = value as Record<string, unknown>; } catch { /* pending, never expose credentials */ }
-    const externalPromise = Promise.all(REFERRAL_SITES.map(site => externalStats(site, dates, tokens)));
+    const externalPromise = Promise.all(REFERRAL_SITES.map(site => loadReferralStats(site.source, dates, tokens[site.source])));
     const db = serverDb();
     // Count in the database instead of downloading and scanning up to 50,000 visits.
     // Independent counts also keep one source's failure from blanking every source.

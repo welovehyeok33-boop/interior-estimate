@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import * as crypto from 'node:crypto';
 import * as referrals from '../src/lib/referralSites.ts';
 import * as periods from '../src/lib/adminStatsPeriod.ts';
 
@@ -31,14 +32,20 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
   const output = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   const exports={};
   const tokens=allTokens?{...Object.fromEntries(referrals.REFERRAL_SITES.map(site=>[site.source,'x'.repeat(40)])),buildhyeok_apt:'x'.repeat(40)}:token?{interiorfree:'x'.repeat(40)}:{};
-  runInNewContext(output,{exports,URL,AbortSignal,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n],fetch:async(url,opts)=>{
+  const fakeFetch=async(url,opts)=>{
     calls.push({url:String(url),opts});
     if(upstreamFails) throw new Error('private upstream error');
     const from=new URL(url).searchParams.get('from'),to=new URL(url).searchParams.get('to');
     const dates=[];for(let stamp=Date.parse(from);stamp<=Date.parse(to);stamp+=86400000)dates.push(new Date(stamp).toISOString().slice(0,10));
     const source=referrals.REFERRAL_SITES.find(site=>site.host===new URL(url).hostname).source;
     return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays||missingClickDays||inProgress?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:upstreamVisitors,clickers:i<Math.max(missingDays,missingClickDays)?null:4}))});
-  }});
+  };
+  const loaderSource=readFileSync(new URL('../src/lib/serverReferralStats.ts',import.meta.url),'utf8');
+  const loaderOutput=ts.transpileModule(loaderSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  const loader={};
+  runInNewContext(loaderOutput,{exports:loader,URL,AbortSignal,Date,setTimeout,fetch:fakeFetch,require:n=>({'server-only':{},'node:crypto':crypto,'./referralSites':referrals})[n]});
+  deps['@/lib/serverReferralStats']={loadReferralStats:loader.createReferralStatsLoader({pause:async()=>{}})};
+  runInNewContext(output,{exports,URL,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n]});
   return {...exports,calls,counts,rpcs};
 }
 const request=(range='today')=>new Request('https://form.it.kr/api/admin/referrals?range='+range);

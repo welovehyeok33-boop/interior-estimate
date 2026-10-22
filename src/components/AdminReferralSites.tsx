@@ -3,7 +3,7 @@ import { Fragment, useEffect, useState, type CSSProperties } from 'react';
 import { IconChevronDown, IconCopy, IconExternalLink } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
 import { action, goldAction, muted, panel, field } from './adminStyles';
-import { groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS, type ReferralReport } from '@/lib/referralSites';
+import { groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS, REFERRAL_ISSUE_LABELS, type ReferralReport } from '@/lib/referralSites';
 import { statsMonth, statsQuery, validStatsMonth } from '@/lib/adminStatsPeriod';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
@@ -47,12 +47,12 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
       </label>
       <button style={action} disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button>
     </div>
-    {loading && <p role="status" style={muted}>사이트별 집계를 확인하는 중…</p>}
+    {loading && <p role="status" style={muted}>사이트별 집계를 확인하는 중… 응답이 늦으면 자동으로 다시 시도합니다.</p>}
     {error && <p role="alert">{error}</p>}
     {report && <>
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
       {report.detailCoverage?.complete === false && <p style={{ ...muted, fontSize: 12 }}>선택 기간에 30일 보관 기한이 지난 상세 기록이 있어 연락처 도착은 —로 표시합니다. 사이트 방문·폼잇 유입·신청 완료 방문은 선택 기간 기준이며, 유입 비율은 방문 기록이 있는 같은 날짜끼리 비교합니다.</p>}
-      <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 누락된 날짜가 있으면 수집된 날짜의 합계를 표시합니다.</p>
+      <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 사이트 통계는 최대 1분간 캐시합니다. 누락된 날짜는 0명으로 처리하지 않습니다.</p>
       <div role="region" aria-label="사이트별 유입 요약" tabIndex={0} style={{ maxWidth: '100%', overflowX: 'auto', border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
         <table style={{ width: '100%', minWidth: 780, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
           <thead><tr>{columns.map((label, i) => <th key={label} scope="col" style={{ padding: '11px 12px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600, color: C.admin.muted, background: i === 2 || i === 4 ? C.admin.accentBg : C.admin.bg, ...(i === 0 ? { minWidth: 230 } : {}) }}>{label}</th>)}</tr></thead>
@@ -87,7 +87,9 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   {row.rate !== null && row.rate > 100 && <p style={{ ...muted, fontSize: 12 }}>100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.</p>}
                   {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다.</p>}
                   {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
+                  {row.external.issue && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>{REFERRAL_ISSUE_LABELS[row.external.issue]}</p>}
                   {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
+                  {row.external.fetchedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>원본 조회 {dateTime(row.external.fetchedAt)}{row.external.cached ? ' · 1분 이내 캐시' : ''}</p>}
                   <label style={{ ...muted, display: 'block', marginTop: 10 }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                     <input id={'link-' + row.source} readOnly value={row.link} style={{ ...field, flex: '1 1 260px', width: '100%' }} onFocus={e => e.currentTarget.select()} />
@@ -99,18 +101,18 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
             </Fragment>)}
           </tbody>)}
           <tfoot aria-label="전체 유입처 합계"><tr>
-            <th scope="row" style={{ ...totalCell, textAlign: 'left', fontSize: 14, fontWeight: 700 }}>총합 <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: C.admin.accentText }}>{report.rows.length}곳</span></th>
-            {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? '확인된 기록이 없습니다.' : total.partial ? `부분 합계 · ${total.knownSites}/${total.totalSites}곳의 확인된 기록 기준입니다.` : '전체 합계'}>
+            <th scope="row" style={{ ...totalCell, textAlign: 'left', fontSize: 14, fontWeight: 700 }}>{totals[0]?.value !== null && !totals[0]?.periodComplete ? '확인된 합계' : '총합'} <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: C.admin.accentText }}>{report.rows.length}곳</span></th>
+            {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? `${total.knownSites}/${total.totalSites}곳만 확인되어 전체 합계는 표시하지 않습니다.` : !total.periodComplete ? '누락된 날짜를 제외한 확인된 기록의 합계입니다.' : total.partial ? '오늘 진행 중인 집계를 포함한 합계입니다.' : '전체 합계'}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{number(total.value)}</strong>
             </td>)}
-            <td style={totalCell} title={totalRate === null ? '유입 비율 계산에 필요한 양수의 사이트 방문 총합과 폼잇 유입 총합이 있어야 합니다.' : `폼잇 유입 총합 ${number(totals[1].value)} ÷ 사이트 방문 총합 ${number(totals[0].value)} × 100${totalRatePartial ? ' · 부분 기록 또는 집계 중인 수치를 포함한 잠정 비율입니다.' : ''}`}>
+            <td style={totalCell} title={totalRate === null ? '사이트 조회 오류·누락된 날짜·방문 0명이 있으면 총합 유입 비율을 계산하지 않습니다.' : `폼잇 유입 총합 ${number(totals[1].value)} ÷ 사이트 방문 총합 ${number(totals[0].value)} × 100${totalRatePartial ? ' · 오늘 집계 중인 잠정 비율입니다.' : ''}`}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{totalRate === null ? '—' : totalRate + '%'}</strong>
             </td>
             <td style={totalCell} />
           </tr></tfoot>
         </table>
       </div>
-      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합은 사이트별 표시값의 합계이며, 사이트 간 중복 방문자는 제거하지 않습니다. 총합 유입 비율은 폼잇 유입 총합 ÷ 사이트 방문 총합 × 100입니다. 미확인 기록이 있거나 집계 중이면 총합과 비율은 잠정 수치입니다.</p>
+      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>사이트 간 중복 방문자는 제거하지 않습니다. 조회에 실패한 사이트가 있으면 해당 총합은 —로 표시합니다. 날짜가 누락되면 확인된 합계만 표시하며, 총합 유입 비율은 모든 사이트의 같은 기간 방문 수가 확인됐을 때만 폼잇 유입 총합 ÷ 사이트 방문 총합 × 100으로 계산합니다. 오늘 수치는 집계 중입니다.</p>
       <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>좁은 화면에서는 표를 좌우로 밀어 볼 수 있어요. 행 끝의 화살표를 누르면 집계 상세와 홍보 링크가 열립니다.</p>
     </>}
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}
