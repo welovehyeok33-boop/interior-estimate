@@ -1,4 +1,12 @@
+## 2026-10-22 SEO 기반 및 기존 글 보류
+
+사용자가 기존 글 22개의 검수 전 검색 제외를 승인했다. 원문은 src/data/posts.ts에 보존하며 상태/검수 기록 없는 글은 기본 보류다. status=published + 유효한 KST 비미래 발행/검수일 + 검수자 + HTTPS 출처 + 비어 있지 않은 내용만 공개 목록/사이트맵/본문/Article 대상이다. 기존 /blog/[slug]는 robust decode/NFC 조회로 HTTP 200 noindex 검수 안내를 내고 원문을 RSC로 직렬화하지 않는다. dynamicParams=false로 미등록 주소는 404. 새 글 추가 없음.
+
+siteMetadata는 form.it.kr 대표주소/로봇/검증코드/공유메타/JSON-LD를 일원화한다. 현재 sitemap은 /와 /landing 두 개, 빈 /blog는 noindex. utility layout은 noindex+canonical null이며 기존 AdminTheme/EstimateProgressProvider 유지. robots는 noindex를 읽도록 페이지 크롤링을 허용하며 API만 제외한다. SEO_FOUNDATION.md에 정책/게시 게이트/검증/소유확인 잔여 작업을 기록했다. 기존 OG/파비콘·관리자 UI/통계/인증/DB 변경 없음. 전체 회귀 116개와 로컬 HTTP 47개 통과. 운영 배포/검사는 후속 기록을 확인한다.
+
 ## 2026-10-22 아파트 길잡이 유입처 제외
+
+운영 배포 완료: PR #50 / main 83157ad13683d2f80956dd61c25ba836c9378ca9, primary/duplicate Vercel 검토·운영 success. /admin HTTP 200·유입처 UI 자산/비로그인 API 401/no-store 확인. 활성 설정은 서버 전용이라 공개 JS에서 5곳 데이터를 직접 검수하지 않았고, 인증된 운영 화면 검수는 미수행. 로컬 관련 4개 소스/테스트 동기화 후 25개 회귀 통과.
 
 REFERRAL_SITES에서 buildhyeok_apt/apt.buildhyeok.com만 제외하여 유입처 관리/API 활성 목록은 인테리어프리와 Interior HUB 4곳(총 5곳)이다. 해당 외부 API와 연락처 집계 조회도 더 이상 실행하지 않는다. 기존 traffic_daily/상담/UTM 인식/일반 대시보드의 과거 데이터·서버 환경변수·외부 사이트는 삭제/변경하지 않았다. 남은 5곳의 링크/유입 비율/부분 집계/표 구성은 유지한다. 관련 테스트 25개·ESLint·소스 타입 검사 통과.
 
