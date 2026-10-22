@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
-import { REFERRAL_SITES, referralLink, groupReferralRows, summarizeReferralRows, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralLink, groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
 import * as periods from '../src/lib/adminStatsPeriod.ts';
 
 function harness() {
@@ -18,7 +18,7 @@ function harness() {
   const source=readFileSync(new URL('../src/components/AdminReferralSites.tsx',import.meta.url),'utf8');
   const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useEffect:fn=>effects.push(fn)},
     'react/jsx-runtime':{jsx,jsxs:jsx},'@tabler/icons-react':{IconCopy:'copy-icon',IconExternalLink:'external-icon',IconChevronDown:'chevron-icon'},
-    '@/lib/referralSites':{groupReferralRows,summarizeReferralRows,REFERRAL_RATE_LABELS},
+    '@/lib/referralSites':{groupReferralRows,summarizeReferralRows,referralTotalRate,REFERRAL_RATE_LABELS},
     '@/lib/adminStatsPeriod':periods,
     './EstimateLayout':{C:{primary:'gold',admin:{line:'line',accentBg:'accent',totalBg:'total-accent',bg:'background',text:'text'}}},
     './adminStyles':{action:{},goldAction:{},muted:{},panel:{},field:{}}};
@@ -54,7 +54,9 @@ test('five active sites use one table row each in two ordered groups with detail
 test('unknown and partial data remain distinct from zero with coverage available',()=>{
   const h=harness(),rows=siteRows(h.render());
   assert.match(text(rows[0]),/0명/);
-  assert.match(text(rows[1]),/3명.*부분 · 5\/7일/);
+  const visits=all(rows[1],n=>n.type==='td')[0];
+  assert.equal(text(visits),'3명');assert.equal(all(visits,n=>n.type==='span').length,0);
+  assert.match(visits.props.title,/방문 기록 5\/7일/);
   assert.equal(text(all(rows[2],n=>n.type==='strong')[0]),'—');
   assert.match(text(rows[2]),/연결 확인 필요/);assert.match(text(rows.at(-1)),/연결 대기/);
   all(rows[1],n=>n.type==='button')[0].props.onClick();
@@ -144,18 +146,32 @@ test('unretained monthly contact totals stay unknown while site traffic and arri
   assert.equal(text(all(first,n=>n.type==='strong')[1]),'0명');assert.equal(text(all(first,n=>n.type==='strong')[2]),'—');
 });
 
-test('a darker yellow total footer keeps four metrics aligned, labels partials and does not sum percentages',()=>{
+test('a compact yellow footer shows four totals and their weighted ratio without numeric sublabels',()=>{
   const h=harness(),tree=h.render(),footer=all(tree,n=>n.type==='tfoot')[0];
   assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/총합.*5곳/);
-  const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['13명','2명','0명','0명']);
-  assert.match(text(footer),/부분 합계 · 3\/5곳/);assert.match(text(footer),/부분 합계 · 4\/5곳/);
-  assert.doesNotMatch(text(footer),/%/);
+  const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['13명','2명','0명','0명','15.4%']);
+  assert.doesNotMatch(text(footer),/부분 합계/);
+  const metricCells=all(footer,n=>n.type==='td');
+  assert.match(metricCells[0].props.title,/부분 합계 · 3\/5곳/);assert.match(metricCells[2].props.title,/부분 합계 · 4\/5곳/);
+  assert.match(metricCells[4].props.title,/폼잇 유입 총합 2명 ÷ 사이트 방문 총합 13명/);
+  assert.match(metricCells[4].props.title,/잠정 비율/);
+  assert.ok(metricCells.every(cell=>all(cell,n=>n.type==='span').length===0));
   const cells=all(footer,n=>n.type==='th'||n.type==='td');assert.equal(cells.reduce((sum,n)=>sum+(n.props.colSpan||1),0),7);
   assert.ok(cells.every(n=>n.props.style.background==='total-accent'));
+  assert.ok(cells.every(n=>n.props.style.padding==='8px 12px'));
   assert.match(text(tree),/사이트 간 중복 방문자는 제거하지 않습니다/);
   h.report.rows.forEach(row=>{row.contacts=null;});
   assert.equal(text(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='strong')[2]),'—');
   h.state[0]='30';assert.equal(all(h.render(),n=>n.type==='tfoot').length,0);
+});
+
+test('footer ratio stays unknown for missing or zero visitor totals, but zero arrivals remain 0 percent',()=>{
+  const h=harness();
+  const rate=()=>text(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='strong').at(-1));
+  h.report.rows.forEach(row=>{row.external.visitors=0;row.external.recordedVisitors=0;});assert.equal(rate(),'—');
+  h.report.rows.forEach(row=>{row.external.visitors=null;row.external.recordedVisitors=null;});assert.equal(rate(),'—');
+  h.report.rows[0].external.visitors=27;h.report.rows.forEach(row=>{row.arrivals=0;});assert.equal(rate(),'0%');
+  h.report.rows[1].arrivals=4;assert.equal(rate(),'14.8%');
 });
 
 test('footer color is admin-scoped, theme-aware and flat in both modes',()=>{

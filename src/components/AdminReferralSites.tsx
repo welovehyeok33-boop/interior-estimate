@@ -3,12 +3,12 @@ import { Fragment, useEffect, useState, type CSSProperties } from 'react';
 import { IconChevronDown, IconCopy, IconExternalLink } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
 import { action, goldAction, muted, panel, field } from './adminStyles';
-import { groupReferralRows, summarizeReferralRows, REFERRAL_RATE_LABELS, type ReferralReport } from '@/lib/referralSites';
+import { groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS, type ReferralReport } from '@/lib/referralSites';
 import { statsMonth, statsQuery, validStatsMonth } from '@/lib/adminStatsPeriod';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
-const totalCell: CSSProperties = { ...metricCell, padding: '12px', borderTop: `1px solid ${C.primary}`, background: C.admin.totalBg };
+const totalCell: CSSProperties = { ...metricCell, padding: '8px 12px', borderTop: `1px solid ${C.primary}`, background: C.admin.totalBg };
 const columns = ['사이트', '사이트 방문', '폼잇 유입', '연락처 도착', '신청 완료 방문', '유입 비율', '상세'];
 
 export default function AdminReferralSites({ refresh }: { refresh: number }) {
@@ -22,6 +22,9 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
   const loading = result?.key !== requestKey;
   const report = loading ? null : result?.report;
   const error = loading ? '' : result?.error;
+  const totals = report ? summarizeReferralRows(report.rows) : [];
+  const totalRate = referralTotalRate(totals);
+  const totalRatePartial = totals[0]?.partial || totals[1]?.partial;
   useEffect(() => {
     const controller = new AbortController();
     void fetch('/api/admin/referrals?' + query, { signal: controller.signal, cache: 'no-store' }).then(async r => {
@@ -63,10 +66,8 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                     <span style={{ ...muted, fontSize: 10, fontWeight: 400, borderRadius: 20, background: row.external.status === 'ready' ? C.admin.accentBg : C.admin.bg, padding: '2px 6px' }}>{({ ready: '연결됨', pending: '연결 대기', error: '연결 확인 필요', partial: '부분 집계' })[row.external.status]}</span>
                   </div>
                 </th>
-                {[{ value: row.external.visitors ?? row.external.recordedVisitors, days: row.external.visitors === null ? row.external.visitorDays : 0 },
-                  { value: row.arrivals, days: 0 }, { value: row.contacts, days: 0 }, { value: row.converted, days: 0 }].map(({ value, days }, i) => <td key={i} style={{ ...metricCell, ...(i === 1 || i === 3 ? { background: C.admin.accentBg } : {}) }}>
+                {[row.external.visitors ?? row.external.recordedVisitors, row.arrivals, row.contacts, row.converted].map((value, i) => <td key={i} style={{ ...metricCell, ...(i === 1 || i === 3 ? { background: C.admin.accentBg } : {}) }} title={i === 0 ? `방문 기록 ${row.external.visitorDays}/${row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다.` : undefined}>
                     <strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>{number(value)}</strong>
-                    {days > 0 && <span style={{ ...muted, display: 'block', whiteSpace: 'nowrap', fontSize: 10, lineHeight: 1.4 }}>부분 · {days}/{row.external.totalDays}일</span>}
                   </td>)}
                 <td style={metricCell} title={row.rate === null ? REFERRAL_RATE_LABELS[row.rateBasis.state] : `폼잇 유입 ${number(row.rateBasis.arrivals)} ÷ 사이트 방문 ${number(row.rateBasis.visitors)} × 100 · 같은 ${row.rateBasis.days}/${row.rateBasis.totalDays}일 기준`}>
                   <strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{row.rate === null ? REFERRAL_RATE_LABELS[row.rateBasis.state] : row.rate + '%'}</strong>
@@ -99,15 +100,17 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
           </tbody>)}
           <tfoot aria-label="전체 유입처 합계"><tr>
             <th scope="row" style={{ ...totalCell, textAlign: 'left', fontSize: 14, fontWeight: 700 }}>총합 <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: C.admin.accentText }}>{report.rows.length}곳</span></th>
-            {summarizeReferralRows(report.rows).map((total, i) => <td key={i} style={totalCell}>
+            {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? '확인된 기록이 없습니다.' : total.partial ? `부분 합계 · ${total.knownSites}/${total.totalSites}곳의 확인된 기록 기준입니다.` : '전체 합계'}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{number(total.value)}</strong>
-              {total.value !== null && total.partial && <span style={{ display: 'block', fontSize: 10, lineHeight: 1.4, whiteSpace: 'nowrap', color: C.admin.accentText }}>부분 합계{total.knownSites < total.totalSites ? ` · ${total.knownSites}/${total.totalSites}곳` : ''}</span>}
             </td>)}
-            <td colSpan={2} style={totalCell} />
+            <td style={totalCell} title={totalRate === null ? '유입 비율 계산에 필요한 양수의 사이트 방문 총합과 폼잇 유입 총합이 있어야 합니다.' : `폼잇 유입 총합 ${number(totals[1].value)} ÷ 사이트 방문 총합 ${number(totals[0].value)} × 100${totalRatePartial ? ' · 부분 기록 또는 집계 중인 수치를 포함한 잠정 비율입니다.' : ''}`}>
+              <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{totalRate === null ? '—' : totalRate + '%'}</strong>
+            </td>
+            <td style={totalCell} />
           </tr></tfoot>
         </table>
       </div>
-      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합은 사이트별 표시값의 합계이며, 사이트 간 중복 방문자는 제거하지 않습니다. 일부 기록을 확인할 수 없으면 확인된 값만 부분 합계로 표시합니다.</p>
+      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합은 사이트별 표시값의 합계이며, 사이트 간 중복 방문자는 제거하지 않습니다. 총합 유입 비율은 폼잇 유입 총합 ÷ 사이트 방문 총합 × 100입니다. 미확인 기록이 있거나 집계 중이면 총합과 비율은 잠정 수치입니다.</p>
       <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>좁은 화면에서는 표를 좌우로 밀어 볼 수 있어요. 행 끝의 화살표를 누르면 집계 상세와 홍보 링크가 열립니다.</p>
     </>}
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}

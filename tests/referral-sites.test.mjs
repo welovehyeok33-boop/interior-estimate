@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, combineReferralStats, groupReferralRows, calculateReferralRate, summarizeReferralRows } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, combineReferralStats, groupReferralRows, calculateReferralRate, summarizeReferralRows, referralTotalRate } from '../src/lib/referralSites.ts';
 const dates = ['2026-10-15', '2026-10-16'];
 const report = () => ({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from:dates[0],to:dates[1],coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:2}))});
 
@@ -24,6 +24,26 @@ test('footer keeps partial known values, unknown totals, zero and unsafe totals 
   rows[1].external={status:'partial',visitors:0,recordedVisitors:0};assert.equal(summarizeReferralRows(rows)[0].partial,true);
   assert.ok(summarizeReferralRows([]).every(item=>item.value===null));
   rows.forEach(row=>{row.arrivals=Number.MAX_SAFE_INTEGER;});assert.equal(summarizeReferralRows(rows)[1].value,null);
+});
+
+test('overall referral percentage divides displayed arrival totals by displayed visitor totals',()=>{
+  const rows=[{external:{status:'partial',visitors:null,recordedVisitors:13},arrivals:0,contacts:0,converted:0},
+    {external:{status:'partial',visitors:null,recordedVisitors:14},arrivals:4,contacts:3,converted:2}];
+  const before=JSON.stringify(rows);assert.equal(referralTotalRate(summarizeReferralRows(rows)),14.8);assert.equal(JSON.stringify(rows),before);
+  rows[0].external.recordedVisitors=100;rows[0].arrivals=50;rows[1].external.recordedVisitors=1;rows[1].arrivals=1;
+  assert.equal(referralTotalRate(summarizeReferralRows(rows)),50.5); // Not the 75% unweighted average.
+  rows.forEach(row=>{row.arrivals=0;});assert.equal(referralTotalRate(summarizeReferralRows(rows)),0);
+  rows[0].external.recordedVisitors=0;rows[1].external.recordedVisitors=1;rows[1].arrivals=2;
+  assert.equal(referralTotalRate(summarizeReferralRows(rows)),200); // No artificial 100% cap.
+});
+
+test('overall ratio cannot turn zero, missing or unsafe denominators into a percentage',()=>{
+  const rows=[{external:{status:'error',visitors:null,recordedVisitors:null},arrivals:1,contacts:null,converted:0}];
+  assert.equal(referralTotalRate(summarizeReferralRows(rows)),null);
+  rows[0].external.recordedVisitors=0;assert.equal(referralTotalRate(summarizeReferralRows(rows)),null);
+  assert.equal(referralTotalRate([]),null);
+  for(const value of [null,-1,NaN,Number.MAX_SAFE_INTEGER+1])assert.equal(referralTotalRate([{value:1},{value}]),null);
+  assert.equal(referralTotalRate([{value:Number.MAX_SAFE_INTEGER+1},{value:1}]),null);
 });
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('today',new Date('2026-10-15T15:00:00Z')).from,'2026-10-16');
