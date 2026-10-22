@@ -3,7 +3,7 @@ import { Fragment, useEffect, useState, type CSSProperties } from 'react';
 import { IconChevronDown, IconCopy, IconExternalLink } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
 import { action, goldAction, muted, panel, field } from './adminStyles';
-import { groupReferralRows, type ReferralReport } from '@/lib/referralSites';
+import { groupReferralRows, REFERRAL_RATE_LABELS, type ReferralReport } from '@/lib/referralSites';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
@@ -30,7 +30,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
   const dateTime = (value: string) => new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false });
   return <section style={panel} aria-label="외부 유입처 관리" aria-busy={loading}>
     <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>유입처 관리</h1>
-    <p style={muted}>외부 사이트에서 폼잇 상담까지, 같은 기간의 흐름을 비교하세요.</p>
+    <p style={muted}>폼잇 유입 비율 = 해당 사이트에서 온 폼잇 유입자 ÷ 해당 사이트 방문자 × 100</p>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '16px 0' }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) => <button key={id} style={range === id ? goldAction : action} aria-pressed={range === id} onClick={() => setRange(id)}>{label}</button>)}
       <button style={action} disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button>
@@ -58,15 +58,24 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                     <strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>{number(value)}</strong>
                     {days > 0 && <span style={{ ...muted, display: 'block', whiteSpace: 'nowrap', fontSize: 10, lineHeight: 1.4 }}>부분 · {days}/{row.external.totalDays}일</span>}
                   </td>)}
-                <td style={metricCell}><strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{row.rate === null ? '계산 대기' : row.rate + '%'}</strong></td>
+                <td style={metricCell} title={row.rate === null ? REFERRAL_RATE_LABELS[row.rateBasis.state] : `폼잇 유입 ${number(row.rateBasis.arrivals)} ÷ 사이트 방문 ${number(row.rateBasis.visitors)} × 100 · 같은 ${row.rateBasis.days}/${row.rateBasis.totalDays}일 기준`}>
+                  <strong style={{ fontSize: 13, whiteSpace: 'nowrap' }}>{row.rate === null ? REFERRAL_RATE_LABELS[row.rateBasis.state] : row.rate + '%'}</strong>
+                  {row.rate !== null && row.rateBasis.state === 'provisional' && <span style={{ ...muted, display: 'block', fontSize: 10, lineHeight: 1.4, whiteSpace: 'nowrap' }}>{row.rateBasis.days < row.rateBasis.totalDays ? `잠정 · ${row.rateBasis.days}/${row.rateBasis.totalDays}일` : '집계 중'}</span>}
+                </td>
                 <td style={metricCell}><span style={{ whiteSpace: 'nowrap' }}>{number(row.external.clickers ?? row.external.recordedClickers)}</span>{row.external.clickers === null && row.external.clickerDays > 0 && <span style={{ ...muted, display: 'block', fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.4 }}>부분 · {row.external.clickerDays}/{row.external.totalDays}일</span>}</td>
                 <td style={{ ...cell, textAlign: 'right' }}><button type="button" aria-label={row.name + ' 상세·홍보 링크'} aria-expanded={expanded === row.source} aria-controls={'referral-detail-' + row.source} onClick={() => setExpanded(current => current === row.source ? null : row.source)} style={{ ...action, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minHeight: 34, minWidth: 34, padding: 6, borderRadius: 8 }}><IconChevronDown size={16} aria-hidden="true" style={{ transform: expanded === row.source ? 'rotate(180deg)' : 'none' }} /></button></td>
               </tr>
               {expanded === row.source && <tr id={'referral-detail-' + row.source}><td colSpan={8} style={{ ...cell, padding: '14px 16px' }}>
                 <div style={{ maxWidth: 720 }}>
                   <p style={{ ...muted, margin: '0 0 6px' }}>{row.host}</p>
+                  <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>
+                    {row.rate !== null ? `같은 ${row.rateBasis.days}/${row.rateBasis.totalDays}일 기준: 폼잇 유입 ${number(row.rateBasis.arrivals)} ÷ 사이트 방문 ${number(row.rateBasis.visitors)} × 100 = ${row.rate}%` : ({
+                      ready: '', provisional: '', no_visitors: '집계된 사이트 방문이 0명이어서 비율을 계산하지 않습니다.', no_data: '비교할 사이트 방문 기록이 아직 없습니다.', not_connected: '사이트 통계 연결을 기다리는 중입니다.', unavailable: '비율 계산에 필요한 통계 조회를 확인해주세요.',
+                    })[row.rateBasis.state]}
+                  </p>
+                  {row.rateBasis.state === 'provisional' && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>집계 중인 수치 또는 방문 기록이 있는 같은 날짜만 비교한 잠정 비율입니다. 위 폼잇 유입 열은 선택 기간 전체 합계이므로 계산에 사용한 수치와 다를 수 있습니다.</p>}
                   {row.rate !== null && row.rate > 100 && <p style={{ ...muted, fontSize: 12 }}>100% 초과: 공유된 링크·집계 누락 등 비교 기준을 확인해주세요.</p>}
-                  {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 클릭 기록 {row.external.clickerDays}/{row.external.totalDays}일 · 미수집 날짜나 집계 진행 중인 기간이 있어 비율은 계산하지 않습니다.</p>}
+                  {row.external.status === 'partial' && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>방문 기록 {row.external.visitorDays}/{row.external.totalDays}일 · 클릭 기록 {row.external.clickerDays}/{row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다. 클릭 기록 누락은 유입 비율 계산을 막지 않습니다.</p>}
                   {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
                   {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
                   <label style={{ ...muted, display: 'block', marginTop: 10 }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
@@ -86,7 +95,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}
     <details style={{ marginTop: 16 }}>
       <summary style={{ ...muted, fontSize: 12, cursor: 'pointer', width: 'fit-content' }}>집계 기준 안내</summary>
-      <p style={muted}>각 단계는 동일인을 이어서 추적한 수치가 아닌, 사이트별 일별 브라우저 집계의 비교입니다. 폼잇은 하루 첫 유입처 기준이며, 다른 곳에 공유한 링크·추적 차단·관리자 제외로 차이가 날 수 있습니다. 연락처 도착은 최근 30일의 수집된 상세 기록 기준입니다. 신청 완료 방문은 실제 신청 건수와 다를 수 있습니다.</p>
+      <p style={muted}>유입 비율은 해당 사이트의 방문자 대비 폼잇 유입자 비율입니다. 방문 기록이 있는 같은 날짜끼리 비교하며 집계 중이거나 날짜가 빠진 경우 잠정 비율로 표시합니다. 방문 0명·데이터 부족·조회 오류는 비율과 구분합니다. 각 단계는 동일인을 이어서 추적한 수치가 아닌, 사이트별 일별 브라우저 집계의 비교입니다. 폼잇은 하루 첫 유입처 기준이며, 다른 곳에 공유한 링크·추적 차단·관리자 제외로 차이가 날 수 있습니다. 연락처 도착은 최근 30일의 수집된 상세 기록 기준입니다. 신청 완료 방문은 실제 신청 건수와 다를 수 있습니다.</p>
     </details>
   </section>;
 }

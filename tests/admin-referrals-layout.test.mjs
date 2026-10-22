@@ -3,20 +3,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
-import { REFERRAL_SITES, referralLink, groupReferralRows } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralLink, groupReferralRows, REFERRAL_RATE_LABELS } from '../src/lib/referralSites.ts';
 
 function harness() {
   const report={from:'2026-10-16',to:'2026-10-22',updatedAt:'2026-10-21T15:00:00Z',rows:REFERRAL_SITES.map((site,i)=>({
-    ...site,link:referralLink(site.source,site.destination),arrivals:0,contacts:i===2?null:0,converted:0,rate:i===0?0:null,
+    ...site,link:referralLink(site.source,site.destination),arrivals:i===1?2:0,contacts:i===2?null:0,converted:0,rate:i===0?0:i===1?33.3:null,
+    rateBasis:{state:['ready','provisional','unavailable','not_connected','no_visitors','no_data'][i],arrivals:i===0?0:i===1?1:null,visitors:i===0?10:i===1?3:i===4?0:null,days:i===0?7:i===1?5:i===4?1:0,totalDays:7},
     external:{status:['ready','partial','error','pending','partial','partial'][i],visitors:i===0?10:null,clickers:i===0?4:null,
-      recordedVisitors:i===1?3:null,recordedClickers:i===1?1:null,visitorDays:i===1?5:0,clickerDays:i===1?5:0,totalDays:7,updatedAt:'2026-10-21T15:00:00Z'},
+      recordedVisitors:i===1?3:i===4?0:null,recordedClickers:i===1?1:null,visitorDays:i===1?5:i===4?1:0,clickerDays:i===1?5:0,totalDays:7,updatedAt:'2026-10-21T15:00:00Z'},
   }))};
   const state=['7',0,{key:'7:0:0',report,error:''},''],effects=[],requests=[],copied=[];let cursor=0;
   const jsx=(type,props)=>({type,props});const exports={};
   const source=readFileSync(new URL('../src/components/AdminReferralSites.tsx',import.meta.url),'utf8');
   const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useEffect:fn=>effects.push(fn)},
     'react/jsx-runtime':{jsx,jsxs:jsx},'@tabler/icons-react':{IconCopy:'copy-icon',IconExternalLink:'external-icon',IconChevronDown:'chevron-icon'},
-    '@/lib/referralSites':{groupReferralRows},
+    '@/lib/referralSites':{groupReferralRows,REFERRAL_RATE_LABELS},
     './EstimateLayout':{C:{admin:{line:'line',accentBg:'accent',bg:'background',text:'text'}}},
     './adminStyles':{action:{},goldAction:{},muted:{},panel:{},field:{}}};
   const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -57,6 +58,16 @@ test('unknown and partial data remain distinct from zero with coverage available
   assert.match(text(h.render()),/방문 기록 5\/7일 · 클릭 기록 5\/7일/);
   all(siteRows(h.render())[2],n=>n.type==='button')[0].props.onClick();
   assert.match(text(h.render()),/사이트 통계를 확인할 수 없습니다/);
+});
+
+test('traffic ratio, provisional date coverage and unavailable reasons replace generic waiting',()=>{
+  const h=harness(),tree=h.render(),rows=siteRows(tree);
+  assert.match(text(tree),/폼잇 유입자 ÷ 해당 사이트 방문자 × 100/);
+  assert.match(text(rows[0]),/0%/);assert.match(text(rows[1]),/33\.3%잠정 · 5\/7일/);
+  assert.match(text(rows[2]),/조회 오류/);assert.match(text(rows[3]),/방문 없음/);assert.match(text(rows[4]),/데이터 부족/);
+  assert.ok(!text(tree).includes('계산 대기'));
+  all(rows[1],n=>n.type==='button')[0].props.onClick();
+  assert.match(text(h.render()),/폼잇 유입 1명 ÷ 사이트 방문 3명 × 100 = 33\.3%/);
 });
 
 test('link copy still uses the individual site URL and reports success',async()=>{

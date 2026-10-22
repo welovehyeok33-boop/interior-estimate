@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, groupReferralRows } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, groupReferralRows, calculateReferralRate } from '../src/lib/referralSites.ts';
 const dates = ['2026-10-15', '2026-10-16'];
 const report = () => ({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from:dates[0],to:dates[1],coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:2}))});
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
@@ -44,12 +44,25 @@ test('missing dates preserve recorded totals and coverage separately from full-p
   assert.equal(stats.visitors,null);assert.equal(stats.clickers,null);
   assert.equal(stats.recordedVisitors,10);assert.equal(stats.recordedClickers,2);
   assert.equal(stats.visitorDays,1);assert.equal(stats.clickerDays,1);assert.equal(stats.totalDays,2);
+  assert.deepEqual(stats.visitorDates,[dates[1]]);
   r.days[1].visitors=0;r.days[1].clickers=0;
   const zero=validateReferralStats(r,'interiorfree',dates);
   assert.equal(zero.recordedVisitors,0);assert.equal(zero.recordedClickers,0);
   r.days[1].visitors=null;r.days[1].clickers=null;
   const missing=validateReferralStats(r,'interiorfree',dates);
   assert.equal(missing.recordedVisitors,null);assert.equal(missing.visitorDays,0);
+  assert.deepEqual(missing.visitorDates,[]);
+});
+
+test('rate uses site traffic, not clickers, permits provisional values and does not clamp above 100 percent',()=>{
+  const raw=report();raw.days.forEach(day=>{day.clickers=null;});
+  const stats={...validateReferralStats(raw,'interiorfree',dates),status:'partial'};
+  assert.equal(calculateReferralRate(stats,4).rate,20);
+  assert.equal(calculateReferralRate(stats,4).rateBasis.state,'provisional');
+  assert.equal(calculateReferralRate(stats,0).rate,0);
+  assert.equal(calculateReferralRate(stats,30).rate,150);
+  assert.equal(calculateReferralRate(stats,null).rateBasis.state,'unavailable');
+  assert.equal(calculateReferralRate(stats,-1).rateBasis.state,'unavailable');
 });
 
 test('missing click days prevent complete status even when visitor totals are complete',()=>{

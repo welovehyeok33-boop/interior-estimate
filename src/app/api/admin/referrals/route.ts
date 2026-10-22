@@ -1,13 +1,13 @@
 import { apiJson, isAdmin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, type ReferralRow } from '@/lib/referralSites';
+import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, calculateReferralRate, type ReferralRow } from '@/lib/referralSites';
 import type { TrafficReport } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
 async function externalStats(site: typeof REFERRAL_SITES[number], dates: string[], tokens: Record<string, unknown>): Promise<ReferralRow['external']> {
   const empty = { visitors: null, clickers: null, partial: false, updatedAt: null,
-    recordedVisitors: null, recordedClickers: null, visitorDays: 0, clickerDays: 0, totalDays: dates.length };
+    recordedVisitors: null, recordedClickers: null, visitorDays: 0, visitorDates: [], clickerDays: 0, totalDays: dates.length };
   const token = tokens[site.source];
   if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
   try {
@@ -49,15 +49,24 @@ export async function GET(request: Request) {
     ]);
     if (summary.error) throw new Error('Stats unavailable');
     const report = summary.data as TrafficReport;
-    const rows = REFERRAL_SITES.map((site, i): ReferralRow => {
+    const rows = await Promise.all(REFERRAL_SITES.map(async (site, i): Promise<ReferralRow> => {
       const matches = report.sources.filter(s => s.source === site.source);
       const arrivals = matches.reduce((sum, s) => sum + s.visitors, 0);
       const converted = matches.reduce((sum, s) => sum + s.converted, 0);
-      const visitors = external[i].visitors;
+      const siteStats = external[i];
+      // A partial external denominator must never be compared with all-period Formit arrivals.
+      // Query only the dates with known site visits, returning an exact count and no browser rows.
+      let rateArrivals: number | null = siteStats.visitorDays === dates.length ? arrivals : null;
+      if (siteStats.visitorDays > 0 && siteStats.visitorDays < dates.length && (siteStats.recordedVisitors ?? 0) > 0) {
+        try {
+          const result = await db.from('traffic_daily').select('day', { count: 'exact', head: true })
+            .gte('day', from).lte('day', to).eq('source', site.source).in('day', siteStats.visitorDates);
+          rateArrivals = result.error ? null : result.count;
+        } catch { rateArrivals = null; }
+      }
       return { source: site.source, name: site.name, host: site.host, link: referralLink(site.source, site.destination), external: external[i],
-        arrivals, contacts: contacts[i], converted,
-        rate: external[i].status === 'ready' && visitors !== null && visitors > 0 ? Math.round(arrivals / visitors * 1000) / 10 : null };
-    });
+        arrivals, contacts: contacts[i], converted, ...calculateReferralRate(siteStats, rateArrivals) };
+    }));
     return apiJson({ from, to, rows, updatedAt: new Date().toISOString() });
   } catch { return apiJson({ error: '유입처 통계를 불러오지 못했어요. 잠시 후 다시 시도해주세요.' }, 503); }
 }
