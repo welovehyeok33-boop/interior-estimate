@@ -1,8 +1,17 @@
+# 2026-10-22 아파트 길잡이 유입처 제외 및 인테리어프리 점검
+
+- 활성 유입처 설정에서 아파트 길잡이만 제외. 화면/API는 총 5곳과 2개 그룹(인테리어프리, Interior HUB). 남아 있는 과거 source 데이터나 토큰이 있어도 해당 행·외부 요청·연락처 집계 조회가 생성되지 않도록 회귀 테스트.
+- 기존 방문/상담/출처 기록·UTM 수집·외부 사이트·서버 키 보존. DB/집계 계산/API 인증 변경 없음.
+- 인테리어프리 전용 키를 노출하지 않고 오늘/어제/7일/30일 HTTP 200 및 응답 검증. 오늘 미제공(null, 0/1일) 때문에 사이트 방문은 —, 어제는 1명, 최근 7일은 수집된 6일 합계 13명. 소스상 Redis counts와 일일 집합의 합계를 검증하지 못하는 날짜는 null을 반환하며 오늘을 일괄 차단하지 않는다. 어떤 Redis 검증 조건이 실패했는지는 확인하지 않았고, 외부 데이터나 수집 코드는 변경하지 않았다.
+- 관련 회귀 25개·ESLint·소스 타입 검사 통과. 검토/운영 배포는 진행 후 기록. 실제 인증된 운영 관리자 화면 검수는 미수행.
+- 변경 파일: src/lib/referralSites.ts, tests/referral-sites.test.mjs, tests/referral-api.test.mjs, tests/admin-referrals-layout.test.mjs, CLAUDE.md, STATUS.md, TODO.md.
+
 # 2026-10-22 상담 목록 카드 압축
 
+- 운영 배포 완료: PR #49 / main f3f8e82c68abe7cd4097d046c0b79e77eca6d9c2. primary/duplicate Vercel 검토·운영 success. /admin HTTP 200 및 공개 JS의 12px/16px 카드·8px 간격/기존 편집·계약률 코드 반영, consultations 비로그인 401/no-store 확인. 로컬 UI/테스트 동기화 후 관련 19개 회귀 통과.
 - 상담 목록 카드 여백과 정보 간격만 축소: padding 20→12px 16px, 카드 사이 12→8px, 업종 행 margin 7→3px. 읽는 글자 크기/정보와 노란 테두리·밝은/어두운 테마 토큰 유지.
 - 펼친 Editor/메모 폰트/자동 저장/상태 변경/계약률/필터/페이지네이션/DB/API 변경 없음. 관리자 외의 화면 변경 없음.
-- compact 카드 스타일·내용·줄바꿈·테두리·펼침/닫힘 및 저장/계약률/API 회귀 포함 관련 테스트 19개·ESLint·소스 타입 검사 통과. 브라우저 inventory가 비어 실제 픽셀/모바일 시각 검수는 미수행. 검토/운영 배포는 진행 후 기록.
+- compact 카드 스타일·내용·줄바꿈·테두리·펼침/닫힘 및 저장/계약률/API 회귀 포함 관련 테스트 19개·ESLint·소스 타입 검사 통과. 브라우저 inventory가 비어 실제 픽셀/모바일 시각 검수는 미수행.
 - 변경 파일: src/components/AdminConsultations.tsx, tests/admin-consult-save.test.mjs, CLAUDE.md, STATUS.md, TODO.md.
 
 # 2026-10-22 유입처 클릭 항목 제거
