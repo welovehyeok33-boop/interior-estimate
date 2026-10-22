@@ -50,3 +50,12 @@ export type ReferralRow = { source: string; name: string; host: string; link: st
   external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial' };
   arrivals: number; contacts: number | null; converted: number; rate: number | null };
 export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string };
+
+export function groupReferralRows(rows: readonly ReferralRow[]) {
+  const isHub = (row: ReferralRow) => row.host.endsWith('.interiorhub.kr');
+  return [
+    { id: 'interiorfree', name: '인테리어프리', rows: rows.filter(row => row.source === 'interiorfree') },
+    { id: 'interiorhub', name: 'Interior HUB', rows: rows.filter(row => row.source !== 'interiorfree' && isHub(row)) },
+    { id: 'other', name: '기타 유입처', rows: rows.filter(row => row.source !== 'interiorfree' && !isHub(row)) },
+  ].filter(group => group.rows.length > 0);
+}

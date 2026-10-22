@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats } from '../src/lib/referralSites.ts';
+import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, groupReferralRows } from '../src/lib/referralSites.ts';
 const dates = ['2026-10-15', '2026-10-16'];
 const report = () => ({version:1,source:'interiorfree',timezone:'Asia/Seoul',metric:'daily_unique_browser',from:dates[0],to:dates[1],coverage:'complete',days:dates.map(day=>({day,visitors:10,clickers:2}))});
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
@@ -12,6 +12,18 @@ test('period boundaries use Korean day and reject unsupported ranges',()=>{
 test('six distinct safe source links retain destination',()=>{
   assert.equal(new Set(REFERRAL_SITES.map(s=>s.source)).size,6);
   for(const s of REFERRAL_SITES){const u=new URL(referralLink(s.source,s.destination));assert.equal(u.origin,'https://form.it.kr');assert.equal(u.searchParams.get('utm_source'),s.source);assert.equal(u.pathname,s.destination);}
+});
+
+test('display groups keep Interiorfree first and the four HUB sites together without changing API order',()=>{
+  const rows=REFERRAL_SITES.map(site=>({...site}));
+  const before=rows.map(row=>row.source);const groups=groupReferralRows(rows);
+  assert.deepEqual(groups.map(group=>group.id),['interiorfree','interiorhub','other']);
+  assert.equal(groups[0].rows[0].source,'interiorfree');
+  assert.deepEqual(groups[1].rows.map(row=>row.source),['interiorhub_office','interiorhub_academy','interiorhub_apt','interiorhub_villa']);
+  assert.equal(groups[2].rows[0].source,'buildhyeok_apt');
+  assert.deepEqual(rows.map(row=>row.source),before);
+  assert.deepEqual(groupReferralRows([]),[]);
+  assert.equal(groupReferralRows([{source:'other',host:'fakeinteriorhub.kr'}])[0].id,'other');
 });
 test('complete daily aggregates sum but incomplete counts never become zero',()=>{
   assert.equal(validateReferralStats(report(),'interiorfree',dates).visitors,20);
