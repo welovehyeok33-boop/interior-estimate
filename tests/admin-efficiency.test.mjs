@@ -4,8 +4,9 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as analytics from '../src/lib/analytics.ts';
+import * as periods from '../src/lib/adminStatsPeriod.ts';
 
-function harness(path, authenticated = false) {
+function harness(path, authenticated = false, body = {consultationCount:4}) {
   const state=[], effects=[], requests=[]; let cursor=0;
   const jsx=(type,props)=>({type,props});
   const palette=new Proxy({}, {get:()=>({})});
@@ -13,6 +14,7 @@ function harness(path, authenticated = false) {
     react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=authenticated&&i===0?true:initial;return[state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useEffect:fn=>effects.push(fn),useCallback:fn=>fn},
     'react/jsx-runtime':{jsx,jsxs:jsx},
     '@/lib/analytics':analytics,'@/lib/features':{DETAIL_ESTIMATE_ENABLED:false},
+    '@/lib/adminStatsPeriod':periods,
     '@/lib/attribution':{SOURCE_LABELS:{}},
     'framer-motion':{motion:{},AnimatePresence:'animate'},
     '@/components/AdminConsultations':{default:'consultations'},
@@ -22,7 +24,7 @@ function harness(path, authenticated = false) {
   deps['./EstimateLayout']=colors;deps['@/components/EstimateLayout']=colors;
   const output=ts.transpileModule(readFileSync(new URL(path,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
   const exports={};
-  runInNewContext(output,{exports,AbortController,fetch:async(url,options)=>{requests.push({url,options});return{ok:true,status:200,json:async()=>({consultationCount:4})};},require:name=>deps[name]||{}});
+  runInNewContext(output,{exports,AbortController,fetch:async(url,options)=>{requests.push({url,options});return{ok:true,status:200,json:async()=>body};},require:name=>deps[name]||{}});
   return {state,effects,requests,render:props=>{cursor=0;effects.length=0;return exports.default(props);}};
 }
 function find(node,predicate){
@@ -66,4 +68,31 @@ test('admin tabs place referral management second and retain their original pane
   assert.equal(find(tree,n=>n.type==='traffic').props.view,'sources');
   assert.equal(find(tree,n=>n.type==='traffic').props.active,true);
   assert.equal(nav().props.children[2].props['aria-pressed'],true);
+});
+
+test('dashboard month field follows 30 days and uses cancellable month queries, refresh and preset reset',()=>{
+  const h=harness('../src/components/AdminTraffic.tsx');
+  const props={refresh:0,view:'overview',active:true};let tree=h.render(props);
+  const input=()=>find(tree,n=>n.type==='input'&&n.props.type==='month');
+  assert.equal(input().props['aria-label'],'통계 조회 월 선택');assert.equal(input().props.min,'2000-01');
+  input().props.onChange({target:{value:'2000-01'}});tree=h.render(props);
+  assert.equal(input().props.value,'2000-01');
+  const cancel=h.effects[0]();assert.equal(h.requests[0].url,'/api/admin/analytics?range=month&month=2000-01');
+  assert.equal(h.requests[0].options.cache,'no-store');cancel();assert.equal(h.requests[0].options.signal.aborted,true);
+  const before=h.state[0];input().props.onChange({target:{value:'2999-01'}});assert.equal(h.state[0],before);
+  find(tree,n=>n.type==='button'&&n.props.children==='새로고침').props.onClick();tree=h.render(props);
+  assert.equal(input().props.value,'2000-01');assert.equal(h.state[5],1);
+  find(tree,n=>n.type==='button'&&n.props.children==='최근 30일').props.onClick();tree=h.render(props);h.effects[0]();
+  assert.equal(h.requests.at(-1).url,'/api/admin/analytics?range=30');assert.equal(input().props.value,'');
+});
+
+test('expired monthly contact records show unknown without hiding preserved visit/application metrics',async()=>{
+  const body={from:'2000-01-01',to:'2000-01-31',startedAt:'2000-01-01T00:00:00Z',updatedAt:'2026-10-22T00:00:00Z',
+    days:[{day:'2000-01-01',visitors:8,requests:2,converted:2,consult_starts:4,engine_starts:0}],
+    sources:[{source:'naver',visitors:8,converted:2}],landings:[],details:{pages:[]},detailCoverage:{complete:false,from:null,to:null}};
+  const h=harness('../src/components/AdminTraffic.tsx',false,body),props={refresh:0,view:'overview',active:true};
+  let tree=h.render(props);h.effects[0]();await new Promise(resolve=>setImmediate(resolve));tree=h.render(props);
+  const metric=label=>find(tree,n=>n.type==='div'&&n.props?.children?.[0]?.props?.children===label)?.props.children[1].props.children;
+  assert.equal(metric('상담 입력 진입'),'—');assert.equal(metric('외부 유입'),'8명');assert.equal(metric('무료 견적 신청'),'2건');assert.equal(metric('신청 전환율'),'25%');
+  assert.ok(find(tree,n=>n.type==='p'&&JSON.stringify(n.props.children).includes('30일 보관 기한')));
 });

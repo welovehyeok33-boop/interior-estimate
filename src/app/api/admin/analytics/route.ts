@@ -1,18 +1,21 @@
 import { apiJson, isAdmin, sameOrigin } from "@/lib/serverAuth";
 import { serverDb } from "@/lib/serverDb";
+import { parseStatsPeriod } from '@/lib/adminStatsPeriod';
 
 export async function GET(request: Request) {
   try {
     if (!await isAdmin()) return apiJson({ error: "로그인이 필요합니다." }, 401);
-    const range = new URL(request.url).searchParams.get('range') || '7';
-    if (!['today', 'yesterday', '7', '30'].includes(range)) return apiJson({ error: '기간을 확인해주세요.' }, 400);
-    const args = {
-      p_days: range === '30' ? 30 : range === '7' ? 7 : 1, p_offset: range === 'yesterday' ? 1 : 0,
-    };
+    const period = parseStatsPeriod(new URL(request.url).searchParams);
+    if (!period) return apiJson({ error: '기간을 확인해주세요.' }, 400);
+    const monthly = period.range === 'month';
+    const args = monthly ? { p_from: period.from, p_to: period.to } : { p_days: period.dates.length, p_offset: period.range === 'yesterday' ? 1 : 0 };
     const db = serverDb();
-    const [summary, details] = await Promise.all([db.rpc('admin_dashboard', args), db.rpc('admin_traffic_details', args)]);
+    const [summary, details] = await Promise.all([
+      db.rpc(monthly ? 'admin_dashboard_range' : 'admin_dashboard', args),
+      db.rpc(monthly ? 'admin_traffic_details_range' : 'admin_traffic_details', args),
+    ]);
     if (summary.error || details.error) throw new Error('Stats unavailable');
-    return apiJson({ ...summary.data, details: details.data });
+    return apiJson({ ...summary.data, details: details.data, detailCoverage: period.detailCoverage });
   } catch { return apiJson({ error: "통계를 불러오지 못했어요. 집계 DB 설정과 연결을 확인해주세요." }, 503); }
 }
 

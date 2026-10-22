@@ -1,3 +1,5 @@
+import type { DetailCoverage } from './adminStatsPeriod';
+
 export const REFERRAL_SITES = [
   { source: 'interiorfree', name: '인테리어프리', host: 'interiorfree.kr', destination: '/', endpoint: '/api/formit-stats/' },
   { source: 'interiorhub_office', name: '오피스 인테리어', host: 'office.interiorhub.kr', destination: '/consult', endpoint: '/wp-json/ih-admin/v1/formit-stats' },
@@ -45,10 +47,26 @@ export function validateReferralStats(raw: unknown, source: string, dates: strin
     visitorDays, visitorDates: visitorDates.sort(), clickerDays, totalDays: dates.length,
     updatedAt: typeof r.dateUpdatedAt === 'string' && Number.isFinite(Date.parse(r.dateUpdatedAt)) ? r.dateUpdatedAt : null };
 }
+// Calendar months can contain 31 days; combine independently validated, <=30-day upstream chunks.
+export function combineReferralStats(parts: Aggregate[]): Aggregate {
+  if (!parts.length) throw new Error('Missing report');
+  const visitorDays = parts.reduce((sum, part) => sum + part.visitorDays, 0);
+  const clickerDays = parts.reduce((sum, part) => sum + part.clickerDays, 0);
+  const totalDays = parts.reduce((sum, part) => sum + part.totalDays, 0);
+  const visitors = parts.reduce((sum, part) => sum + (part.recordedVisitors ?? 0), 0);
+  const clickers = parts.reduce((sum, part) => sum + (part.recordedClickers ?? 0), 0);
+  const visitorDates = parts.flatMap(part => part.visitorDates).sort();
+  if (!Number.isSafeInteger(visitors) || !Number.isSafeInteger(clickers) || new Set(visitorDates).size !== visitorDays) throw new Error('Invalid total');
+  return { visitors: visitorDays === totalDays ? visitors : null, clickers: clickerDays === totalDays ? clickers : null,
+    partial: parts.some(part => part.partial), recordedVisitors: visitorDays ? visitors : null, recordedClickers: clickerDays ? clickers : null,
+    visitorDays, visitorDates, clickerDays, totalDays,
+    updatedAt: parts.every(part => part.updatedAt) ? parts.map(part => part.updatedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] : null };
+}
+
 export type ReferralRow = { source: string; name: string; host: string; link: string;
   external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial' };
   arrivals: number; contacts: number | null; converted: number; rate: number | null; rateBasis: ReferralRateBasis };
-export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string };
+export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string; detailCoverage?: DetailCoverage };
 
 export type ReferralRateBasis = {
   state: 'ready' | 'provisional' | 'no_visitors' | 'no_data' | 'not_connected' | 'unavailable';

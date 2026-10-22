@@ -1,6 +1,7 @@
 import { apiJson, isAdmin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
-import { REFERRAL_SITES, referralDates, referralLink, validateReferralStats, calculateReferralRate, type ReferralRow } from '@/lib/referralSites';
+import { REFERRAL_SITES, referralLink, validateReferralStats, combineReferralStats, calculateReferralRate, type ReferralRow } from '@/lib/referralSites';
+import { parseStatsPeriod } from '@/lib/adminStatsPeriod';
 import type { TrafficReport } from '@/lib/analytics';
 
 export const dynamic = 'force-dynamic';
@@ -12,13 +13,17 @@ async function externalStats(site: typeof REFERRAL_SITES[number], dates: string[
   if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
   try {
     // Fixed allowlist: neither host nor path may be supplied by the client.
-    const url = new URL(site.endpoint, 'https://' + site.host);
-    url.searchParams.set('from', dates[0]); url.searchParams.set('to', dates[dates.length - 1]);
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8000) });
-    if (!response.ok) throw new Error('Upstream unavailable');
-    const text = await response.text();
-    if (text.length > 32000) throw new Error('Invalid response');
-    const aggregate = validateReferralStats(JSON.parse(text), site.source, dates);
+    const chunks = [dates.slice(0, 30), ...(dates.length > 30 ? [dates.slice(30)] : [])];
+    const parts = await Promise.all(chunks.map(async chunk => {
+      const url = new URL(site.endpoint, 'https://' + site.host);
+      url.searchParams.set('from', chunk[0]); url.searchParams.set('to', chunk[chunk.length - 1]);
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error('Upstream unavailable');
+      const text = await response.text();
+      if (text.length > 32000) throw new Error('Invalid response');
+      return validateReferralStats(JSON.parse(text), site.source, chunk);
+    }));
+    const aggregate = combineReferralStats(parts);
     return { ...aggregate, status: aggregate.partial ? 'partial' : 'ready' };
   } catch { return { ...empty, status: 'error' }; }
 }
@@ -26,9 +31,9 @@ async function externalStats(site: typeof REFERRAL_SITES[number], dates: string[
 export async function GET(request: Request) {
   try {
     if (!await isAdmin()) return apiJson({ error: '로그인이 필요합니다.' }, 401);
-    const range = new URL(request.url).searchParams.get('range') || '7';
-    if (!['today', 'yesterday', '7', '30'].includes(range)) return apiJson({ error: '기간을 확인해주세요.' }, 400);
-    const { from, to, dates } = referralDates(range);
+    const period = parseStatsPeriod(new URL(request.url).searchParams);
+    if (!period) return apiJson({ error: '기간을 확인해주세요.' }, 400);
+    const { range, from, to, dates, detailCoverage } = period;
     let tokens: Record<string, unknown> = {};
     try { const value: unknown = JSON.parse(process.env.FORMIT_REFERRAL_TOKENS || '{}'); if (value && typeof value === 'object' && !Array.isArray(value)) tokens = value as Record<string, unknown>; } catch { /* pending, never expose credentials */ }
     const externalPromise = Promise.all(REFERRAL_SITES.map(site => externalStats(site, dates, tokens)));
@@ -36,6 +41,8 @@ export async function GET(request: Request) {
     // Count in the database instead of downloading and scanning up to 50,000 visits.
     // Independent counts also keep one source's failure from blanking every source.
     const contactsPromise = Promise.all(REFERRAL_SITES.map(async site => {
+      // Missing retained days are unknown, not zero and not a misleading partial-month total.
+      if (!detailCoverage.complete) return null;
       try {
         const result = await db.from('traffic_details').select('traffic_daily!inner(source)', { count: 'exact', head: true })
           .gte('day', from).lte('day', to).eq('traffic_daily.source', site.source)
@@ -44,7 +51,7 @@ export async function GET(request: Request) {
       } catch { return null; }
     }));
     const [summary, contacts, external] = await Promise.all([
-      db.rpc('admin_dashboard', { p_days: dates.length, p_offset: range === 'yesterday' ? 1 : 0 }),
+      db.rpc(range === 'month' ? 'admin_dashboard_range' : 'admin_dashboard', range === 'month' ? { p_from: from, p_to: to } : { p_days: dates.length, p_offset: range === 'yesterday' ? 1 : 0 }),
       contactsPromise, externalPromise,
     ]);
     if (summary.error) throw new Error('Stats unavailable');
@@ -67,6 +74,6 @@ export async function GET(request: Request) {
       return { source: site.source, name: site.name, host: site.host, link: referralLink(site.source, site.destination), external: external[i],
         arrivals, contacts: contacts[i], converted, ...calculateReferralRate(siteStats, rateArrivals) };
     }));
-    return apiJson({ from, to, rows, updatedAt: new Date().toISOString() });
+    return apiJson({ from, to, rows, detailCoverage, updatedAt: new Date().toISOString() });
   } catch { return apiJson({ error: '유입처 통계를 불러오지 못했어요. 잠시 후 다시 시도해주세요.' }, 503); }
 }
