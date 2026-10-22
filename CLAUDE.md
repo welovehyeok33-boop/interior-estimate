@@ -1,8 +1,12 @@
+## 2026-10-22 관리자 탭 순서
+
+관리자 카테고리 배열만 대시보드 → 유입처 관리 → 유입 트래픽 → 상담 관리 순서로 변경. flow ID/패널 연결·조회/갱신·테마·반응형·상담 상태·통계는 유지한다. admin-efficiency 회귀에 순서/aria-controls/실제 클릭 패널 전환 검증 추가.
+
 ## 2026-10-22 SEO 기반 및 기존 글 보류
 
 사용자가 기존 글 22개의 검수 전 검색 제외를 승인했다. 원문은 src/data/posts.ts에 보존하며 상태/검수 기록 없는 글은 기본 보류다. status=published + 유효한 KST 비미래 발행/검수일 + 검수자 + HTTPS 출처 + 비어 있지 않은 내용만 공개 목록/사이트맵/본문/Article 대상이다. 기존 /blog/[slug]는 robust decode/NFC 조회로 HTTP 200 noindex 검수 안내를 내고 원문을 RSC로 직렬화하지 않는다. dynamicParams=false로 미등록 주소는 404. 새 글 추가 없음.
 
-siteMetadata는 form.it.kr 대표주소/로봇/검증코드/공유메타/JSON-LD를 일원화한다. 현재 sitemap은 /와 /landing 두 개, 빈 /blog는 noindex. utility layout은 noindex+canonical null이며 기존 AdminTheme/EstimateProgressProvider 유지. robots는 noindex를 읽도록 페이지 크롤링을 허용하며 API만 제외한다. SEO_FOUNDATION.md에 정책/게시 게이트/검증/소유확인 잔여 작업을 기록했다. 기존 OG/파비콘·관리자 UI/통계/인증/DB 변경 없음. 전체 회귀 116개와 로컬 HTTP 47개 통과. 운영 배포/검사는 후속 기록을 확인한다.
+siteMetadata는 form.it.kr 대표주소/로봇/검증코드/공유메타/JSON-LD를 일원화한다. 현재 sitemap은 /와 /landing 두 개, 빈 /blog는 noindex. utility layout은 noindex+canonical null이며 기존 AdminTheme/EstimateProgressProvider 유지. robots는 noindex를 읽도록 페이지 크롤링을 허용하며 API만 제외한다. SEO_FOUNDATION.md에 정책/게시 게이트/검증/소유확인 잔여 작업을 기록했다. 기존 OG/파비콘·관리자 UI/통계/인증/DB 변경 없음. 전체 회귀 116개와 로컬 HTTP 47개 통과. PR #51 / main 607bccd170d45d55a1ad58c9df271f36d2df1199 운영 완료, primary/duplicate Vercel 검토·운영 success 및 운영 HTTP 47/47 통과. 실제 Google/Naver 소유확인/제출/색인 상태는 미확인이다.
 
 ## 2026-10-22 아파트 길잡이 유입처 제외
 

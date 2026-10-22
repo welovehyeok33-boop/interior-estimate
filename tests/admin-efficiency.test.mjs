@@ -47,3 +47,23 @@ test('initial admin load does not refresh traffic twice; consultation mounts laz
   find(tree,n=>n.type==='button'&&n.props['aria-controls']==='admin-traffic').props.onClick();
   tree=h.render({});assert.ok(find(tree,n=>n.type==='consultations'));
 });
+
+test('admin tabs place referral management second and retain their original panel bindings',()=>{
+  const h=harness('../src/app/admin/page.tsx',true);
+  let tree=h.render({});
+  const nav=()=>find(tree,n=>n.type==='nav'&&n.props['aria-label']==='관리자 카테고리');
+  let buttons=nav().props.children;
+  assert.deepEqual(Array.from(buttons,button=>button.props.children[0]),['대시보드','유입처 관리','유입 트래픽','상담 관리']);
+  assert.equal(nav().props.style.flexWrap,'wrap');
+  assert.equal(buttons[1].props['aria-controls'],'admin-referrals');
+  assert.equal(buttons[2].props['aria-controls'],'admin-traffic');
+  buttons[1].props.onClick();tree=h.render({});
+  assert.ok(find(tree,n=>n.props?.id==='admin-referrals'));
+  assert.equal(find(tree,n=>n.type==='traffic').props.active,false);
+  assert.equal(nav().props.children[1].props['aria-pressed'],true);
+  buttons=nav().props.children;buttons[2].props.onClick();tree=h.render({});
+  assert.equal(find(tree,n=>n.props?.id==='admin-referrals'),undefined);
+  assert.equal(find(tree,n=>n.type==='traffic').props.view,'sources');
+  assert.equal(find(tree,n=>n.type==='traffic').props.active,true);
+  assert.equal(nav().props.children[2].props['aria-pressed'],true);
+});

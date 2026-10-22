@@ -263,8 +263,8 @@ export default function AdminPage() {
         <nav aria-label="관리자 카테고리" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 6, border: `1px solid ${A.border}`, background: A.card, borderRadius: 14, marginBottom: 32 }}>
           {([
             { id: 'overview', title: '대시보드', count: null },
-            { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'referrals', title: '유입처 관리', count: null },
+            { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
           ] as const).filter(item => DETAIL_ESTIMATE_ENABLED || item.id !== "engine").map(item => (
