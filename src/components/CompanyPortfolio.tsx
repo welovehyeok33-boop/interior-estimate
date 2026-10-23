@@ -87,7 +87,7 @@ function WorkPreview({ kind }: { kind: (typeof PORTFOLIO_WORKS)[number]['id'] })
 }
 
 export default function CompanyPortfolio() {
-  return <div style={{ background: H.paper, color: H.ink, overflowWrap: 'anywhere' }}>
+  return <div style={{ background: H.paper, color: H.ink, overflowWrap: 'anywhere', wordBreak: 'keep-all' }}>
     <header style={{ borderBottom: '1px solid ' + H.line }}>
       <div style={{ ...wrap, minHeight: 76, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 12, paddingBottom: 12 }}>
         <Link href="/" aria-label="폼잇 홈" style={{ display: 'flex', gap: 10, alignItems: 'center', textDecoration: 'none', color: H.ink }}><Image src="/logo.png" alt="" width={31} height={28} style={{ objectFit: 'contain' }} /><strong style={{ fontSize: 18, letterSpacing: '-0.04em' }}>폼잇.</strong></Link>
