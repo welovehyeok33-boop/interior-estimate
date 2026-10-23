@@ -7,6 +7,7 @@ import { GUIDE_AUDIENCES, guideAudiencePath, type GuideAudience } from '@/lib/gu
 import { C } from './EstimateLayout';
 import GuideContent from './GuideContent';
 import ResidentialRoadmap from './ResidentialRoadmap';
+import CommercialRoadmap from './CommercialRoadmap';
 
 export type GuideSummary = Pick<Post, 'slug' | 'title' | 'description' | 'category' | 'subcategory' | 'publishedAt'> & { href: string };
 export type GuideArticleData = GuideSummary & { content?: string; review?: Post['review'] };
@@ -80,7 +81,7 @@ export function GuideAudienceIndex({ audience, posts }: { audience: GuideAudienc
     <nav aria-label="공간별 가이드 전환" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
       {GUIDE_AUDIENCES.map(item => <Link key={item.id} href={guideAudiencePath(item.id)} aria-current={item.id === audience ? 'page' : undefined} style={{ color: C.textDark, background: item.id === audience ? C.primary : C.card, border: '1px solid ' + (item.id === audience ? C.primary : C.border), borderRadius: 10, padding: '11px 16px', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>{item.title}</Link>)}
     </nav>
-    {audience === 'residential' ? <ResidentialRoadmap /> : posts.length === 0 && <ReviewNotice />}
+    {audience === 'residential' ? <ResidentialRoadmap /> : <CommercialRoadmap />}
     {posts.length > 0 && <section aria-label="공개된 인테리어 가이드" style={{ marginTop: 32 }}><h2 style={{ fontSize: 20, margin: '0 0 16px' }}>함께 읽는 가이드</h2><GuidePostList posts={posts} /></section>}
     <ConsultCta />
   </Shell>;

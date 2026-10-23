@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { POSTS, getPublishedPosts, isPostPublished } from '../src/data/posts.ts';
 import { GUIDE_AUDIENCES, guideAudiencePath } from '../src/lib/guideAudiences.ts';
 import { RESIDENTIAL_ITEMS, residentialGuidePath } from '../src/lib/residentialChecklist.ts';
+import { COMMERCIAL_ITEMS, commercialGuidePath } from '../src/lib/commercialGuide.ts';
 
 // Read-only HTTP smoke check. No analytics events, form submissions or authenticated data reads.
 // Usage: node --experimental-strip-types scripts/check-seo.mjs [http://127.0.0.1:3012]
@@ -69,10 +70,14 @@ await parallel(GUIDE_AUDIENCES, audience => checked(guideAudiencePath(audience.i
   checkCanonical(html, guideAudiencePath(audience.id));
   assert.ok(html.includes(audience.title));
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
-  if (!matching.length) assert.ok(html.includes(audience.id === 'residential' ? '주거 인테리어 단계별 가이드' : '기존 자료를 검수하고 있어요'));
+  if (!matching.length) assert.ok(html.includes(audience.title + ' 단계별 가이드'));
   if (audience.id === 'residential') {
     assert.ok(!html.includes('type="checkbox"'));
     for (const item of RESIDENTIAL_ITEMS) assert.ok(html.includes('href="' + residentialGuidePath(item.id) + '"'));
+  }
+  if (audience.id === 'commercial') {
+    assert.ok(!html.includes('type="checkbox"'));
+    for (const item of COMMERCIAL_ITEMS) assert.ok(html.includes('href="' + commercialGuidePath(item.id) + '"'));
   }
   assert.ok(html.includes('href="/blog"'));
 }));
@@ -86,6 +91,17 @@ await parallel(RESIDENTIAL_ITEMS, item => checked(residentialGuidePath(item.id),
   assert.ok(!html.includes('type="checkbox"'));
 }));
 await checked('/blog/residential/unknown-item', ({ response }) => assert.equal(response.status, 404));
+await parallel(COMMERCIAL_ITEMS, item => checked(commercialGuidePath(item.id), ({ response, html }) => {
+  assert.equal(response.status, 200);
+  checkRobots(html, false);
+  checkCanonical(html, commercialGuidePath(item.id));
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.ok(html.includes(item.title));
+  assert.ok(html.includes('상가 공통 기본 안내'));
+  assert.ok(html.includes('href="/blog/commercial#commercial-' + item.stageId + '"'));
+  assert.ok(!html.includes('type="checkbox"'));
+}));
+await checked('/blog/commercial/unknown-item', ({ response }) => assert.equal(response.status, 404));
 await parallel(POSTS, post => checked('/blog/' + encodeURIComponent(post.slug), ({ response, html }) => {
   const publishedPost = isPostPublished(post);
   assert.equal(response.status, 200, 'Existing article URL must resolve');

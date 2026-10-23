@@ -11,6 +11,8 @@ import * as share from '../src/lib/shareMetadata.ts';
 import * as audiences from '../src/lib/guideAudiences.ts';
 import * as checklist from '../src/lib/residentialChecklist.ts';
 import * as residentialDetails from '../src/data/residentialGuideDetails.ts';
+import * as commercial from '../src/lib/commercialGuide.ts';
+import * as commercialDetails from '../src/data/commercialGuideDetails.ts';
 
 const require = createRequire(import.meta.url);
 const now = new Date('2026-10-22T02:00:00Z');
@@ -26,8 +28,10 @@ const C = { bg: '#fff8dd', card: '#fff', border: '#ddd', primary: '#f5c200', tex
 const Link = ({ href, children, ...props }) => React.createElement('a', { ...props, href }, children);
 const content = load('src/components/GuideContent.tsx', { './EstimateLayout': { C } });
 const roadmap = load('src/components/ResidentialRoadmap.tsx', { './EstimateLayout': { C: { ...C, primaryLight: '#ffd740', ruler: {} } }, '@/lib/residentialChecklist': checklist, 'next/link': { default: Link } });
-const views = load('src/components/GuideViews.tsx', { './EstimateLayout': { C }, './GuideContent': content, './ResidentialRoadmap': roadmap, 'next/link': { default: Link }, '@/lib/guideAudiences': audiences });
+const commercialRoadmap = load('src/components/CommercialRoadmap.tsx', { './ResidentialRoadmap': roadmap, '@/lib/commercialGuide': commercial });
+const views = load('src/components/GuideViews.tsx', { './EstimateLayout': { C }, './GuideContent': content, './ResidentialRoadmap': roadmap, './CommercialRoadmap': commercialRoadmap, 'next/link': { default: Link }, '@/lib/guideAudiences': audiences });
 const detailView = load('src/components/ResidentialGuideDetail.tsx', { './EstimateLayout': { C }, './GuideViews': views, '@/lib/residentialChecklist': checklist, 'next/link': { default: Link } });
+const commercialDetailView = load('src/components/CommercialGuideDetail.tsx', { './ResidentialGuideDetail': detailView, '@/lib/commercialGuide': commercial });
 function articleModule(data = posts) {
   return load('src/app/blog/[slug]/page.tsx', {
     '@/data/posts': data, '@/lib/siteMetadata': seo, '@/components/GuideViews': views,
@@ -184,7 +188,7 @@ test('both audience routes have independent canonicals, noindex empty states, re
     assert.equal(tree.props.posts.length, 0);
     const html = renderToStaticMarkup(tree);
     assert.equal((html.match(/<h1\b/g) || []).length, 1);
-    assert.match(html, audience.id === 'residential' ? /주거 인테리어 단계별 가이드/ : /기존 자료를 검수하고 있어요/);
+    assert.ok(html.includes(audience.title + ' 단계별 가이드'));
     const active = html.match(/<a\b[^>]*>/g).find(tag => tag.includes('href="/blog/' + audience.id + '"'));
     assert.ok(active.includes('aria-current="page"'));
     assert.match(html, /href="\/blog"/);
@@ -268,6 +272,54 @@ test('all 25 residential detail pages resolve, have unique noindex canonicals an
     if (index < 24) assert.ok(html.includes(checklist.residentialGuidePath(checklist.RESIDENTIAL_ITEMS[index + 1].id)));
   }
   assert.equal(destinations.size, 25);
+  await assert.rejects(module.default({ params: Promise.resolve({ item: 'unknown' }) }), /NOT_FOUND/);
+  await assert.rejects(module.generateMetadata({ params: Promise.resolve({ item: '../admin' }) }), /NOT_FOUND/);
+});
+
+test('commercial basics reuse the ruler with eight stages, sixteen links and no checkbox/storage behavior', () => {
+  assert.equal(commercial.COMMERCIAL_STAGES.length, 8);
+  assert.equal(commercial.COMMERCIAL_STAGES[0].percent, 0);
+  assert.equal(commercial.COMMERCIAL_STAGES.at(-1).percent, 100);
+  assert.equal(commercial.COMMERCIAL_ITEMS.length, 16);
+  assert.equal(new Set(commercial.COMMERCIAL_ITEMS.map(item => item.id)).size, 16);
+  const html = renderToStaticMarkup(React.createElement(commercialRoadmap.default));
+  assert.match(html, /상가 인테리어 단계별 가이드/);
+  assert.match(html, /공간 계획부터, 오픈 후까지/);
+  assert.match(html, /공통 준비를 위한 기본 틀/);
+  assert.equal((html.match(/<h3\b/g) || []).length, 8);
+  assert.doesNotMatch(html, /type="checkbox"|href="\/blog\/residential\//);
+  for (const item of commercial.COMMERCIAL_ITEMS) assert.ok(html.includes('href="' + commercial.commercialGuidePath(item.id) + '"'));
+  for (const invalid of ['', 'unknown', '../admin', '%2fadmin']) assert.equal(commercial.getCommercialGuide(invalid), undefined);
+  assert.equal(commercial.getCommercialGuide(commercial.COMMERCIAL_ITEMS[0].id).previous, null);
+  assert.equal(commercial.getCommercialGuide(commercial.COMMERCIAL_ITEMS.at(-1).id).next, null);
+});
+
+test('all sixteen commercial detail pages are draft noindex with independent paths and correct stage/neighbor links', async () => {
+  const module = load('src/app/blog/commercial/[item]/page.tsx', {
+    '@/lib/commercialGuide': commercial, '@/data/commercialGuideDetails': commercialDetails,
+    '@/lib/siteMetadata': seo, '@/components/CommercialGuideDetail': commercialDetailView,
+    'next/navigation': { notFound: () => { throw new Error('NOT_FOUND'); } },
+  });
+  assert.equal(module.generateStaticParams().length, 16);
+  const paths = new Set();
+  for (const [index, item] of commercial.COMMERCIAL_ITEMS.entries()) {
+    const props = { params: Promise.resolve({ item: item.id }) };
+    const metadata = await module.generateMetadata(props);
+    paths.add(metadata.alternates.canonical);
+    assert.equal(metadata.alternates.canonical, 'https://form.it.kr' + commercial.commercialGuidePath(item.id));
+    assert.equal(metadata.robots.index, false);
+    assert.equal(metadata.robots.googleBot.index, false);
+    assert.equal(commercialDetails.COMMERCIAL_GUIDE_DETAILS[item.id].points.length, 3);
+    const html = renderToStaticMarkup(await module.default(props));
+    assert.equal((html.match(/<h1\b/g) || []).length, 1);
+    assert.ok(html.includes(item.title));
+    assert.ok(html.includes('href="/blog/commercial#commercial-' + item.stageId + '"'));
+    assert.match(html, /상가 공통 기본 안내/);
+    assert.doesNotMatch(html, /type="checkbox"|href="\/blog\/residential|"@type":"Article"|전문가 검수 완료/);
+    if (index) assert.ok(html.includes(commercial.commercialGuidePath(commercial.COMMERCIAL_ITEMS[index - 1].id)));
+    if (index < 15) assert.ok(html.includes(commercial.commercialGuidePath(commercial.COMMERCIAL_ITEMS[index + 1].id)));
+  }
+  assert.equal(paths.size, 16);
   await assert.rejects(module.default({ params: Promise.resolve({ item: 'unknown' }) }), /NOT_FOUND/);
   await assert.rejects(module.generateMetadata({ params: Promise.resolve({ item: '../admin' }) }), /NOT_FOUND/);
 });
