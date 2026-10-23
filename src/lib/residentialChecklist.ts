@@ -1,5 +1,3 @@
-export const RESIDENTIAL_CHECKLIST_KEY = 'formit_residential_checklist_v1';
-
 export const RESIDENTIAL_STAGES = [
   {
     id: 'plan', percent: 0, title: '어디를, 얼마나 바꿀지 정하기', summary: '견적을 받기 전, 내 기준부터 정리해요.',
@@ -68,16 +66,20 @@ export const RESIDENTIAL_STAGES = [
   },
 ] as const;
 
-export const RESIDENTIAL_CHECK_IDS: readonly string[] = RESIDENTIAL_STAGES.flatMap(stage => stage.items.map(item => item.id));
+export const RESIDENTIAL_ITEMS = RESIDENTIAL_STAGES.flatMap((stage, index) => stage.items.map(item => ({ ...item, stageId: stage.id, stageTitle: stage.title, step: index + 1 })));
+export type ResidentialItemId = (typeof RESIDENTIAL_ITEMS)[number]['id'];
 
-export function parseResidentialChecks(raw: string): string[] {
-  if (raw.length > 10000) return [];
-  try {
-    const value: unknown = JSON.parse(raw);
-    if (!Array.isArray(value)) return [];
-    return RESIDENTIAL_CHECK_IDS.filter(id => value.includes(id));
-  } catch { return []; }
+export function residentialGuidePath(id: ResidentialItemId): string {
+  return '/blog/residential/' + id;
 }
+
+export function getResidentialGuide(id: string) {
+  const index = RESIDENTIAL_ITEMS.findIndex(item => item.id === id);
+  if (index < 0) return undefined;
+  return { ...RESIDENTIAL_ITEMS[index], previous: RESIDENTIAL_ITEMS[index - 1] ?? null, next: RESIDENTIAL_ITEMS[index + 1] ?? null };
+}
+
+export type ResidentialGuide = NonNullable<ReturnType<typeof getResidentialGuide>>;
 
 export function guideScrollPercent(progress: number): number {
   return Number.isFinite(progress) ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : 0;

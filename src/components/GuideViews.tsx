@@ -21,6 +21,8 @@ function Shell({ children }: { children: ReactNode }) {
   </div>;
 }
 
+export { Shell as GuideShell };
+
 function ConsultCta() {
   return <section aria-label="무료 견적 상담 안내" style={{ padding: '24px', borderRadius: 14, background: C.bg, border: '1px solid ' + C.border, marginTop: 36 }}>
     <h2 style={{ fontSize: 20, margin: '0 0 10px' }}>내 공간에 맞는 상담이 필요하다면</h2>

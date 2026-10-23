@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { POSTS, getPublishedPosts, isPostPublished } from '../src/data/posts.ts';
 import { GUIDE_AUDIENCES, guideAudiencePath } from '../src/lib/guideAudiences.ts';
+import { RESIDENTIAL_ITEMS, residentialGuidePath } from '../src/lib/residentialChecklist.ts';
 
 // Read-only HTTP smoke check. No analytics events, form submissions or authenticated data reads.
 // Usage: node --experimental-strip-types scripts/check-seo.mjs [http://127.0.0.1:3012]
@@ -68,9 +69,23 @@ await parallel(GUIDE_AUDIENCES, audience => checked(guideAudiencePath(audience.i
   checkCanonical(html, guideAudiencePath(audience.id));
   assert.ok(html.includes(audience.title));
   assert.equal((html.match(/<h1\b/g) || []).length, 1);
-  if (!matching.length) assert.ok(html.includes(audience.id === 'residential' ? '주거 인테리어 단계별 체크리스트' : '기존 자료를 검수하고 있어요'));
+  if (!matching.length) assert.ok(html.includes(audience.id === 'residential' ? '주거 인테리어 단계별 가이드' : '기존 자료를 검수하고 있어요'));
+  if (audience.id === 'residential') {
+    assert.ok(!html.includes('type="checkbox"'));
+    for (const item of RESIDENTIAL_ITEMS) assert.ok(html.includes('href="' + residentialGuidePath(item.id) + '"'));
+  }
   assert.ok(html.includes('href="/blog"'));
 }));
+await parallel(RESIDENTIAL_ITEMS, item => checked(residentialGuidePath(item.id), ({ response, html }) => {
+  assert.equal(response.status, 200);
+  checkRobots(html, false);
+  checkCanonical(html, residentialGuidePath(item.id));
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.ok(html.includes(item.title));
+  assert.ok(html.includes('href="/blog/residential#residential-' + item.stageId + '"'));
+  assert.ok(!html.includes('type="checkbox"'));
+}));
+await checked('/blog/residential/unknown-item', ({ response }) => assert.equal(response.status, 404));
 await parallel(POSTS, post => checked('/blog/' + encodeURIComponent(post.slug), ({ response, html }) => {
   const publishedPost = isPostPublished(post);
   assert.equal(response.status, 200, 'Existing article URL must resolve');
