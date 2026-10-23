@@ -3,6 +3,11 @@ import { apiJson, isAdmin, rateLimit, sameOrigin } from '@/lib/serverAuth';
 import { CONSENT_VERSION, validateConsult } from '@/lib/intakeValidation';
 import { serializeLeadRegion } from '@/lib/estimateRegion';
 import { visitorIdentity } from '@/lib/serverAnalytics';
+import { after } from 'next/server';
+import { notifyNewConsultationSms } from '@/lib/serverSms';
+
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return apiJson({ error: '허용되지 않은 요청입니다.' }, 403);
@@ -31,6 +36,15 @@ export async function POST(request: Request) {
     });
     // A retry after a lost response must not create another customer record.
     if (error && error.code !== '23505') throw error;
+    if (!error) {
+      // Only the successful INSERT schedules an alert, never an idempotent duplicate.
+      // Notification scheduling and delivery must not turn a saved inquiry into a failed one.
+      try { after(async () => {
+        try { await notifyNewConsultationSms(); }
+        catch { console.warn('Formit consultation SMS unavailable'); }
+      }); }
+      catch { console.warn('Formit consultation SMS scheduling unavailable'); }
+    }
     return apiJson({ ok: true });
   } catch { return apiJson({ error: '신청을 저장하지 못했어요. 입력 내용은 유지되니 잠시 후 다시 시도해주세요.' }, 503); }
 }
