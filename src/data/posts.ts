@@ -1,3 +1,5 @@
+import type { GuideAudience } from '../lib/guideAudiences';
+
 export type Category = "마감공정" | "기능공정";
 
 export type Post = {
@@ -11,6 +13,8 @@ export type Post = {
   // Existing material is held for review by default. Publishing requires an explicit review record.
   status?: 'draft' | 'published';
   review?: { reviewer: string; reviewedAt: string; sources: { title: string; url: string }[] };
+  // Assign audiences explicitly during review; a shared guide may belong to both.
+  audiences?: GuideAudience[];
 };
 
 export const POSTS: Post[] = [
@@ -1344,6 +1348,10 @@ export function getPublishedPosts(now = new Date()): Post[] {
   return POSTS.filter((p) => isPostPublished(p, now)).sort(
     (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
+}
+
+export function getPublishedPostsForAudience(audience: GuideAudience, now = new Date()): Post[] {
+  return getPublishedPosts(now).filter(post => post.audiences?.includes(audience));
 }
 
 export function getPostBySlug(slug: string): Post | undefined {

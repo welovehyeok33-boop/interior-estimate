@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { POSTS, getPublishedPosts, isPostPublished } from '../src/data/posts.ts';
+import { GUIDE_AUDIENCES, guideAudiencePath } from '../src/lib/guideAudiences.ts';
 
 // Read-only HTTP smoke check. No analytics events, form submissions or authenticated data reads.
 // Usage: node --experimental-strip-types scripts/check-seo.mjs [http://127.0.0.1:3012]
@@ -58,7 +59,18 @@ await checked('/blog', ({ response, html }) => {
     assert.ok(!html.includes('현직 인테리어 전문가'));
     assert.ok(!html.includes('"content":"##'));
   }
+  for (const audience of GUIDE_AUDIENCES) assert.ok(html.includes('href="' + guideAudiencePath(audience.id) + '"'), 'Two audience entry links must be crawlable');
 });
+await parallel(GUIDE_AUDIENCES, audience => checked(guideAudiencePath(audience.id), ({ response, html }) => {
+  const matching = published.filter(post => post.audiences?.includes(audience.id));
+  assert.equal(response.status, 200);
+  checkRobots(html, matching.length > 0);
+  checkCanonical(html, guideAudiencePath(audience.id));
+  assert.ok(html.includes(audience.title));
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  if (!matching.length) assert.ok(html.includes(audience.id === 'residential' ? '주거 인테리어 단계별 체크리스트' : '기존 자료를 검수하고 있어요'));
+  assert.ok(html.includes('href="/blog"'));
+}));
 await parallel(POSTS, post => checked('/blog/' + encodeURIComponent(post.slug), ({ response, html }) => {
   const publishedPost = isPostPublished(post);
   assert.equal(response.status, 200, 'Existing article URL must resolve');
@@ -88,7 +100,8 @@ await checked('/robots.txt', ({ response, html }) => {
 await checked('/sitemap.xml', ({ response, html }) => {
   assert.equal(response.status, 200);
   const urls = [...html.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => normalizeUrl(decodeHtml(match[1]))).sort();
-  const expected = ['/', '/landing', ...(published.length ? ['/blog'] : []), ...published.map(post => '/blog/' + encodeURIComponent(post.slug))].map(path => normalizeUrl(new URL(path, origin))).sort();
+  const categories = GUIDE_AUDIENCES.filter(audience => published.some(post => post.audiences?.includes(audience.id))).map(audience => guideAudiencePath(audience.id));
+  const expected = ['/', '/landing', ...(published.length ? ['/blog'] : []), ...categories, ...published.map(post => '/blog/' + encodeURIComponent(post.slug))].map(path => normalizeUrl(new URL(path, origin))).sort();
   assert.deepEqual(urls, expected, 'Only approved canonical pages may enter sitemap');
   assert.ok(!html.includes('interiorhub.co.kr'));
 });
