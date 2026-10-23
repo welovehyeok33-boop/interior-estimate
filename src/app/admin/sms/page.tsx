@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { C } from '@/components/EstimateLayout';
 
-type Readiness = { ready: boolean; reason: string | null; recipient: string | null; dailyLimit: number | null };
+type Readiness = { ready: boolean; reason: string | null; recipient: string | null; dailyLimit: number | null;
+  pricing: { status: string; unitCost?: number; reason?: string; httpStatus?: number; shape?: string } | null };
 const REASONS: Record<string, string> = {
   disabled: '문자 알림이 꺼져 있어요.', not_production: '운영 서버에서만 실제 문자를 보낼 수 있어요.',
   invalid_config: '운영 서버의 문자 비밀 설정을 확인해주세요.', daily_limit: '오늘 발송 한도에 도달했어요.',
@@ -56,6 +57,9 @@ export default function AdminSmsPage() {
             ? `관리자 ${settings.recipient} · 한국시간 하루 최대 ${settings.dailyLimit}건. 신규 견적 저장 성공 시 알립니다.`
             : REASONS[settings.reason || ''] || '설정을 확인해주세요.'}</p>
           <p style={{ color: C.admin.muted, lineHeight: 1.7, fontSize: 13 }}>테스트는 문자 1건, 최대 20원입니다. 추가 충전·자동결제는 하지 않습니다. 고객 정보와 상담 통계는 생성하지 않습니다.</p>
+          {settings.pricing && <p style={{ color: C.admin.muted, fontSize: 12, lineHeight: 1.7 }}>{settings.pricing.status === 'ok'
+            ? `현재 단문 단가: 부가세 포함 최대 ${settings.pricing.unitCost}원`
+            : `단가 조회 확인 필요: ${settings.pricing.reason}${settings.pricing.httpStatus ? ` · HTTP ${settings.pricing.httpStatus}` : ''}${settings.pricing.shape ? ` · ${settings.pricing.shape}` : ''}`}</p>}
           <button type="button" onClick={testSms} disabled={!settings.ready || busy || attempted}
             style={{ width: '100%', padding: '12px 16px', border: 0, borderRadius: 10, background: C.primary, color: C.textDark, fontSize: 14, fontWeight: 700, cursor: busy || attempted ? 'default' : 'pointer', opacity: !settings.ready || busy || attempted ? 0.6 : 1 }}>
             {busy ? '발송 확인 중…' : attempted ? '테스트 요청 완료 · 다시 보내지 않음' : '테스트 문자 1건 발송 (최대 20원)'}

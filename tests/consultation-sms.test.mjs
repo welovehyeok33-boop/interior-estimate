@@ -64,7 +64,7 @@ test('readiness only exposes a masked recipient and safe operational status', ()
 
 test('uses fresh HMAC signatures, fixed API URLs, timeouts, one fixed recipient and explicit SMS only', async () => {
   const s = sms(); assert.equal((await s.sendAdminSms('consultation')).status, 'accepted');
-  assert.equal(s.calls.length, 2); assert.equal(s.calls[0].url, 'https://api.solapi.com/pricing/v1/messaging');
+  assert.equal(s.calls.length, 2); assert.equal(s.calls[0].url, 'https://api.solapi.com/pricing/v1/messaging?countryId=82&serviceMethod=MT');
   assert.equal(s.calls[1].url, 'https://api.solapi.com/messages/v4/send-many/detail');
   const salts = [];
   for (const call of s.calls) {
@@ -103,17 +103,36 @@ test('unknown, malformed or too-expensive prices never reach a paid POST', async
   }
 });
 
-test('daily and test limits are persistent and fail closed before contacting SOLAPI', async () => {
+test('daily and test limits are persistent and fail closed before any paid SOLAPI call', async () => {
   for (const [kind, options, reason] of [['consultation', { quota: () => ({ data: false }) }, 'daily_limit'],
     ['test', { quota: () => ({ data: false }) }, 'test_limit'],
     ['consultation', { quota: () => ({ data: null, error: { message: 'private' } }) }, 'quota_unavailable'],
     ['test', { quotaThrow: true }, 'quota_unavailable']]) {
     const s = sms(options); const result = await s.sendAdminSms(kind);
-    assert.equal(result.status, 'skipped'); assert.equal(result.reason, reason); assert.equal(s.calls.length, 0);
+    assert.equal(result.status, 'skipped'); assert.equal(result.reason, reason); assert.equal(s.calls.length, 1);
+    assert.equal(s.calls[0].init.method, 'GET');
   }
   const once = sms(); assert.equal((await once.sendAdminSms('test')).status, 'accepted');
   assert.deepEqual(once.quotas.map(q => q.max_hits), [1, 20]);
   assert.notEqual(once.quotas[0].bucket, once.quotas[1].bucket);
+});
+
+test('read-only price diagnostics expose only safe enums and never consume a paid test', async () => {
+  const good = sms(); const quoted = await good.smsPricingStatus();
+  assert.equal(quoted.status, 'ok'); assert.equal(quoted.unitCost, 19.8);
+  assert.equal(good.quotas.length, 0); assert.equal(good.calls.length, 1); assert.equal(good.calls[0].init.method, 'GET');
+  const bad = sms({ pricing: () => new Response('private provider detail fixture-secret 01012345678', { status: 401 }) });
+  const result = await bad.smsPricingStatus();
+  assert.equal(result.status, 'failed'); assert.equal(result.reason, 'http'); assert.equal(result.httpStatus, 401);
+  assert.doesNotMatch(JSON.stringify(result), /private|fixture|010/); assert.equal(bad.quotas.length, 0);
+});
+
+test('a price-only failure cannot consume or bypass the atomic paid-test guard', async () => {
+  const s = sms({ pricingThrow: true });
+  assert.equal((await s.sendAdminSms('test')).reason, 'price_unavailable');
+  assert.equal(s.quotas.length, 0); assert.equal(s.calls.filter(c => c.init.method === 'POST').length, 0);
+  const ok = sms(); await ok.sendAdminSms('test');
+  assert.equal(ok.quotas[0].bucket, crypto.createHmac('sha256', env.SOLAPI_API_SECRET).update('formit-sms-v1:test-send').digest('hex'));
 });
 
 test('parallel test requests can consume the atomic guard only once', async () => {
@@ -188,6 +207,7 @@ function admin(auth = true) {
     '@/lib/serverAuth': { isAdmin: async () => auth, sameOrigin: r => r.headers.get('origin') === new URL(r.url).origin,
       apiJson: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }) },
     '@/lib/serverSms': { smsReadiness: () => ({ ready: true, recipient: '끝자리 5432', dailyLimit: 20 }),
+      smsPricingStatus: async () => ({ status: 'ok', unitCost: 19.8 }),
       sendAdminSms: async kind => { sends.push(kind); return { status: 'accepted' }; } },
   });
   return { ...result, sends };
@@ -195,7 +215,8 @@ function admin(auth = true) {
 const adminRequest = (body, origin = 'https://form.it.kr') => new Request('https://form.it.kr/api/admin/sms', { method: 'POST', headers: { origin }, body: JSON.stringify(body) });
 test('diagnostics require admin authentication, same origin, explicit test confirmation and no recipient override', async () => {
   const a = admin(false); assert.equal((await a.GET()).status, 401); assert.equal((await a.POST(adminRequest({ confirmTest: true }))).status, 401); assert.equal(a.sends.length, 0);
-  const s = admin(); assert.equal((await s.POST(adminRequest({ confirmTest: true }, 'https://other.test'))).status, 403);
+  const s = admin(); const ready = await s.GET(); assert.equal(ready.status, 200); assert.equal((await ready.json()).pricing.unitCost, 19.8); assert.equal(s.sends.length, 0);
+  assert.equal((await s.POST(adminRequest({ confirmTest: true }, 'https://other.test'))).status, 403);
   for (const body of [{}, { confirmTest: false }, { confirmTest: true, to: '01011112222' }, []]) assert.equal((await s.POST(adminRequest(body))).status, 400);
   assert.equal(s.sends.length, 0); const response = await s.POST(adminRequest({ confirmTest: true })); assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store'); assert.deepEqual(s.sends, ['test']);

@@ -11,6 +11,8 @@ export const TEST_SMS = '[폼잇] 문자 알림 연결 테스트입니다.\nhttp
 type SmsConfig = { key: string; secret: string; from: string; to: string; dailyLimit: number };
 type SkipReason = 'disabled' | 'not_production' | 'invalid_config' | 'daily_limit' | 'test_limit' | 'quota_unavailable';
 type FailureReason = 'price_unavailable' | 'price_limit' | 'provider_rejected' | 'invalid_response';
+type SmsPricing = { status: 'ok'; unitCost: number } | { status: 'failed';
+  reason: 'configuration' | 'http' | 'network' | 'format' | 'limit'; httpStatus?: number; shape?: 'json' | 'array' | 'country' | 'sms' };
 export type SmsOutcome =
   | { status: 'accepted' }
   | { status: 'skipped'; reason: SkipReason }
@@ -62,34 +64,50 @@ async function readJson(response: Response): Promise<unknown> {
   return JSON.parse(text);
 }
 
+async function checkPrice(settings: SmsConfig): Promise<SmsPricing> {
+  let response: Response;
+  try {
+    response = await fetch(API_ORIGIN + '/pricing/v1/messaging?countryId=82&serviceMethod=MT', { method: 'GET',
+      headers: { Authorization: authorization(settings) }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
+  } catch { return { status: 'failed', reason: 'network' }; }
+  if (!response.ok) return { status: 'failed', reason: 'http', httpStatus: response.status };
+  let data: unknown;
+  try { data = await readJson(response); } catch { return { status: 'failed', reason: 'format', shape: 'json' }; }
+  const price = object(data);
+  if (Array.isArray(data)) return { status: 'failed', reason: 'format', shape: 'array' };
+  if (price?.countryId !== '82') return { status: 'failed', reason: 'format', shape: 'country' };
+  if (typeof price.sms !== 'number' || !Number.isFinite(price.sms) || price.sms <= 0) {
+    return { status: 'failed', reason: 'format', shape: 'sms' };
+  }
+  if (Math.ceil(price.sms * 1.1) > MAX_UNIT_COST) return { status: 'failed', reason: 'limit' };
+  return { status: 'ok', unitCost: Math.round(price.sms * 1.1 * 100) / 100 };
+}
+
+// A free, authenticated GET can diagnose configuration/price without consuming a test
+// or exposing a provider body, credential, account identifier, or full phone number.
+export async function smsPricingStatus(): Promise<SmsPricing> {
+  const settings = config();
+  return 'reason' in settings ? { status: 'failed', reason: 'configuration' } : checkPrice(settings.value);
+}
+
 export async function sendAdminSms(kind: 'consultation' | 'test'): Promise<SmsOutcome> {
   const settings = config();
   if ('reason' in settings) return { status: 'skipped', reason: settings.reason };
   const value = settings.value;
   try {
+    const pricing = await checkPrice(value);
+    if (pricing.status !== 'ok') return { status: 'failed', reason: pricing.reason === 'limit' ? 'price_limit' : 'price_unavailable' };
     // Persistent, atomic limits use the existing service-role-only RPC, not instance memory.
-    // A failed or ambiguous test attempt also consumes this guard: never auto-send it again.
+    // Claim only after the free preflight succeeds. An ambiguous paid attempt consumes
+    // this guard permanently for this 24h window; never retry a potentially accepted POST.
+    // The legacy 'test' bucket only covered a confirmed preflight-only, zero-message attempt.
     if (kind === 'test') {
-      const once = await consume(value, 'test', 1);
+      const once = await consume(value, 'test-send', 1);
       if (once !== 'allowed') return { status: 'skipped', reason: once === 'blocked' ? 'test_limit' : 'quota_unavailable' };
     }
     const day = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const quota = await consume(value, 'daily:' + day, value.dailyLimit);
     if (quota !== 'allowed') return { status: 'skipped', reason: quota === 'blocked' ? 'daily_limit' : 'quota_unavailable' };
-
-    // Check this account's current SMS price before any paid request. Leave room for VAT.
-    let pricing: unknown;
-    try {
-      const response = await fetch(API_ORIGIN + '/pricing/v1/messaging', { method: 'GET',
-        headers: { Authorization: authorization(value) }, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
-      if (!response.ok) return { status: 'failed', reason: 'price_unavailable' };
-      pricing = await readJson(response);
-    } catch { return { status: 'failed', reason: 'price_unavailable' }; }
-    const price = object(pricing);
-    if (price?.countryId !== '82' || typeof price.sms !== 'number' || !Number.isFinite(price.sms) || price.sms <= 0) {
-      return { status: 'failed', reason: 'price_unavailable' };
-    }
-    if (Math.ceil(price.sms * 1.1) > MAX_UNIT_COST) return { status: 'failed', reason: 'price_limit' };
 
     let response: Response;
     try {
