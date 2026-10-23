@@ -51,6 +51,17 @@ for (const path of ['/', '/landing', '/?utm_source=seo-test']) {
     assert.match(html, /application\/ld\+json/);
   });
 }
+await checked('/portfolio', ({ response, html }) => {
+  assert.equal(response.status, 200);
+  checkRobots(html, false);
+  checkCanonical(html, '/portfolio');
+  assert.equal((html.match(/<h1\b/g) || []).length, 1);
+  assert.ok(html.includes('회사 소개 · 포트폴리오 콘셉트 시안'));
+  assert.ok(html.includes('실제 시공 실적이 아닙니다'));
+  assert.equal((html.match(/aria-pressed=/g) || []).length, 4);
+  assert.ok(html.includes('현재 파일 업로드·자동 분석·시세 판정 기능을 제공하지 않습니다'));
+  assert.ok(!html.includes('href="/admin'));
+});
 const published = getPublishedPosts();
 await checked('/blog', ({ response, html }) => {
   assert.equal(response.status, 200);
@@ -136,7 +147,7 @@ await checked('/sitemap.xml', ({ response, html }) => {
   assert.deepEqual(urls, expected, 'Only approved canonical pages may enter sitemap');
   assert.ok(!html.includes('interiorhub.co.kr'));
 });
-await parallel(['/formit-share-v3.png', '/formit-icon-transparent-64.png', '/formit-apple-v2.png', '/favicon.ico'], path => checked(path, ({ response }) => assert.equal(response.status, 200)));
+await parallel(['/formit-share-v3.png', '/formit-icon-transparent-64.png', '/formit-apple-v2.png', '/favicon.ico', '/portfolio/space-concept-v1.png'], path => checked(path, ({ response }) => assert.equal(response.status, 200)));
 await parallel(['/api/admin/referrals', '/api/admin/consultations'], path => checked(path, ({ response }) => {
   assert.equal(response.status, 401);
   assert.match(response.headers.get('cache-control') || '', /no-store/);
