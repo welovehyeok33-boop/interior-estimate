@@ -2,8 +2,11 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Post } from '@/data/posts';
+import { IconArrowRight, IconBuildingStore, IconHome } from '@tabler/icons-react';
+import { GUIDE_AUDIENCES, guideAudiencePath, type GuideAudience } from '@/lib/guideAudiences';
 import { C } from './EstimateLayout';
 import GuideContent from './GuideContent';
+import ResidentialRoadmap from './ResidentialRoadmap';
 
 export type GuideSummary = Pick<Post, 'slug' | 'title' | 'description' | 'category' | 'subcategory' | 'publishedAt'> & { href: string };
 export type GuideArticleData = GuideSummary & { content?: string; review?: Post['review'] };
@@ -26,22 +29,57 @@ function ConsultCta() {
   </section>;
 }
 
-export function GuideIndex({ posts }: { posts: GuideSummary[] }) {
-  return <Shell>
-    <p style={{ margin: '0 0 10px', color: C.textMid, fontSize: 13 }}>폼잇 가이드</p>
-    <h1 style={{ fontSize: 'clamp(26px, 5vw, 36px)', letterSpacing: '-0.04em', margin: '0 0 16px' }}>인테리어 가이드</h1>
-    {posts.length === 0 ? <section aria-label="콘텐츠 검수 안내" style={{ padding: 24, borderRadius: 14, background: C.bg, border: '1px solid ' + C.border, lineHeight: 1.9 }}>
-      <h2 style={{ fontSize: 20, margin: '0 0 10px' }}>기존 자료를 검수하고 있어요</h2>
-      <p style={{ margin: 0, color: C.textMid }}>기존 글의 내용과 비용 근거를 확인하고 있습니다. 검수를 마친 자료부터 공개하며, 확인 전 자료는 검색 노출 대상에서 제외합니다.</p>
-    </section> : <>
-      <p style={{ color: C.textMid, lineHeight: 1.8, marginBottom: 28 }}>주거·상가 인테리어의 비용과 공사 준비를 위한 자료입니다. 글마다 적용 조건과 참고 출처를 확인해주세요.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 16 }}>{posts.map(post => <article key={post.slug} style={{ padding: 22, border: '1px solid ' + C.border, borderRadius: 12, minWidth: 0 }}>
+function ReviewNotice() {
+  return <section aria-label="콘텐츠 검수 안내" style={{ padding: 22, borderRadius: 14, background: C.bg, border: '1px solid ' + C.border, lineHeight: 1.9 }}>
+    <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>기존 자료를 검수하고 있어요</h2>
+    <p style={{ margin: 0, color: C.textMid, fontSize: 14 }}>기존 글의 내용과 비용 근거를 확인하고 있습니다. 검수를 마친 자료부터 공개하며, 확인 전 자료는 검색 노출 대상에서 제외합니다.</p>
+  </section>;
+}
+
+function GuidePostList({ posts }: { posts: GuideSummary[] }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 16 }}>{posts.map(post => <article key={post.slug} style={{ padding: 22, border: '1px solid ' + C.border, borderRadius: 12, minWidth: 0 }}>
         <span style={{ color: C.textMid, fontSize: 12 }}>{post.category} · {post.subcategory}</span>
         <h2 style={{ fontSize: 18, lineHeight: 1.6, margin: '10px 0' }}><Link href={post.href} style={{ color: C.textDark, textDecoration: 'none' }}>{post.title}</Link></h2>
         <p style={{ color: C.textMid, fontSize: 14, lineHeight: 1.8 }}>{post.description}</p>
         <time dateTime={post.publishedAt} style={{ color: C.textMid, fontSize: 12 }}>{post.publishedAt}</time>
-      </article>)}</div>
-    </>}
+  </article>)}</div>;
+}
+
+export function GuideIndex({ posts }: { posts: GuideSummary[] }) {
+  return <Shell>
+    <p style={{ margin: '0 0 10px', color: C.textMid, fontSize: 13 }}>폼잇 가이드</p>
+    <h1 style={{ fontSize: 'clamp(26px, 5vw, 36px)', letterSpacing: '-0.04em', margin: '0 0 12px' }}>인테리어 가이드</h1>
+    <p style={{ color: C.textMid, lineHeight: 1.8, margin: '0 0 28px' }}>준비하는 공간을 선택해주세요.</p>
+    <nav aria-label="공간별 인테리어 가이드" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16, marginBottom: 28 }}>
+      {GUIDE_AUDIENCES.map(audience => {
+        const Icon = audience.id === 'residential' ? IconHome : IconBuildingStore;
+        return <Link key={audience.id} href={guideAudiencePath(audience.id)} style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: 26, border: '1px solid ' + C.border, borderRadius: 18, textDecoration: 'none', color: C.textDark, minWidth: 0 }}>
+          <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, background: C.bg, borderRadius: 14 }}><Icon size={26} stroke={1.6} /></span>
+          <div>
+            <h2 style={{ fontSize: 24, letterSpacing: '-0.03em', margin: '0 0 10px' }}>{audience.title}</h2>
+            <p style={{ color: C.textMid, fontSize: 14, lineHeight: 1.8, margin: '0 0 8px' }}>{audience.description}</p>
+            <p style={{ color: C.textMid, fontSize: 12, lineHeight: 1.8, margin: 0 }}>{audience.examples}</p>
+          </div>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingTop: 16, borderTop: '1px solid ' + C.border, fontSize: 14, fontWeight: 700 }}>{audience.label} 가이드 보기<IconArrowRight aria-hidden="true" size={18} /></span>
+        </Link>;
+      })}
+    </nav>
+    {posts.length === 0 ? <ReviewNotice /> : <section aria-label="공개된 인테리어 가이드"><h2 style={{ fontSize: 20, margin: '0 0 16px' }}>최근 공개된 가이드</h2><GuidePostList posts={posts} /></section>}
+    <ConsultCta />
+  </Shell>;
+}
+
+export function GuideAudienceIndex({ audience, posts }: { audience: GuideAudience; posts: GuideSummary[] }) {
+  const category = GUIDE_AUDIENCES.find(item => item.id === audience)!;
+  return <Shell>
+    <nav aria-label="현재 위치" style={{ fontSize: 13, color: C.textMid, marginBottom: 28 }}><Link href="/blog" style={{ color: C.textMid }}>인테리어 가이드</Link> › {category.label}</nav>
+    <h1 style={{ fontSize: 'clamp(26px, 5vw, 36px)', letterSpacing: '-0.04em', margin: '0 0 12px' }}>{category.title} 가이드</h1>
+    <p style={{ color: C.textMid, lineHeight: 1.8, margin: '0 0 24px' }}>{category.examples}<br />{category.description}</p>
+    <nav aria-label="공간별 가이드 전환" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+      {GUIDE_AUDIENCES.map(item => <Link key={item.id} href={guideAudiencePath(item.id)} aria-current={item.id === audience ? 'page' : undefined} style={{ color: C.textDark, background: item.id === audience ? C.primary : C.card, border: '1px solid ' + (item.id === audience ? C.primary : C.border), borderRadius: 10, padding: '11px 16px', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>{item.title}</Link>)}
+    </nav>
+    {audience === 'residential' ? <ResidentialRoadmap /> : posts.length === 0 && <ReviewNotice />}
+    {posts.length > 0 && <section aria-label="공개된 인테리어 가이드" style={{ marginTop: 32 }}><h2 style={{ fontSize: 20, margin: '0 0 16px' }}>함께 읽는 가이드</h2><GuidePostList posts={posts} /></section>}
     <ConsultCta />
   </Shell>;
 }
