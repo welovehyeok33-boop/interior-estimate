@@ -101,6 +101,15 @@ test('message includes the selected sub-industry, exact area and formatted reque
   assert.match(formatter.buildConsultationSms({ ...smsSummary, budget: '10000' }), /희망예산 1억원 이상/);
 });
 
+test('test SMS uses the same summary formatter and a clearly marked synthetic example', async () => {
+  const s = sms();
+  assert.equal(s.TEST_SMS, '[폼잇] 견적 테스트\n일반 오피스 · 28평\n희망예산 3,000만원\nhttps://form.it.kr/admin');
+  assert.equal(s.TEST_SMS, formatter.buildConsultationSms(smsSummary, 'test'));
+  assert.ok(formatter.fitsShortSms(s.TEST_SMS));
+  assert.equal((await s.sendAdminSms('test')).status, 'accepted');
+  assert.equal(JSON.parse(s.calls.find(c => c.init.method === 'POST').init.body).messages[0].text, s.TEST_SMS);
+});
+
 test('all allowed industries, budget choices and extreme areas remain a single 90-byte SMS', () => {
   const budgets = ['unknown', ...Array.from({ length: 20 }, (_, i) => String((i + 1) * 500))];
   for (const [commercialType, subs] of Object.entries(validation.INDUSTRIES)) {
@@ -176,7 +185,20 @@ test('a price-only failure cannot consume or bypass the atomic paid-test guard',
   assert.equal((await s.sendAdminSms('test')).reason, 'price_unavailable');
   assert.equal(s.quotas.length, 0); assert.equal(s.calls.filter(c => c.init.method === 'POST').length, 0);
   const ok = sms(); await ok.sendAdminSms('test');
-  assert.equal(ok.quotas[0].bucket, crypto.createHmac('sha256', env.SOLAPI_API_SECRET).update('formit-sms-v1:test-send').digest('hex'));
+  assert.equal(ok.quotas[0].bucket, crypto.createHmac('sha256', env.SOLAPI_API_SECRET).update('formit-sms-v1:test-send:' + ok.TEST_SMS).digest('hex'));
+});
+
+test('explicitly approved new template has a separate guard without resetting prior test or daily guards', async () => {
+  const priorGuard = crypto.createHmac('sha256', env.SOLAPI_API_SECRET).update('formit-sms-v1:test-send').digest('hex');
+  let currentAttempts = 0;
+  const s = sms({ quota: (_n, args) => ({ data: args.bucket === priorGuard ? false : args.max_hits === 1 ? ++currentAttempts === 1 : true }) });
+  assert.equal((await s.sendAdminSms('test')).status, 'accepted');
+  assert.equal((await s.sendAdminSms('test')).reason, 'test_limit');
+  assert.equal(s.calls.filter(c => c.init.method === 'POST').length, 1);
+  assert.notEqual(s.quotas[0].bucket, priorGuard);
+  const day = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  assert.equal(s.quotas[1].bucket, crypto.createHmac('sha256', env.SOLAPI_API_SECRET).update('formit-sms-v1:daily:' + day).digest('hex'));
+  assert.equal(s.quotas[1].max_hits, 20);
 });
 
 test('parallel test requests can consume the atomic guard only once', async () => {
@@ -256,7 +278,7 @@ function admin(auth = true) {
   const result = load('src/app/api/admin/sms/route.ts', {
     '@/lib/serverAuth': { isAdmin: async () => auth, sameOrigin: r => r.headers.get('origin') === new URL(r.url).origin,
       apiJson: (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } }) },
-    '@/lib/serverSms': { smsReadiness: () => ({ ready: true, recipient: '끝자리 5432', dailyLimit: 20 }),
+    '@/lib/serverSms': { TEST_SMS: 'synthetic test message', smsReadiness: () => ({ ready: true, recipient: '끝자리 5432', dailyLimit: 20 }),
       smsPricingStatus: async () => ({ status: 'ok', unitCost: 19.8 }),
       sendAdminSms: async kind => { sends.push(kind); return { status: 'accepted' }; } },
   });

@@ -17,7 +17,7 @@ export function fitsShortSms(text: string): boolean {
   return Array.from(text).reduce((bytes, char) => bytes + (char.charCodeAt(0) < 128 ? 1 : 2), 0) <= 90;
 }
 
-export function buildConsultationSms(summary: ConsultationSmsSummary): string | null {
+export function buildConsultationSms(summary: ConsultationSmsSummary, mode: 'consultation' | 'test' = 'consultation'): string | null {
   if (!validArea(summary.area) || !validBudget(summary.budget)) return null;
   let category: string;
   let industry: string;
@@ -32,8 +32,9 @@ export function buildConsultationSms(summary: ConsultationSmsSummary): string | 
       ? summary.commercialSub : category;
   } else return null;
   const budget = summary.budget === 'unknown' ? '미정' : formatConsultBudget(summary.budget);
+  const title = mode === 'test' ? '견적 테스트' : '새 견적';
   const render = (label: string, budgetLabel = '희망예산') =>
-    `[폼잇] 새 견적\n${label} · ${summary.area}평\n${budgetLabel} ${budget}\nhttps://form.it.kr/admin`;
+    `[폼잇] ${title}\n${label} · ${summary.area}평\n${budgetLabel} ${budget}\nhttps://form.it.kr/admin`;
   // Prefer the selected sub-industry. If needed, shorten only its category label,
   // never silently truncate the area, budget, or admin link and never use LMS.
   return [render(industry), render(category), render(category, '예산')].find(fitsShortSms) ?? null;

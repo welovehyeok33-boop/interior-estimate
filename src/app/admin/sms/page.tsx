@@ -5,11 +5,11 @@ import { useEffect, useState } from 'react';
 import { C } from '@/components/EstimateLayout';
 
 type Readiness = { ready: boolean; reason: string | null; recipient: string | null; dailyLimit: number | null;
-  pricing: { status: string; unitCost?: number; reason?: string; httpStatus?: number; shape?: string } | null };
+  pricing: { status: string; unitCost?: number; reason?: string; httpStatus?: number; shape?: string } | null; testMessage: string };
 const REASONS: Record<string, string> = {
   disabled: '문자 알림이 꺼져 있어요.', not_production: '운영 서버에서만 실제 문자를 보낼 수 있어요.',
   invalid_config: '운영 서버의 문자 비밀 설정을 확인해주세요.', daily_limit: '오늘 발송 한도에 도달했어요.',
-  test_limit: '테스트 발송은 24시간에 한 번만 가능해요. 솔라피 발송 내역을 확인해주세요.',
+  test_limit: '같은 내용의 테스트는 24시간에 한 번만 가능해요. 솔라피 발송 내역을 확인해주세요.',
   quota_unavailable: '발송 한도를 확인하지 못해 문자를 보내지 않았어요.',
   price_unavailable: '현재 SMS 단가를 확인하지 못해 문자를 보내지 않았어요.',
   price_limit: '현재 단가가 부가세를 고려한 20원 한도를 넘어 문자를 보내지 않았어요.',
@@ -60,6 +60,8 @@ export default function AdminSmsPage() {
           {settings.pricing && <p style={{ color: C.admin.muted, fontSize: 12, lineHeight: 1.7 }}>{settings.pricing.status === 'ok'
             ? `현재 단문 단가: 부가세 포함 최대 ${settings.pricing.unitCost}원`
             : `단가 조회 확인 필요: ${settings.pricing.reason}${settings.pricing.httpStatus ? ` · HTTP ${settings.pricing.httpStatus}` : ''}${settings.pricing.shape ? ` · ${settings.pricing.shape}` : ''}`}</p>}
+          {settings.testMessage && <pre style={{ margin: '16px 0', padding: 12, borderRadius: 10, border: `1px solid ${C.admin.line}`,
+            whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.7, color: C.admin.text }}>{settings.testMessage}</pre>}
           <button type="button" onClick={testSms} disabled={!settings.ready || busy || attempted}
             style={{ width: '100%', padding: '12px 16px', border: 0, borderRadius: 10, background: C.primary, color: C.textDark, fontSize: 14, fontWeight: 700, cursor: busy || attempted ? 'default' : 'pointer', opacity: !settings.ready || busy || attempted ? 0.6 : 1 }}>
             {busy ? '발송 확인 중…' : attempted ? '테스트 요청 완료 · 다시 보내지 않음' : '테스트 문자 1건 발송 (최대 20원)'}

@@ -1,5 +1,5 @@
 import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
-import { sendAdminSms, smsReadiness, smsPricingStatus } from '@/lib/serverSms';
+import { sendAdminSms, smsReadiness, smsPricingStatus, TEST_SMS } from '@/lib/serverSms';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export async function GET() {
     if (!await isAdmin()) return apiJson({ error: '관리자 로그인이 필요해요.' }, 401);
     const settings = smsReadiness();
     const pricing = settings.ready ? await smsPricingStatus() : null;
-    return apiJson({ ...settings, ready: settings.ready && pricing?.status === 'ok', pricing,
+    return apiJson({ ...settings, ready: settings.ready && pricing?.status === 'ok', pricing, testMessage: TEST_SMS,
       reason: settings.reason ?? (pricing?.status === 'failed' ? pricing.reason === 'limit' ? 'price_limit' : 'price_unavailable' : null) });
   } catch { return apiJson({ error: '문자 설정을 확인하지 못했어요.' }, 503); }
 }
