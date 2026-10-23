@@ -1,16 +1,16 @@
 import 'server-only';
 import { createHmac, randomBytes } from 'node:crypto';
 import { serverDb } from './serverDb';
+import { buildConsultationSms, fitsShortSms, type ConsultationSmsSummary } from './consultationSms';
 
 const API_ORIGIN = 'https://api.solapi.com';
 const REQUEST_TIMEOUT = 7000;
 const MAX_UNIT_COST = 20;
-export const CONSULTATION_SMS = '[폼잇] 새 견적 문의가 접수됐습니다.\nhttps://form.it.kr/admin';
 export const TEST_SMS = '[폼잇] 문자 알림 연결 테스트입니다.\nhttps://form.it.kr/admin';
 
 type SmsConfig = { key: string; secret: string; from: string; to: string; dailyLimit: number };
 type SkipReason = 'disabled' | 'not_production' | 'invalid_config' | 'daily_limit' | 'test_limit' | 'quota_unavailable';
-type FailureReason = 'price_unavailable' | 'price_limit' | 'provider_rejected' | 'invalid_response';
+type FailureReason = 'price_unavailable' | 'price_limit' | 'provider_rejected' | 'invalid_response' | 'invalid_message';
 type SmsPricing = { status: 'ok'; unitCost: number } | { status: 'failed';
   reason: 'configuration' | 'http' | 'network' | 'format' | 'limit'; httpStatus?: number; shape?: 'json' | 'array' | 'country' | 'sms' };
 export type SmsOutcome =
@@ -90,11 +90,13 @@ export async function smsPricingStatus(): Promise<SmsPricing> {
   return 'reason' in settings ? { status: 'failed', reason: 'configuration' } : checkPrice(settings.value);
 }
 
-export async function sendAdminSms(kind: 'consultation' | 'test'): Promise<SmsOutcome> {
+export async function sendAdminSms(kind: 'consultation' | 'test', summary?: ConsultationSmsSummary): Promise<SmsOutcome> {
   const settings = config();
   if ('reason' in settings) return { status: 'skipped', reason: settings.reason };
   const value = settings.value;
   try {
+    const text = kind === 'test' ? TEST_SMS : summary ? buildConsultationSms(summary) : null;
+    if (!text || !fitsShortSms(text)) return { status: 'failed', reason: 'invalid_message' };
     const pricing = await checkPrice(value);
     if (pricing.status !== 'ok') return { status: 'failed', reason: pricing.reason === 'limit' ? 'price_limit' : 'price_unavailable' };
     // Persistent, atomic limits use the existing service-role-only RPC, not instance memory.
@@ -111,12 +113,12 @@ export async function sendAdminSms(kind: 'consultation' | 'test'): Promise<SmsOu
 
     let response: Response;
     try {
-      // Exactly one fixed recipient and a fixed short text. No customer data, automatic LMS,
-      // fallback channel, charging API, or retry after a potentially accepted POST.
+      // Exactly one fixed recipient and a length-checked, allowlisted summary. No names,
+      // phones, free text, automatic LMS, charging API, or retry after an ambiguous POST.
       response = await fetch(API_ORIGIN + '/messages/v4/send-many/detail', { method: 'POST',
         headers: { Authorization: authorization(value), 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ from: value.from, to: value.to, type: 'SMS', autoTypeDetect: false,
-          text: kind === 'test' ? TEST_SMS : CONSULTATION_SMS }], strict: true, allowDuplicates: false, showMessageList: true }),
+          text }], strict: true, allowDuplicates: false, showMessageList: true }),
         cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
     } catch { return { status: 'unknown', reason: 'network' }; }
     if (!response.ok) return { status: 'failed', reason: 'provider_rejected' };
@@ -131,8 +133,8 @@ export async function sendAdminSms(kind: 'consultation' | 'test'): Promise<SmsOu
   } catch { return { status: 'skipped', reason: 'quota_unavailable' }; }
 }
 
-export async function notifyNewConsultationSms() {
-  const result = await sendAdminSms('consultation');
+export async function notifyNewConsultationSms(summary: ConsultationSmsSummary) {
+  const result = await sendAdminSms('consultation', summary);
   if (result.status !== 'accepted' && !(result.status === 'skipped' && ['disabled', 'not_production'].includes(result.reason))) {
     // Never log provider bodies, errors, recipients, Authorization, or credentials.
     console.warn('Formit consultation SMS', { status: result.status, reason: result.reason });

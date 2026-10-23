@@ -6,6 +6,7 @@ import * as crypto from 'node:crypto';
 import ts from 'typescript';
 import * as validation from '../src/lib/intakeValidation.ts';
 import * as region from '../src/lib/estimateRegion.ts';
+import * as consultFormat from '../src/lib/consultStore.ts';
 
 const source = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 function load(path, deps, globals = {}) {
@@ -14,6 +15,8 @@ function load(path, deps, globals = {}) {
     { exports, require: name => { if (!(name in deps)) throw new Error('Unexpected test dependency: ' + name); return deps[name]; }, ...globals });
   return exports;
 }
+const formatter = load('src/lib/consultationSms.ts', { './intakeValidation': validation, './consultStore': consultFormat });
+const smsSummary = { buildingType: 'commercial', commercialType: 'office', commercialSub: '일반 오피스', area: 28, budget: '3000' };
 const env = { FORMIT_SMS_ENABLED: 'true', NODE_ENV: 'production', VERCEL_ENV: 'production',
   SOLAPI_API_KEY: 'fixture-key', SOLAPI_API_SECRET: 'fixture-secret-not-real-1234567890',
   SOLAPI_FROM_NUMBER: '01012345678', SOLAPI_ADMIN_NUMBER: '01098765432', FORMIT_SMS_DAILY_LIMIT: '20' };
@@ -35,7 +38,7 @@ function sms(options = {}) {
     if (options.postThrow) throw new Error('private network detail with Authorization');
     return options.post ? options.post() : accepted();
   };
-  const module = load('src/lib/serverSms.ts', { 'server-only': {}, 'node:crypto': crypto, './serverDb': { serverDb: () => db } },
+  const module = load('src/lib/serverSms.ts', { 'server-only': {}, 'node:crypto': crypto, './serverDb': { serverDb: () => db }, './consultationSms': formatter },
     { process: { env: { ...env, ...options.env } }, fetch: request, Date,
       AbortSignal: { timeout: ms => { timeouts.push(ms); return AbortSignal.timeout(ms); } },
       console: { warn: (...args) => warnings.push(args) } });
@@ -63,7 +66,7 @@ test('readiness only exposes a masked recipient and safe operational status', ()
 });
 
 test('uses fresh HMAC signatures, fixed API URLs, timeouts, one fixed recipient and explicit SMS only', async () => {
-  const s = sms(); assert.equal((await s.sendAdminSms('consultation')).status, 'accepted');
+  const s = sms(); assert.equal((await s.sendAdminSms('consultation', smsSummary)).status, 'accepted');
   assert.equal(s.calls.length, 2); assert.equal(s.calls[0].url, 'https://api.solapi.com/pricing/v1/messaging?countryId=82&serviceMethod=MT');
   assert.equal(s.calls[1].url, 'https://api.solapi.com/messages/v4/send-many/detail');
   const salts = [];
@@ -76,20 +79,61 @@ test('uses fresh HMAC signatures, fixed API URLs, timeouts, one fixed recipient 
   }
   assert.notEqual(salts[0], salts[1]); assert.deepEqual(s.timeouts, [7000, 7000]);
   const payload = JSON.parse(s.calls[1].init.body);
-  assert.deepEqual(payload.messages, [{ from: env.SOLAPI_FROM_NUMBER, to: env.SOLAPI_ADMIN_NUMBER, type: 'SMS', autoTypeDetect: false, text: s.CONSULTATION_SMS }]);
+  assert.deepEqual(payload.messages, [{ from: env.SOLAPI_FROM_NUMBER, to: env.SOLAPI_ADMIN_NUMBER, type: 'SMS', autoTypeDetect: false, text: formatter.buildConsultationSms(smsSummary) }]);
   assert.equal(payload.strict, true); assert.equal(payload.allowDuplicates, false); assert.equal(payload.showMessageList, true);
   assert.equal(s.quotas[0].name, 'consume_request_limit'); assert.equal(s.quotas[0].max_hits, 20); assert.equal(s.quotas[0].window_seconds, 86400);
   assert.match(s.quotas[0].bucket, /^[a-f0-9]{64}$/);
 });
 
-test('both fixed texts conservatively fit SMS and contain no customer fields or long-message options', () => {
+test('summary and test texts fit SMS without names, phone numbers or long-message options', () => {
   const s = sms();
-  for (const text of [s.CONSULTATION_SMS, s.TEST_SMS]) {
-    assert.ok(Buffer.byteLength(text, 'utf8') <= 90, 'Even UTF-8 size fits the EUC-KR SMS limit');
+  for (const text of [formatter.buildConsultationSms(smsSummary), s.TEST_SMS]) {
+    assert.ok(formatter.fitsShortSms(text));
     assert.match(text, /https:\/\/form\.it\.kr\/admin$/);
     assert.doesNotMatch(text, /010|고객명|#{|\$\{/);
   }
-  assert.notEqual(s.CONSULTATION_SMS, s.TEST_SMS);
+  assert.notEqual(formatter.buildConsultationSms(smsSummary), s.TEST_SMS);
+});
+
+test('message includes the selected sub-industry, exact area and formatted requested budget', () => {
+  assert.equal(formatter.buildConsultationSms(smsSummary), '[폼잇] 새 견적\n일반 오피스 · 28평\n희망예산 3,000만원\nhttps://form.it.kr/admin');
+  assert.match(formatter.buildConsultationSms({ ...smsSummary, buildingType: 'residential', area: 24.5, budget: 'unknown' }), /주거 · 24\.5평\n희망예산 미정/);
+  assert.match(formatter.buildConsultationSms({ ...smsSummary, budget: '10000' }), /희망예산 1억원 이상/);
+});
+
+test('all allowed industries, budget choices and extreme areas remain a single 90-byte SMS', () => {
+  const budgets = ['unknown', ...Array.from({ length: 20 }, (_, i) => String((i + 1) * 500))];
+  for (const [commercialType, subs] of Object.entries(validation.INDUSTRIES)) {
+    for (const commercialSub of subs.length ? subs : [undefined]) {
+      for (const area of [1, 28, 24.5, 9999, 9998.123456789012, 1.0000000000000002]) {
+        for (const budget of budgets) {
+          const text = formatter.buildConsultationSms({ ...smsSummary, commercialType, commercialSub, area, budget });
+          assert.ok(text && formatter.fitsShortSms(text), JSON.stringify({ commercialType, commercialSub, area, budget }));
+          assert.ok(text.includes(`${area}평`));
+          assert.ok(text.includes(budget === 'unknown' ? '미정' : consultFormat.formatConsultBudget(budget)));
+          assert.match(text, /https:\/\/form\.it\.kr\/admin$/);
+        }
+      }
+    }
+  }
+});
+
+test('only allowlisted summary values are rendered; private text and unsupported characters never pass', () => {
+  const text = formatter.buildConsultationSms({ ...smsSummary, commercialType: 'unknown', commercialSub: '홍길동 01012345678 비공개 주소',
+    name: '홍길동', phone: '01012345678', memo: '비공개 메모', regionDetail: '비공개 주소' });
+  assert.match(text, /업종 미정/); assert.doesNotMatch(text, /홍길동|010|비공개/);
+  assert.equal(formatter.buildConsultationSms({ ...smsSummary, commercialType: 'bad\n01012345678' }), null);
+  for (const area of [0, 10000, Infinity, NaN]) assert.equal(formatter.buildConsultationSms({ ...smsSummary, area }), null);
+  for (const budget of ['0', '3001', '홍길동', 'Infinity']) assert.equal(formatter.buildConsultationSms({ ...smsSummary, budget }), null);
+  for (const text of ['😀', '가'.repeat(46), 'a'.repeat(91), 'x\r\ny', '']) assert.equal(formatter.fitsShortSms(text), false);
+  assert.equal(formatter.fitsShortSms('가'.repeat(45)), true);
+});
+
+test('missing or invalid summaries cannot trigger any provider call or consume a paid quota', async () => {
+  for (const summary of [undefined, { ...smsSummary, area: Infinity }, { ...smsSummary, budget: 'bad' }]) {
+    const s = sms(); const result = await s.sendAdminSms('consultation', summary);
+    assert.equal(result.reason, 'invalid_message'); assert.equal(s.calls.length, 0); assert.equal(s.quotas.length, 0);
+  }
 });
 
 test('unknown, malformed or too-expensive prices never reach a paid POST', async () => {
@@ -108,7 +152,7 @@ test('daily and test limits are persistent and fail closed before any paid SOLAP
     ['test', { quota: () => ({ data: false }) }, 'test_limit'],
     ['consultation', { quota: () => ({ data: null, error: { message: 'private' } }) }, 'quota_unavailable'],
     ['test', { quotaThrow: true }, 'quota_unavailable']]) {
-    const s = sms(options); const result = await s.sendAdminSms(kind);
+    const s = sms(options); const result = await s.sendAdminSms(kind, smsSummary);
     assert.equal(result.status, 'skipped'); assert.equal(result.reason, reason); assert.equal(s.calls.length, 1);
     assert.equal(s.calls[0].init.method, 'GET');
   }
@@ -149,7 +193,7 @@ test('ambiguous or rejected paid requests never retry, leak errors or claim deli
     [{ post: () => Response.json({ failedMessageList: [{ statusCode: 'failed', text: 'private' }] }) }, 'failed', 'provider_rejected'],
     [{ post: () => new Response('bad-json') }, 'failed', 'invalid_response'],
     [{ post: () => Response.json({ groupInfo: { count: { registeredSuccess: 0 } } }) }, 'failed', 'invalid_response']]) {
-    const s = sms(options); const result = await s.sendAdminSms('consultation');
+    const s = sms(options); const result = await s.sendAdminSms('consultation', smsSummary);
     assert.equal(result.status, status); assert.equal(result.reason, reason);
     assert.equal(s.calls.filter(c => c.init.method === 'POST').length, 1);
     assert.doesNotMatch(JSON.stringify(result), /private|Authorization|fixture|010/);
@@ -158,9 +202,9 @@ test('ambiguous or rejected paid requests never retry, leak errors or claim deli
 
 test('notification logs contain only safe enums and suppress normal disabled/non-production states', async () => {
   for (const patch of [{ FORMIT_SMS_ENABLED: 'false' }, { VERCEL_ENV: 'preview' }]) {
-    const s = sms({ env: patch }); await s.notifyNewConsultationSms(); assert.equal(s.warnings.length, 0);
+    const s = sms({ env: patch }); await s.notifyNewConsultationSms(smsSummary); assert.equal(s.warnings.length, 0);
   }
-  const s = sms({ postThrow: true }); await s.notifyNewConsultationSms(); assert.equal(s.warnings.length, 1);
+  const s = sms({ postThrow: true }); await s.notifyNewConsultationSms(smsSummary); assert.equal(s.warnings.length, 1);
   assert.doesNotMatch(JSON.stringify(s.warnings), /private|Authorization|fixture|010|HMAC/);
 });
 
@@ -176,15 +220,21 @@ function intake(options = {}) {
       rateLimit: async () => options.limited !== true, apiJson: (body, status = 200) => Response.json(body, { status }) },
     '@/lib/intakeValidation': validation, '@/lib/estimateRegion': region, '@/lib/serverAnalytics': { visitorIdentity: async () => null },
     'next/server': { after: callback => { if (options.scheduleThrow) throw new Error('private'); scheduled.push(callback); } },
-    '@/lib/serverSms': { notifyNewConsultationSms: async () => { sends.push(true); if (options.sendThrow) throw new Error('private'); } },
+    '@/lib/serverSms': { notifyNewConsultationSms: async summary => { sends.push(summary); if (options.sendThrow) throw new Error('private'); } },
   }, { Date, console: { warn: (...args) => warnings.push(args) } });
   return { ...result, scheduled, inserts, sends, warnings };
 }
 
-test('successful insert acknowledges before notification, with no customer object sent to SMS helper', async () => {
+test('successful insert acknowledges before notification and passes only the five approved summary fields', async () => {
   const s = intake(); const result = await s.POST(request());
   assert.equal(result.status, 200); assert.equal(s.inserts.length, 1); assert.equal(s.scheduled.length, 1); assert.equal(s.sends.length, 0);
   await s.scheduled[0](); assert.equal(s.sends.length, 1);
+  assert.deepEqual(Object.keys(s.sends[0]).sort(), ['area', 'budget', 'buildingType', 'commercialSub', 'commercialType']);
+  assert.equal(s.sends[0].buildingType, 'residential'); assert.equal(s.sends[0].area, application.area); assert.equal(s.sends[0].budget, application.budget);
+  assert.doesNotMatch(JSON.stringify(s.sends[0]), /01012345678|검증용|submissionId|consent|region|memo/);
+  const commercial = intake(); assert.equal((await commercial.POST(request({ ...application, ...smsSummary }))).status, 200);
+  await commercial.scheduled[0]();
+  assert.equal(formatter.buildConsultationSms(commercial.sends[0]), formatter.buildConsultationSms(smsSummary));
 });
 
 test('duplicate insert, invalid request, rate limit and storage failures never schedule SMS', async () => {

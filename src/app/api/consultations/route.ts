@@ -37,10 +37,13 @@ export async function POST(request: Request) {
     // A retry after a lost response must not create another customer record.
     if (error && error.code !== '23505') throw error;
     if (!error) {
+      const smsSummary = { buildingType: commercial ? 'commercial' : 'residential',
+        commercialType: commercial ? body.commercialType : undefined,
+        commercialSub: commercial ? body.commercialSub : undefined, area: body.area, budget: body.budget };
       // Only the successful INSERT schedules an alert, never an idempotent duplicate.
       // Notification scheduling and delivery must not turn a saved inquiry into a failed one.
       try { after(async () => {
-        try { await notifyNewConsultationSms(); }
+        try { await notifyNewConsultationSms(smsSummary); }
         catch { console.warn('Formit consultation SMS unavailable'); }
       }); }
       catch { console.warn('Formit consultation SMS scheduling unavailable'); }
