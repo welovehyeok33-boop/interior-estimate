@@ -6,7 +6,8 @@ import { buildConsultationSms, fitsShortSms, type ConsultationSmsSummary } from 
 const API_ORIGIN = 'https://api.solapi.com';
 const REQUEST_TIMEOUT = 7000;
 const MAX_UNIT_COST = 20;
-export const TEST_SMS = '[폼잇] 문자 알림 연결 테스트입니다.\nhttps://form.it.kr/admin';
+export const TEST_SMS = buildConsultationSms({ buildingType: 'commercial', commercialType: 'office',
+  commercialSub: '일반 오피스', area: 28, budget: '3000' }, 'test') ?? '';
 
 type SmsConfig = { key: string; secret: string; from: string; to: string; dailyLimit: number };
 type SkipReason = 'disabled' | 'not_production' | 'invalid_config' | 'daily_limit' | 'test_limit' | 'quota_unavailable';
@@ -102,9 +103,10 @@ export async function sendAdminSms(kind: 'consultation' | 'test', summary?: Cons
     // Persistent, atomic limits use the existing service-role-only RPC, not instance memory.
     // Claim only after the free preflight succeeds. An ambiguous paid attempt consumes
     // this guard permanently for this 24h window; never retry a potentially accepted POST.
-    // The legacy 'test' bucket only covered a confirmed preflight-only, zero-message attempt.
+    // A new, explicitly approved template can be tested without deleting old guards.
+    // The same fixed test text stays single-attempt across instances and deployments.
     if (kind === 'test') {
-      const once = await consume(value, 'test-send', 1);
+      const once = await consume(value, 'test-send:' + TEST_SMS, 1);
       if (once !== 'allowed') return { status: 'skipped', reason: once === 'blocked' ? 'test_limit' : 'quota_unavailable' };
     }
     const day = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
