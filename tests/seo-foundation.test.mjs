@@ -10,6 +10,7 @@ import * as posts from '../src/data/posts.ts';
 import * as share from '../src/lib/shareMetadata.ts';
 import * as audiences from '../src/lib/guideAudiences.ts';
 import * as checklist from '../src/lib/residentialChecklist.ts';
+import * as residentialDetails from '../src/data/residentialGuideDetails.ts';
 
 const require = createRequire(import.meta.url);
 const now = new Date('2026-10-22T02:00:00Z');
@@ -24,8 +25,9 @@ const seo = load('src/lib/siteMetadata.ts', { './shareMetadata': share });
 const C = { bg: '#fff8dd', card: '#fff', border: '#ddd', primary: '#f5c200', textDark: '#111', textMid: '#444' };
 const Link = ({ href, children, ...props }) => React.createElement('a', { ...props, href }, children);
 const content = load('src/components/GuideContent.tsx', { './EstimateLayout': { C } });
-const roadmap = load('src/components/ResidentialRoadmap.tsx', { './EstimateLayout': { C: { ...C, primaryLight: '#ffd740', ruler: {} } }, '@/lib/residentialChecklist': checklist });
+const roadmap = load('src/components/ResidentialRoadmap.tsx', { './EstimateLayout': { C: { ...C, primaryLight: '#ffd740', ruler: {} } }, '@/lib/residentialChecklist': checklist, 'next/link': { default: Link } });
 const views = load('src/components/GuideViews.tsx', { './EstimateLayout': { C }, './GuideContent': content, './ResidentialRoadmap': roadmap, 'next/link': { default: Link }, '@/lib/guideAudiences': audiences });
+const detailView = load('src/components/ResidentialGuideDetail.tsx', { './EstimateLayout': { C }, './GuideViews': views, '@/lib/residentialChecklist': checklist, 'next/link': { default: Link } });
 function articleModule(data = posts) {
   return load('src/app/blog/[slug]/page.tsx', {
     '@/data/posts': data, '@/lib/siteMetadata': seo, '@/components/GuideViews': views,
@@ -182,7 +184,7 @@ test('both audience routes have independent canonicals, noindex empty states, re
     assert.equal(tree.props.posts.length, 0);
     const html = renderToStaticMarkup(tree);
     assert.equal((html.match(/<h1\b/g) || []).length, 1);
-    assert.match(html, audience.id === 'residential' ? /주거 인테리어 단계별 체크리스트/ : /기존 자료를 검수하고 있어요/);
+    assert.match(html, audience.id === 'residential' ? /주거 인테리어 단계별 가이드/ : /기존 자료를 검수하고 있어요/);
     const active = html.match(/<a\b[^>]*>/g).find(tag => tag.includes('href="/blog/' + audience.id + '"'));
     assert.ok(active.includes('aria-current="page"'));
     assert.match(html, /href="\/blog"/);
@@ -206,37 +208,68 @@ test('sitemap includes an audience only when that audience has a reviewed publis
   assert.equal(new Set(both).size, both.length);
 });
 
-test('residential roadmap has eight ordered stages, safe unique checkbox IDs and bounded saved state', () => {
+test('residential roadmap has eight ordered stages and 25 unique detail destinations', () => {
   assert.equal(checklist.RESIDENTIAL_STAGES.length, 8);
   assert.equal(checklist.RESIDENTIAL_STAGES[0].percent, 0);
   assert.equal(checklist.RESIDENTIAL_STAGES.at(-1).percent, 100);
-  assert.equal(checklist.RESIDENTIAL_CHECK_IDS.length, 25);
-  assert.equal(new Set(checklist.RESIDENTIAL_CHECK_IDS).size, 25);
+  assert.equal(checklist.RESIDENTIAL_ITEMS.length, 25);
+  assert.equal(new Set(checklist.RESIDENTIAL_ITEMS.map(item => item.id)).size, 25);
   assert.equal(new Set(checklist.RESIDENTIAL_STAGES.map(stage => stage.id)).size, 8);
   for (const [index, stage] of checklist.RESIDENTIAL_STAGES.entries()) {
     if (index) assert.ok(stage.percent > checklist.RESIDENTIAL_STAGES[index - 1].percent);
     assert.ok(stage.items.every(item => item.title && item.detail));
   }
-  for (const invalid of ['', 'broken', 'null', '{}', '1', '"text"', ' '.repeat(10001)]) assert.deepEqual(checklist.parseResidentialChecks(invalid), []);
-  const first = checklist.RESIDENTIAL_CHECK_IDS[0];
-  assert.deepEqual(checklist.parseResidentialChecks(JSON.stringify([first, first, 'admin-password', null, 7, { id: first }])) , [first]);
-  assert.deepEqual(checklist.parseResidentialChecks(JSON.stringify([...checklist.RESIDENTIAL_CHECK_IDS].reverse())), [...checklist.RESIDENTIAL_CHECK_IDS]);
+  assert.equal(checklist.getResidentialGuide(checklist.RESIDENTIAL_ITEMS[0].id).previous, null);
+  assert.equal(checklist.getResidentialGuide(checklist.RESIDENTIAL_ITEMS.at(-1).id).next, null);
+  for (const invalid of ['', '../admin', 'unknown', '%2fadmin']) assert.equal(checklist.getResidentialGuide(invalid), undefined);
   for (const [input, expected] of [[0, 0], [0.504, 50], [0.999, 100], [1, 100], [-5, 0], [3, 100], [NaN, 0], [Infinity, 0]]) assert.equal(checklist.guideScrollPercent(input), expected);
 });
 
-test('residential roadmap is SSR-readable, separates browsing from completed checks, and has no server storage or paid side effects', () => {
+test('residential roadmap has crawlable item links and no checkboxes, saved-state access or paid side effects', () => {
   const html = renderToStaticMarkup(React.createElement(roadmap.default));
-  assert.equal((html.match(/type="checkbox"/g) || []).length, 25);
+  assert.equal((html.match(/type="checkbox"/g) || []).length, 0);
   assert.equal((html.match(/<h3\b/g) || []).length, 8);
   assert.match(html, /가이드 탐색 위치/);
   assert.match(html, /실제 공사 진행률/);
-  assert.match(html, /이 브라우저에만 저장/);
+  for (const item of checklist.RESIDENTIAL_ITEMS) assert.ok(html.includes('href="' + checklist.residentialGuidePath(item.id) + '"'));
+  assert.doesNotMatch(html, /체크한 항목|브라우저에만 저장/);
   assert.match(html, /참고 자료와 이용 안내/);
   for (const source of checklist.RESIDENTIAL_SOURCES) assert.ok(html.includes(source.title));
   const code = readFileSync(new URL('../src/components/ResidentialRoadmap.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(code, /fetch\(|supabase|SOLAPI|\/api\//i);
-  assert.match(code, /useSyncExternalStore/);
-  assert.match(code, /catch \{ memoryOnly = true/);
+  assert.doesNotMatch(code, /fetch\(|supabase|SOLAPI|\/api\/|localStorage|useSyncExternalStore|toggleCheck|type="checkbox"/i);
+});
+
+test('all 25 residential detail pages resolve, have unique noindex canonicals and return to the matching stage', async () => {
+  const module = load('src/app/blog/residential/[item]/page.tsx', {
+    '@/lib/residentialChecklist': checklist, '@/data/residentialGuideDetails': residentialDetails,
+    '@/lib/siteMetadata': seo, '@/components/ResidentialGuideDetail': detailView,
+    'next/navigation': { notFound: () => { throw new Error('NOT_FOUND'); } },
+  });
+  assert.equal(module.generateStaticParams().length, 25);
+  const destinations = new Set();
+  for (const [index, item] of checklist.RESIDENTIAL_ITEMS.entries()) {
+    const props = { params: Promise.resolve({ item: item.id }) };
+    const metadata = await module.generateMetadata(props);
+    destinations.add(metadata.alternates.canonical);
+    assert.equal(metadata.alternates.canonical, 'https://form.it.kr' + checklist.residentialGuidePath(item.id));
+    assert.equal(metadata.robots.index, false);
+    assert.equal(metadata.robots.googleBot.index, false);
+    const body = residentialDetails.RESIDENTIAL_GUIDE_DETAILS[item.id];
+    assert.equal(body.points.length, 3);
+    assert.ok(body.points.every(point => point.trim().length > 10));
+    assert.ok(body.question && body.record);
+    const html = renderToStaticMarkup(await module.default(props));
+    assert.equal((html.match(/<h1\b/g) || []).length, 1);
+    assert.ok(html.includes(item.title));
+    assert.ok(html.includes('href="/blog/residential#residential-' + item.stageId + '"'));
+    assert.match(html, /이렇게 준비해보세요|이렇게 물어보세요|챙겨둘 자료/);
+    assert.doesNotMatch(html, /type="checkbox"|"@type":"Article"|전문가 검수 완료/);
+    if (index) assert.ok(html.includes(checklist.residentialGuidePath(checklist.RESIDENTIAL_ITEMS[index - 1].id)));
+    if (index < 24) assert.ok(html.includes(checklist.residentialGuidePath(checklist.RESIDENTIAL_ITEMS[index + 1].id)));
+  }
+  assert.equal(destinations.size, 25);
+  await assert.rejects(module.default({ params: Promise.resolve({ item: 'unknown' }) }), /NOT_FOUND/);
+  await assert.rejects(module.generateMetadata({ params: Promise.resolve({ item: '../admin' }) }), /NOT_FOUND/);
 });
 
 test('approved content uses a single title, semantic lists/tables and truthful Article/Breadcrumb data', async () => {
