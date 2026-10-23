@@ -5,7 +5,9 @@ import { useRef, useState } from 'react';
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
 import { IconArrowDown, IconArrowRight } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
-import { RESIDENTIAL_SOURCES, RESIDENTIAL_STAGES, guideScrollPercent, residentialGuidePath } from '@/lib/residentialChecklist';
+import { RESIDENTIAL_SOURCES, RESIDENTIAL_STAGES, guideScrollPercent } from '@/lib/residentialChecklist';
+import type { GuideAudience } from '@/lib/guideAudiences';
+import type { GuideSource, GuideStage } from '@/lib/guideTypes';
 
 function TapeCase() {
   return <svg viewBox="0 0 64 68" aria-hidden="true" style={{ width: 58, height: 62, display: 'block' }}>
@@ -20,13 +22,19 @@ function TapeCase() {
 }
 
 export default function ResidentialRoadmap() {
+  return <GuideRoadmap audience="residential" stages={RESIDENTIAL_STAGES} sources={RESIDENTIAL_SOURCES} title="계약 전부터, 입주 후까지." notice="한국소비자원 안내를 참고해 구성한 일반적인 준비 목록이에요. 건물·공사 범위에 따라 순서와 필요한 절차가 달라질 수 있고, 계약·법률·안전 판단을 대신하지 않아요. 위험한 점검은 담당 전문가에게 요청하세요." />;
+}
+
+export function GuideRoadmap({ audience, stages, sources, title, notice }: { audience: GuideAudience; stages: readonly GuideStage[]; sources: readonly GuideSource[]; title: string; notice: string }) {
+  const label = audience === 'residential' ? '주거' : '상가';
+  const count = stages.reduce((total, stage) => total + stage.items.length, 0);
   const timeline = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: timeline, offset: ['start center', 'end 70%'] });
   const hookTop = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
   const [position, setPosition] = useState(0);
   useMotionValueEvent(scrollYProgress, 'change', value => setPosition(guideScrollPercent(value)));
-  return <section aria-label="주거 인테리어 단계별 가이드" style={{ marginTop: 32 }}>
-    <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(23px, 4.5vw, 30px)', letterSpacing: '-0.04em' }}>계약 전부터, 입주 후까지.</h2>
+  return <section aria-label={`${label} 인테리어 단계별 가이드`} style={{ marginTop: 32 }}>
+    <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(23px, 4.5vw, 30px)', letterSpacing: '-0.04em' }}>{title}</h2>
     <p style={{ margin: '0 0 24px', color: C.textMid, lineHeight: 1.9, fontSize: 15 }}>줄자를 따라 내려가며 지금 필요한 일을 찾아보세요.<br />궁금한 항목을 누르면 자세한 안내로 이어져요.</p>
 
     <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.card, padding: '14px 0', marginBottom: 46, borderBottom: '1px solid ' + C.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -34,7 +42,7 @@ export default function ResidentialRoadmap() {
         <span style={{ fontSize: 12, color: C.textMid }}>가이드 위치</span>
         <strong style={{ fontSize: 28, letterSpacing: '-0.05em', fontVariantNumeric: 'tabular-nums' }}>{position}<span style={{ fontSize: 14, marginLeft: 2 }}>%</span></strong>
       </div>
-      <span style={{ fontSize: 12, color: C.textMid }}>8단계 · 25개 가이드</span>
+      <span style={{ fontSize: 12, color: C.textMid }}>{stages.length}단계 · {count}개 가이드</span>
     </div>
 
     <div ref={timeline} style={{ position: 'relative', display: 'grid', gridTemplateColumns: '58px minmax(0, 1fr)', columnGap: 'clamp(12px, 3vw, 28px)', alignItems: 'stretch' }}>
@@ -52,8 +60,8 @@ export default function ResidentialRoadmap() {
       </div>
 
       <ol style={{ listStyle: 'none', padding: 0, margin: 0, minWidth: 0 }}>
-        {RESIDENTIAL_STAGES.map((stage, index) => {
-          return <li key={stage.id} id={`residential-${stage.id}`} style={{ scrollMarginTop: 110, paddingBottom: index === RESIDENTIAL_STAGES.length - 1 ? 0 : 34 }}>
+        {stages.map((stage, index) => {
+          return <li key={stage.id} id={`${audience}-${stage.id}`} style={{ scrollMarginTop: 110, paddingBottom: index === stages.length - 1 ? 0 : 34 }}>
             <section aria-labelledby={`heading-${stage.id}`} style={{ padding: 'clamp(16px, 3vw, 26px)', border: '1px solid ' + C.border, borderRadius: 16, background: C.card, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: C.textMid }}>STEP {String(index + 1).padStart(2, '0')}</span>
@@ -62,7 +70,7 @@ export default function ResidentialRoadmap() {
               <h3 id={`heading-${stage.id}`} style={{ fontSize: 'clamp(18px, 3.6vw, 23px)', letterSpacing: '-0.04em', lineHeight: 1.5, margin: '0 0 8px' }}>{stage.title}</h3>
               <p style={{ color: C.textMid, fontSize: 13, lineHeight: 1.8, margin: '0 0 20px' }}>{stage.summary}</p>
               <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>{stage.items.map(item => <li key={item.id} style={{ borderTop: '1px solid ' + C.border }}>
-                <Link href={residentialGuidePath(item.id)} style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', padding: '15px 0', color: C.textDark, textDecoration: 'none', minHeight: 44, boxSizing: 'border-box' }}>
+                <Link href={`/blog/${audience}/${item.id}`} style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', padding: '15px 0', color: C.textDark, textDecoration: 'none', minHeight: 44, boxSizing: 'border-box' }}>
                   <span style={{ minWidth: 0 }}>
                     <strong style={{ display: 'block', fontSize: 14, fontWeight: 650, color: C.textDark, lineHeight: 1.7 }}>{item.title}</strong>
                     <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: C.textMid, lineHeight: 1.9 }}>{item.detail}</span>
@@ -71,7 +79,7 @@ export default function ResidentialRoadmap() {
                 </Link>
               </li>)}</ul>
             </section>
-            {index < RESIDENTIAL_STAGES.length - 1 && <div aria-hidden="true" style={{ display: 'flex', justifyContent: 'center', color: C.ruler.label, paddingTop: 14 }}><IconArrowDown size={16} stroke={1.5} /></div>}
+            {index < stages.length - 1 && <div aria-hidden="true" style={{ display: 'flex', justifyContent: 'center', color: C.ruler.label, paddingTop: 14 }}><IconArrowDown size={16} stroke={1.5} /></div>}
           </li>;
         })}
       </ol>
@@ -80,8 +88,8 @@ export default function ResidentialRoadmap() {
     <p style={{ fontSize: 12, color: C.textMid, lineHeight: 1.9, margin: '24px 0 0' }}>0~100%는 가이드의 탐색 위치이며 실제 공사 진행률·기간·완료 보증이 아니에요.</p>
     <details style={{ marginTop: 20, fontSize: 12, color: C.textMid, lineHeight: 1.9 }}>
       <summary style={{ cursor: 'pointer', padding: '8px 0' }}>참고 자료와 이용 안내</summary>
-      <p>한국소비자원 안내를 참고해 구성한 일반적인 준비 목록이에요. 건물·공사 범위에 따라 순서와 필요한 절차가 달라질 수 있고, 계약·법률·안전 판단을 대신하지 않아요. 위험한 점검은 담당 전문가에게 요청하세요.</p>
-      <ul style={{ paddingLeft: 18 }}>{RESIDENTIAL_SOURCES.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" style={{ color: C.textMid }}>{source.title}</a></li>)}</ul>
+      <p>{notice}</p>
+      <ul style={{ paddingLeft: 18 }}>{sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" style={{ color: C.textMid }}>{source.title}</a></li>)}</ul>
       <p>화면 구성·자료 확인: 2026-10-23. 참고 자료의 과거 통계·금액·법정 기간을 현재 기준으로 단정하지 않으며, 필요한 기준은 공식 기관에 확인하세요.</p>
     </details>
   </section>;
