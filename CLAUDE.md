@@ -1,5 +1,7 @@
 ## 2026-10-23 SOLAPI 문자 알림 구현 / 배포 검증 중
 
+PR #59/main 2c975d442f6ea0daed86e17d0d5bb995e628ca93 운영 반영 및 두 Vercel 빌드 통과. 운영 비인증/동일 출처 보호와 인증된 수신 끝자리/한도 확인. 첫 테스트는 무료 단가 조회 실패로 유료 요청 전에 멈췄고 솔라피 발송 내역 없음/잔액 300원 유지(비용 0)를 확인했다. 콘솔 단문 단가는 VAT 포함 19.8원, 자동충전 꺼짐이다. countryId/serviceMethod 명시 및 비밀값 없는 관리자 GET 단가 진단을 추가해 원인을 확인한다. 가격 확인 뒤 유료 시도 직전에 test-send 원자적 가드를 두고 유료 요청의 모호한 결과는 절대 재시도하지 않는다. 기존 preflight-only 가드 기록은 삭제하지 않는다. 관련 16개 회귀 통과, 실제 문자 테스트는 아직 미발송이다.
+
 사용자가 모든 IP 허용/365일 만료, 끝자리 1732 테스트 SMS 1건 최대 20원을 추가 승인하여 앞선 승인 대기는 해소됐다. 운영 키는 2027-10-23 23:59:59 KST 만료로 발급했고 실제 form.it.kr 프로젝트 `joonhyeokshin-s-projects/interior-estimate`의 Production Secret 6개에만 직접 저장했다. 비밀키는 채팅/캡처/Git/로컬 파일에 남기지 않고 발급 화면을 닫고 메모리 변수를 비웠다. 다른 프로젝트/Preview/로컬에 키 없음. 충전/자동결제 설정·호출은 하지 않는다.
 
 serverSms는 server-only/node HMAC-SHA256으로 고정 SOLAPI endpoint만 호출한다. 신규 consultations INSERT 성공 후 Next after에서 고객 정보 없는 고정 단문을 고정 관리자 번호로 요청한다. duplicate 23505/실패에는 발송하지 않으며 스케줄/발송 실패가 저장 성공을 취소하지 않는다. production+활성 플래그/설정 검증, 기존 service_role 전용 consume_request_limit RPC의 원자적 하루 20건/테스트 24시간 1회, 계정 SMS 단가와 VAT 고려 20원 상한을 적용한다. 불명확한 단가/한도는 미발송, paid POST 자동 재시도 없음. DB 마이그레이션 없음. 영속 알림 큐/자동 재시도는 미구현이며 best-effort 후처리임을 명시한다.
