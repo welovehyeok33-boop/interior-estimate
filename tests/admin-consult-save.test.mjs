@@ -47,23 +47,56 @@ function editorHarness(fetch, initial = [], root = false, runtime = {}) {
     { exports, require: name => dependencies[name] || {}, fetch, ...runtime.globals });
   return props => { cursor = 0; return (root ? exports.default : exports.Editor)(props); };
 }
-test('autosave waits one second, skips unchanged/composing/failed drafts, and cancels pending timer', async () => {
-  for (const [note, busy, error, composing, expected] of [['original', false, '', false, 0], ['edited', false, '', false, 1], ['edited', true, '', false, 0], ['edited', false, 'failed', false, 0], ['edited', false, '', true, 0]]) {
-    const effects = [], timers = [], cleared = [], requests = [];
-    const item = { id: 'test', status: 'new', admin_note: 'original', phone: '01000000000', admin_version: 1 };
-    const render = editorHarness(async (_url, options) => { requests.push(JSON.parse(options.body)); return { ok: true, json: async () => ({ item: { ...item, admin_note: note, admin_version: 2 } }) }; }, ['new', note, busy, error, false, composing], false, {
-      effect: effect => effects.push(effect), globals: { setTimeout: (fn, delay) => { timers.push({ fn, delay }); return 1; }, clearTimeout: id => cleared.push(id) },
-    });
-    render({ item, onSaved: () => {} });
-    const cleanup = effects[0]();
-    assert.equal(timers.length, expected);
-    if (expected) {
-      assert.equal(timers[0].delay, 1000);
-      cleanup(); assert.deepEqual(cleared, [1]);
-      timers[0].fn(); await new Promise(resolve => setImmediate(resolve));
-      assert.equal(requests[0].admin_note, 'edited');
-      assert.equal(requests[0].admin_version, 1);
-    }
+test('note and status edits stay local through waiting, collapse and reopen until save is clicked', async () => {
+  const requests = [], effects = [], listeners = new Map(), timers = [];
+  let item = { id: 'test', status: 'new', admin_note: 'original', phone: '01000000000', admin_version: 1 };
+  const render = editorHarness(async (_url, options) => {
+    const body = JSON.parse(options.body); requests.push(body);
+    return { ok: true, json: async () => ({ item: { ...item, ...body, admin_version: 2 } }) };
+  }, [], false, {
+    effect: effect => effects.push(effect), globals: {
+      window: { addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name) },
+      setTimeout: (fn, delay) => { timers.push({ fn, delay }); return 1; }, clearTimeout: () => {},
+    },
+  });
+  const props = (hidden = false) => ({ item, hidden, onSaved: updated => { item = updated; } });
+  let tree = render(props());
+  find(tree, node => node.type === 'textarea').props.onChange({ target: { value: '작성 중인 메모' } });
+  find(tree, node => node.type === 'select').props.onChange({ target: { value: 'consulting' } });
+  tree = render(props());
+  for (const effect of effects.splice(0)) effect();
+  for (const timer of timers) timer.fn();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(timers.length, 0);
+  assert.equal(requests.length, 0);
+  assert.match(text(tree), /아직 저장하지 않은 변경 내용/);
+  assert.doesNotMatch(text(tree), /1초 후 자동 저장/);
+  const event = { preventDefault() { this.prevented = true; } };
+  listeners.get('beforeunload')(event);
+  assert.equal(event.prevented, true);
+  tree = render(props(true));
+  assert.equal(tree.props.hidden, true);
+  assert.equal(find(tree, node => node.type === 'textarea').props.value, '작성 중인 메모');
+  tree = render(props());
+  assert.equal(tree.props.hidden, false);
+  assert.equal(find(tree, node => node.type === 'select').props.value, 'consulting');
+  assert.equal(requests.length, 0);
+  await find(tree, node => node.type === 'button').props.onClick();
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].admin_note, '작성 중인 메모');
+  assert.equal(requests[0].status, 'consulting');
+  assert.equal(requests[0].admin_version, 1);
+  assert.match(text(render(props())), /상담 내용을 저장했어요/);
+});
+
+test('save cannot run while a previous save or Korean composition is active', async () => {
+  for (const [busy, composing] of [[true, false], [false, true]]) {
+    let requests = 0;
+    const render = editorHarness(() => { requests++; }, ['new', 'draft', busy, '', false, composing]);
+    const button = find(render({ item: { status: 'new', admin_note: '', phone: '' }, onSaved: () => {} }), node => node.type === 'button');
+    assert.equal(button.props.disabled, true);
+    await button.props.onClick();
+    assert.equal(requests, 0);
   }
 });
 function find(node, predicate) {
@@ -101,7 +134,26 @@ test('compact cards retain readable content, yellow borders, wrapping and the sa
   assert.equal(find(opened, node => node.type === 'button').props['aria-expanded'], true);
   assert.equal(find(opened, node => node.type?.name === 'Editor').props.item, item);
   find(opened, node => node.type === 'button').props.onClick();
-  assert.equal(find(render(props), node => node.type?.name === 'Editor'), undefined);
+  const collapsed = find(render(props), node => node.type?.name === 'Editor');
+  assert.equal(collapsed.props.hidden, true);
+  assert.equal(collapsed.key, find(opened, node => node.type?.name === 'Editor').key);
+});
+
+test('switching between cards keeps separate editors mounted under stable consultation keys', () => {
+  const first = { id: 'first', name: '첫 상담', status: 'new', phone: '', admin_note: 'first', admin_version: 1 };
+  const second = { ...first, id: 'second', name: '둘째 상담', admin_note: 'second' };
+  const render = editorHarness(() => {}, [[first, second], 2, [], '', { status: 'all', page: 1, month: '', q: '' }, 'first', 0, false, ''], true);
+  const props = { refresh: 0, onSaved: () => {} };
+  const editorFor = (tree, id) => find(tree, node => node.type?.name === 'Editor' && node.props.item.id === id);
+  let tree = render(props);
+  assert.equal(editorFor(tree, 'first').props.hidden, false);
+  assert.equal(editorFor(tree, 'second').props.hidden, true);
+  find(tree, node => node.type === 'article' && text(node).includes('둘째 상담')).props.children[0].props.onClick();
+  tree = render(props);
+  assert.equal(editorFor(tree, 'first').props.hidden, true);
+  assert.equal(editorFor(tree, 'second').props.hidden, false);
+  assert.equal(editorFor(tree, 'first').key, 'first');
+  assert.equal(editorFor(tree, 'second').key, 'second');
 });
 
 test('save keeps editor mounted, uses returned version on second save, and shows inline success', async () => {

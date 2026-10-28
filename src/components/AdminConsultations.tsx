@@ -10,7 +10,7 @@ import { IconChevronDown, IconSearch, IconBuildingStore, IconRulerMeasure, IconC
 
 const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '미정';
 const grades: Record<string, string> = { economy: '실속형', budget: '실속형', standard: '스탠다드', premium: '하이앤드', highend: '하이앤드' };
-function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Consultation) => void }) {
+function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?: boolean; onSaved: (updated: Consultation) => void }) {
   const [status, setStatus] = useState(item.status || 'new');
   const [note, setNote] = useState(item.admin_note || '');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -18,18 +18,13 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
   const [composing, setComposing] = useState(false);
   const dirty = status !== (item.status || 'new') || note !== (item.admin_note || '');
   useEffect(() => {
-    if (!dirty || busy || composing || error) return;
-    const timer = setTimeout(() => { void save(); }, 1000);
-    return () => clearTimeout(timer);
-  });
-  useEffect(() => {
     if (!dirty && !busy) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty, busy]);
   async function save() {
-    if (busy) return;
+    if (busy || composing) return;
     setBusy(true); setError(''); setSaved(false);
     try {
       const r = await fetch('/api/admin/consultations', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -44,7 +39,7 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
     } catch (e) { setError(e instanceof Error ? e.message : '저장하지 못했어요.'); }
     finally { setBusy(false); }
   }
-  return <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${C.admin.line}`, lineHeight: 1.8, overflowWrap: 'anywhere', fontSize: 14 }}>
+  return <div hidden={hidden} style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${C.admin.line}`, lineHeight: 1.8, overflowWrap: 'anywhere', fontSize: 14 }}>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 24, alignItems: 'start' }}>
     <section aria-label="신청 상세" style={{ minWidth: 0 }}>
       <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, margin: '0 0 16px' }}><IconBuildingStore size={18} aria-hidden="true" color={C.admin.accentText} />신청 정보</h3>
@@ -82,10 +77,10 @@ function Editor({ item, onSaved }: { item: Consultation; onSaved: (updated: Cons
         <textarea placeholder="상담 내용, 고객의 요청, 다음에 확인할 내용을 남겨주세요." value={note} onChange={e => setNote(e.target.value)} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} maxLength={4000} rows={7} style={{ ...field, display: 'block', width: '100%', resize: 'vertical', marginTop: 6, fontFamily: 'inherit', fontSize: 13, fontWeight: 650, lineHeight: 1.8 }} />
       </label>
       <div style={{ ...muted, textAlign: 'right', fontSize: 11, marginTop: 5 }}>{note.length.toLocaleString()} / 4,000자</div>
-      <p style={{ ...muted, fontSize: 11, margin: '12px 0 20px' }}>입력을 멈추면 1초 후 자동 저장됩니다. 저장 완료를 확인한 뒤 이동해주세요.<br />저장해도 문자나 자동 알림은 발송되지 않습니다.</p>
+      <p style={{ ...muted, fontSize: 11, margin: '12px 0 20px' }}>저장 버튼을 눌러야 반영됩니다. 접었다 다시 열어도 작성 중인 내용은 유지됩니다.<br />새로고침하거나 목록을 이동하기 전에는 저장해주세요. 저장해도 문자나 자동 알림은 발송되지 않습니다.</p>
       {error && <p role="alert" style={{ color: C.consultStatus.lost.color }}>{error}</p>}
-      <button type="button" onClick={save} style={{ ...goldAction, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconDeviceFloppy size={17} aria-hidden="true" />{busy ? '저장 중…' : '상담 내용 저장'}</button>
-      <p role="status" style={{ ...muted, minHeight: 22, margin: '8px 0 0', fontSize: 12 }}>{busy ? '저장 중…' : error ? '저장하지 못했어요. 저장 버튼을 눌러 다시 시도해주세요.' : dirty ? '변경 내용 저장 대기 중…' : saved ? '상담 내용을 저장했어요.' : '\u00a0'}</p>
+      <button type="button" onClick={save} disabled={busy || composing} style={{ ...goldAction, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconDeviceFloppy size={17} aria-hidden="true" />{busy ? '저장 중…' : '상담 내용 저장'}</button>
+      <p role="status" style={{ ...muted, minHeight: 22, margin: '8px 0 0', fontSize: 12 }}>{busy ? '저장 중…' : error ? '저장하지 못했어요. 저장 버튼을 눌러 다시 시도해주세요.' : dirty ? '아직 저장하지 않은 변경 내용이 있어요.' : saved ? '상담 내용을 저장했어요.' : '\u00a0'}</p>
     </fieldset>
     </section>
     </div>
@@ -170,11 +165,12 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
           <span style={{ minWidth: 110 }}><span style={{ ...muted, display: 'block', fontSize: 11, fontWeight: 400 }}>희망 예산</span><strong style={{ display: 'block', marginTop: 3, fontSize: 15 }}>{formatConsultBudget(item.budget ?? undefined)}</strong></span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
         </button>
-        {open === item.id && <Editor key={item.id} item={item} onSaved={updated => {
+        {/* Keep each editor mounted so collapsing or opening another card preserves its draft and pending save. */}
+        <Editor key={item.id} item={item} hidden={open !== item.id} onSaved={updated => {
           setItems(current => current.map(row => row.id === updated.id ? updated : row));
           setSummary(current => updateConsultationCounts(current, item.status, updated.status));
           onSaved(item, updated);
-        }} />}
+        }} />
       </article>)}
       <p style={{ ...muted, fontSize: 12, marginTop: 20 }}>목록 이동 전 변경 내용을 저장해주세요. 한 페이지에 25건씩 표시합니다.<br />저장한 상담은 현재 위치에 유지됩니다. 변경된 필터 조건은 목록 새로고침 시 적용됩니다.</p>
       <div style={{ display: 'flex', gap: 18, justifyContent: 'center', alignItems: 'center', marginTop: 24 }}>
