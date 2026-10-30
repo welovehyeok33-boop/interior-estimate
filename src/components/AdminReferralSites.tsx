@@ -5,6 +5,7 @@ import { C } from './EstimateLayout';
 import { action, goldAction, muted, panel, field } from './adminStyles';
 import { groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS, REFERRAL_ISSUE_LABELS, type ReferralReport } from '@/lib/referralSites';
 import { statsMonth, statsQuery, validStatsMonth } from '@/lib/adminStatsPeriod';
+import ReferralVisitorChart from './ReferralVisitorChart';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
@@ -53,6 +54,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
       {report.detailCoverage?.complete === false && <p style={{ ...muted, fontSize: 12 }}>선택 기간에 30일 보관 기한이 지난 상세 기록이 있어 연락처 도착은 —로 표시합니다. 사이트 방문·폼잇 유입·신청 완료 방문은 선택 기간 기준이며, 유입 비율은 방문 기록이 있는 같은 날짜끼리 비교합니다.</p>}
       <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 사이트 통계는 최대 1분간 캐시합니다. 누락된 날짜는 0명으로 처리하지 않습니다.</p>
+      <ReferralVisitorChart key={`${report.from}:${report.to}`} report={report} />
       <div role="region" aria-label="사이트별 유입 요약" tabIndex={0} style={{ maxWidth: '100%', overflowX: 'auto', border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
         <table style={{ width: '100%', minWidth: 780, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
           <thead><tr>{columns.map((label, i) => <th key={label} scope="col" style={{ padding: '11px 12px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600, color: C.admin.muted, background: i === 2 || i === 4 ? C.admin.accentBg : C.admin.bg, ...(i === 0 ? { minWidth: 230 } : {}) }}>{label}</th>)}</tr></thead>

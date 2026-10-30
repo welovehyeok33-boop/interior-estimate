@@ -37,7 +37,10 @@ test('fresh cache and concurrent requests deduplicate by source, exact dates and
   const [a,b]=await Promise.all([load('interiorfree',dates,token),load('interiorfree',dates,token)]);
   assert.equal(calls,1);assert.equal(a.cached,false);assert.equal(b.cached,false);
   a.visitorDates.length=0;assert.equal(b.visitorDates.length,2);
+  a.dailyVisitors[0].visitors=999;a.dailyVisitors.length=0;
+  assert.deepEqual(Array.from(b.dailyVisitors,day=>day.visitors),[10,10]);
   const cached=await load('interiorfree',dates,token);assert.equal(cached.cached,true);assert.equal(cached.visitorDates.length,2);assert.equal(calls,1);
+  assert.deepEqual(Array.from(cached.dailyVisitors,day=>day.visitors),[10,10]);
   assert.equal(cached.fetchedAt,'2026-10-22T07:00:00.000Z');
   await load('interiorfree',dates,'b'.repeat(64));await load('interiorhub_apt',dates,token);await load('interiorfree',[dates[1]],token);assert.equal(calls,4);
   clock+=60000;assert.equal((await load('interiorfree',dates,token)).cached,false);assert.equal(calls,5);
@@ -83,6 +86,7 @@ test('calendar-month chunks are sequential and share one 45-second retry budget'
   const healthy=loaderModule.createReferralStatsLoader({request:async url=>{active++;maxActive=Math.max(maxActive,active);ranges.push(String(url));await Promise.resolve();active--;return response(url);}});
   const ok=await healthy('interiorhub_apt',month,token);
   assert.equal(ok.visitors,310);assert.equal(ok.totalDays,31);assert.equal(ranges.length,2);assert.equal(maxActive,1);
+  assert.equal(ok.dailyVisitors.length,31);assert.deepEqual(Array.from(ok.dailyVisitors,day=>day.day),month);
 });
 
 test('one failing source cannot erase other sources, invalid source/dates never fetch, and caches are bounded',async()=>{

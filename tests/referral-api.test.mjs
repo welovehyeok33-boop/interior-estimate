@@ -81,11 +81,13 @@ test('referrals reject unauthenticated and invalid requests before any data acce
 test('referrals combine daily aggregates with fixed private upstream and no token in response',async()=>{
   const s=setup({token:true});const r=await (await s.GET(request())).json();
   assert.equal(r.rows[0].external.visitors,10);assert.equal(r.rows[0].rate,30);assert.equal(r.rows[0].contacts,60001);
+  assert.deepEqual(r.rows[0].external.dailyVisitors,[{day:r.from,visitors:10}]);
   assert.equal(r.rows[0].rateBasis.state,'ready');assert.equal(r.rows[0].rateBasis.arrivals,3);assert.equal(r.rows[0].rateBasis.visitors,10);
   assert.equal(s.counts.length,5);
   for (const c of s.counts) { assert.equal(c.options.head,true);assert.equal(c.options.count,'exact');assert.equal(c.filter,'traffic_daily.source');assert.equal(c.contains.column,'pages');assert.equal(c.contains.value[0],'/consult/step4');assert.equal(c.from,c.to); }
   assert.equal(r.rows[1].external.status,'pending');assert.equal(r.rows[1].external.visitors,null);
   assert.equal(r.rows[1].rateBasis.state,'not_connected');
+  assert.deepEqual(r.rows[1].external.dailyVisitors,[]);
   const f=s.calls.find(c=>typeof c==='object');assert.equal(new URL(f.url).hostname,'interiorfree.kr');assert.equal(f.opts.redirect,'error');assert.equal(f.opts.cache,'no-store');
   assert.ok(!JSON.stringify(r).includes('x'.repeat(40)));assert.ok(!JSON.stringify(r).includes('visitor_id'));
 });

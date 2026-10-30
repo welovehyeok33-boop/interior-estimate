@@ -24,11 +24,11 @@ export function createReferralStatsLoader(options: {
   const signal = options.signal ?? (ms => AbortSignal.timeout(ms));
   const cache = new Map<string, { expires: number; value: External }>();
   const inflight = new Map<string, Promise<External>>();
-  const copy = (value: External, cached: boolean): External => ({ ...value, visitorDates: [...value.visitorDates], cached });
+  const copy = (value: External, cached: boolean): External => ({ ...value, visitorDates: [...value.visitorDates], dailyVisitors: value.dailyVisitors.map(day => ({ ...day })), cached });
 
   return async function load(source: ReferralSource, dates: string[], token: unknown): Promise<External> {
     const empty: External = { status: 'error', visitors: null, clickers: null, partial: false, updatedAt: null,
-      recordedVisitors: null, recordedClickers: null, visitorDays: 0, visitorDates: [], clickerDays: 0, totalDays: dates.length };
+      recordedVisitors: null, recordedClickers: null, visitorDays: 0, visitorDates: [], dailyVisitors: [], clickerDays: 0, totalDays: dates.length };
     if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
     const site = REFERRAL_SITES.find(item => item.source === source);
     if (!site || !dates.length || dates.length > 31 || dates.some((day, i) =>
