@@ -1,20 +1,12 @@
 <?php
-// Formit known-referrer module v1.0.0. Appended to the existing collector, not a separate plugin.
+// Formit known-referrer module v1.1.0. Uses retained source-qualified visitor statistics.
 defined('ABSPATH') || exit;
 
 function fkr_source() {
     $host = strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST));
-    return [
-        'office.interiorhub.kr' => 'interiorhub_office',
-        'academy.interiorhub.kr' => 'interiorhub_academy',
-        'apt.interiorhub.kr' => 'interiorhub_apt',
-        'villa.interiorhub.kr' => 'interiorhub_villa',
-    ][$host] ?? '';
+    return ['office.interiorhub.kr' => 'interiorhub_office', 'academy.interiorhub.kr' => 'interiorhub_academy', 'apt.interiorhub.kr' => 'interiorhub_apt', 'villa.interiorhub.kr' => 'interiorhub_villa'][$host] ?? '';
 }
-function fkr_table() { global $wpdb; return $wpdb->prefix . 'formit_known_referrer'; }
 function fkr_now() { return new DateTimeImmutable('now', new DateTimeZone('Asia/Seoul')); }
-
-// Only a valid external HTTP(S) origin qualifies. UTM labels alone do not establish a referrer.
 function fkr_external_referrer($value, $own_host) {
     if (!is_string($value) || strlen($value) > 2048) return false;
     $ref = wp_parse_url($value);
@@ -23,46 +15,7 @@ function fkr_external_referrer($value, $own_host) {
     $own = preg_replace('/^www\./', '', strtolower(rtrim($own_host, '.')));
     $canonical = preg_replace('/^www\./', '', $host);
     if (!$host || !strpos($host, '.') || !filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) return false;
-    if ($canonical === $own || substr($canonical, -strlen('.' . $own)) === '.' . $own) return false;
-    return true;
-}
-
-add_action('init', function () {
-    if (!fkr_source() || get_option('fkr_schema') === '1') return;
-    global $wpdb;
-    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-    $table = fkr_table(); $charset = $wpdb->get_charset_collate();
-    dbDelta("CREATE TABLE $table (
-        day date NOT NULL,
-        browser char(64) NOT NULL,
-        clicked tinyint unsigned NOT NULL DEFAULT 0,
-        updated_at datetime NOT NULL,
-        PRIMARY KEY  (day,browser)
-    ) $charset;");
-    if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return;
-    // Old records have no daily-browser/referrer linkage and must not become invented zeroes.
-    add_option('fkr_started', gmdate('c'), '', false);
-    update_option('fkr_schema', '1', false);
-});
-
-function fkr_record($request) {
-    global $wpdb;
-    $uid = wp_validate_auth_cookie('', 'logged_in');
-    if ($uid && user_can($uid, 'manage_options')) return;
-    if (preg_match('/bot|crawler|spider|headless|preview/i', $_SERVER['HTTP_USER_AGENT'] ?? '') || ($_SERVER['HTTP_DNT'] ?? '') === '1' || ($_SERVER['HTTP_SEC_GPC'] ?? '') === '1') return;
-    $own = (string) wp_parse_url(home_url(), PHP_URL_HOST);
-    if (wp_parse_url($request->get_header('origin'), PHP_URL_HOST) !== $own) return;
-    $p = $request->get_json_params();
-    if (!is_array($p) || ($p['metric'] ?? '') !== 'daily_unique_browser' || !in_array($p['kind'] ?? '', ['view', 'click'], true)) return;
-    $bid = $p['bid'] ?? '';
-    if (!is_string($bid) || !preg_match('/^[a-f0-9-]{32,64}$/i', $bid) || !fkr_external_referrer($p['ref'] ?? '', $own)) return;
-    $day = fkr_now()->format('Y-m-d');
-    if (get_option('fkr_schema') !== '1') { update_option('fkr_gap_' . $day, true, false); return; }
-    $browser = hash_hmac('sha256', 'formit-known-referrer-v1|' . $day . '|' . $bid, wp_salt());
-    $previous = $wpdb->suppress_errors(true);
-    $ok = $wpdb->query($wpdb->prepare('INSERT INTO ' . fkr_table() . ' (day,browser,clicked,updated_at) VALUES (%s,%s,%d,%s) ON DUPLICATE KEY UPDATE clicked=GREATEST(clicked,VALUES(clicked)),updated_at=VALUES(updated_at)', $day, $browser, $p['kind'] === 'click' ? 1 : 0, gmdate('Y-m-d H:i:s')));
-    $wpdb->suppress_errors($previous);
-    if ($ok === false) update_option('fkr_gap_' . $day, true, false);
+    return $canonical !== $own && substr($canonical, -strlen('.' . $own)) !== '.' . $own;
 }
 
 function fkr_report($request) {
@@ -76,37 +29,57 @@ function fkr_report($request) {
     }
     $today = fkr_now()->setTime(0, 0); $from = $dates['from']; $to = $dates['to'];
     if ($from > $to || $to > $today || $from->diff($to)->days > 29) return new WP_Error('invalid_dates', 'Invalid date range', ['status' => 400]);
-    $started = get_option('fkr_started');
-    if (get_option('fkr_schema') !== '1' || !is_string($started) || !strtotime($started)) return new WP_Error('unavailable', 'Statistics unavailable', ['status' => 503]);
-    $start = (new DateTimeImmutable($started))->setTimezone($tz); $retained = $today->modify('-89 days');
+    // Koko's cookie expires at the site's midnight; require an aligned daily cookie metric.
+    if (!defined('KOKO_ANALYTICS_VERSION') || !function_exists('KokoAnalytics\\get_settings') || (\KokoAnalytics\get_settings()['tracking_method'] ?? '') !== 'cookie' || wp_timezone()->getOffset($from) !== 32400 || wp_timezone()->getOffset($to) !== 32400) return new WP_Error('unavailable', 'Visitor statistics unavailable', ['status' => 503]);
+    $prefix = $wpdb->prefix . 'koko_analytics_';
     $previous = $wpdb->suppress_errors(true);
-    $rows = $wpdb->get_results($wpdb->prepare('SELECT day,COUNT(*) visitors,SUM(clicked) clickers FROM ' . fkr_table() . ' WHERE day BETWEEN %s AND %s GROUP BY day', $from->format('Y-m-d'), $to->format('Y-m-d')), ARRAY_A);
-    $failed = (bool) $wpdb->last_error; $wpdb->suppress_errors($previous);
-    if ($failed) return new WP_Error('storage', 'Statistics unavailable', ['status' => 503]);
-    $map = []; foreach ($rows ?: [] as $row) $map[$row['day']] = $row;
+    $site_rows = $wpdb->get_results($wpdb->prepare('SELECT date day, visitors FROM ' . $prefix . 'site_stats WHERE date BETWEEN %s AND %s', $from->format('Y-m-d'), $to->format('Y-m-d')), ARRAY_A);
+    $failed = (bool) $wpdb->last_error;
+    $referrer_rows = $wpdb->get_results($wpdb->prepare('SELECT s.date day, l.value referrer, s.unique_hits visitors FROM ' . $prefix . 'referrer_stats s JOIN ' . $prefix . 'referrer_labels l ON l.id=s.id WHERE s.date BETWEEN %s AND %s', $from->format('Y-m-d'), $to->format('Y-m-d')), ARRAY_A);
+    $failed = $failed || (bool) $wpdb->last_error;
+    $first = $wpdb->get_var('SELECT MIN(date) FROM ' . $prefix . 'site_stats');
+    $failed = $failed || (bool) $wpdb->last_error; $wpdb->suppress_errors($previous);
+    if ($failed || !is_array($site_rows) || !is_array($referrer_rows)) return new WP_Error('storage', 'Visitor statistics unavailable', ['status' => 503]);
+    $totals = []; $qualified = [];
+    foreach ($site_rows as $row) {
+        $value = filter_var($row['visitors'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        $totals[$row['day']] = $value === false ? null : $value; $qualified[$row['day']] = $value === false ? null : 0;
+    }
+    $own = (string) wp_parse_url(home_url(), PHP_URL_HOST);
+    // unique_hits uses the site's new-visitor flag, not every referring pageview.
+    // Read raw counters; Koko's display helper promotes zero unique_hits to one.
+    foreach ($referrer_rows as $row) {
+        $day = $row['day'];
+        if (!array_key_exists($day, $qualified) || $qualified[$day] === null) continue;
+        $referrer = $row['referrer'] ?? '';
+        if (!is_string($referrer) || !fkr_external_referrer('https://' . $referrer, $own)) continue;
+        $value = filter_var($row['visitors'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($value === false || $value > PHP_INT_MAX - $qualified[$day]) { $qualified[$day] = null; continue; }
+        $qualified[$day] += $value;
+    }
     $days = []; $partial = false;
     for ($date = $from; $date <= $to; $date = $date->modify('+1 day')) {
         $day = $date->format('Y-m-d');
-        $missing = $date < $retained || $date < $start->setTime(0, 0) || get_option('fkr_gap_' . $day, false);
-        if ($missing || $date == $today || $day === $start->format('Y-m-d')) $partial = true;
-        $days[] = ['day' => $day, 'visitors' => $missing ? null : (int) ($map[$day]['visitors'] ?? 0), 'clickers' => $missing ? null : (int) ($map[$day]['clickers'] ?? 0)];
+        $visitors = array_key_exists($day, $qualified) ? $qualified[$day] : ($date == $today ? 0 : null);
+        if (isset($totals[$day]) && $visitors !== null && $visitors > $totals[$day]) $visitors = null;
+        if ($visitors === null || $date == $today || $day === $first) $partial = true;
+        $days[] = ['day' => $day, 'visitors' => $visitors, 'clickers' => null];
     }
-    $response = new WP_REST_Response(['version' => 1, 'source' => fkr_source(), 'timezone' => 'Asia/Seoul', 'metric' => 'daily_unique_browser', 'visitorScope' => 'known_referrer', 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'trackingStartedAt' => $started, 'dateUpdatedAt' => gmdate('c'), 'days' => $days, 'coverage' => $partial ? 'partial' : 'complete']);
-    $response->header('Cache-Control', 'private, no-store, max-age=0');
-    $response->header('Vary', 'Authorization');
+    $response = new WP_REST_Response(['version' => 1, 'source' => fkr_source(), 'timezone' => 'Asia/Seoul', 'metric' => 'daily_unique_browser', 'provider' => 'koko_cookie', 'visitorScope' => 'known_referrer', 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'trackingStartedAt' => ($first ?: $today->format('Y-m-d')) . 'T00:00:00+09:00', 'dateUpdatedAt' => gmdate('c'), 'days' => $days, 'coverage' => $partial ? 'partial' : 'complete']);
+    $response->header('Cache-Control', 'private, no-store, max-age=0'); $response->header('Vary', 'Authorization');
     return $response;
 }
 
-// Reuse the existing bridge's endpoint and authentication. Never replace an auth/error response.
+// Keep existing authentication/default reports; replace only successful scoped GETs.
 add_filter('rest_request_after_callbacks', function ($response, $handler, $request) {
     if (!fkr_source() || is_wp_error($response)) return $response;
-    $status = rest_ensure_response($response)->get_status();
-    if ($request->get_route() === '/ih-admin/v1/track' && $request->get_method() === 'POST' && $status === 204) fkr_record($request);
-    if ($request->get_route() === '/ih-admin/v1/formit-stats' && $request->get_method() === 'GET' && $status === 200 && $request->get_param('visitor_scope') === 'known_referrer') return fkr_report($request);
+    if ($request->get_route() === '/ih-admin/v1/formit-stats' && $request->get_method() === 'GET' && rest_ensure_response($response)->get_status() === 200 && $request->get_param('visitor_scope') === 'known_referrer') return fkr_report($request);
     return $response;
 }, 30, 3);
 
+// Retain the unused v1.0 table without new writes and preserve its 90-day expiration.
 add_action('ihadm_cleanup', function () {
+    if (get_option('fkr_schema') !== '1') return;
     global $wpdb; $cutoff = fkr_now()->modify('-89 days')->format('Y-m-d');
-    $wpdb->query($wpdb->prepare('DELETE FROM ' . fkr_table() . ' WHERE day < %s', $cutoff));
+    $wpdb->query($wpdb->prepare('DELETE FROM ' . $wpdb->prefix . 'formit_known_referrer WHERE day < %s', $cutoff));
 });

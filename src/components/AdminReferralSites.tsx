@@ -99,7 +99,8 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
                   {row.external.issue && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>{REFERRAL_ISSUE_LABELS[row.external.issue]}</p>}
                   {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
-                  {row.external.scopeStartedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>출처 확인 방문 집계 시작 {dateTime(row.external.scopeStartedAt)}</p>}
+                  {row.external.provider === 'koko_cookie' && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>기존 사이트 방문 통계(Koko Analytics)의 출처별 순방문 기록을 사용합니다.</p>}
+                  {row.external.scopeStartedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>확인 가능한 방문 기록 시작 {dateTime(row.external.scopeStartedAt)}</p>}
                   {row.external.fetchedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>원본 조회 {dateTime(row.external.fetchedAt)}{row.external.cached ? ' · 1분 이내 캐시' : ''}</p>}
                   <label style={{ ...muted, display: 'block', marginTop: 10 }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
