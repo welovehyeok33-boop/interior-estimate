@@ -6,6 +6,7 @@ import { action, goldAction, muted, panel, field } from './adminStyles';
 import { groupReferralRows, summarizeReferralRows, referralTotalRate, REFERRAL_RATE_LABELS, REFERRAL_ISSUE_LABELS, type ReferralReport } from '@/lib/referralSites';
 import { statsMonth, statsQuery, validStatsMonth } from '@/lib/adminStatsPeriod';
 import ReferralVisitorChart from './ReferralVisitorChart';
+import { readReferralReport } from '@/lib/readReferralReport';
 
 const cell: CSSProperties = { padding: '10px 12px', borderTop: `1px solid ${C.admin.line}`, verticalAlign: 'middle' };
 const metricCell: CSSProperties = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' };
@@ -14,24 +15,30 @@ const columns = ['사이트', '사이트 방문', '폼잇 유입', '연락처 �
 
 export default function AdminReferralSites({ refresh }: { refresh: number }) {
   const [range, setRange] = useState('7'), [retry, setRetry] = useState(0);
-  const [result, setResult] = useState<{ key: string; report: ReferralReport | null; error: string } | null>(null);
+  const [result, setResult] = useState<{ key: string; report: ReferralReport | null; error: string; pending?: boolean } | null>(null);
   const [copied, setCopied] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [month, setMonth] = useState('');
   const query = statsQuery(range, month);
   const requestKey = `${range === 'month' ? `${range}:${month}` : range}:${retry}:${refresh}`;
-  const loading = result?.key !== requestKey;
-  const report = loading ? null : result?.report;
-  const error = loading ? '' : result?.error;
+  const current = result?.key === requestKey;
+  const loading = !current || result?.pending === true;
+  const report = current ? result?.report : null;
+  const error = current ? result?.error : '';
+  const received = report?.rows.filter(row => row.external.status !== 'loading').length ?? 0;
   const totals = report ? summarizeReferralRows(report.rows) : [];
   const totalRate = referralTotalRate(totals);
   const totalRatePartial = totals[0]?.partial || totals[1]?.partial;
   useEffect(() => {
     const controller = new AbortController();
-    void fetch('/api/admin/referrals?' + query, { signal: controller.signal, cache: 'no-store' }).then(async r => {
-      const data = await r.json(); if (!r.ok) throw new Error(data.error || '조회 실패');
-      if (!controller.signal.aborted) setResult({ key: requestKey, report: data, error: '' });
-    }).catch(e => { if (!controller.signal.aborted) setResult({ key: requestKey, report: null, error: e instanceof Error ? e.message : '조회 실패' }); });
+    void fetch('/api/admin/referrals?' + query + '&stream=1', { signal: controller.signal, cache: 'no-store' }).then(r =>
+      readReferralReport(r, (data, pending) => {
+        if (!controller.signal.aborted) setResult({ key: requestKey, report: data, pending, error: '' });
+      }, controller.signal),
+    ).catch(e => { if (!controller.signal.aborted) setResult(before => ({ key: requestKey, pending: false,
+      report: before?.key === requestKey && before.report ? { ...before.report, rows: before.report.rows.map(row => row.external.status === 'loading' ?
+        { ...row, rate: null, external: { ...row.external, status: 'error', issue: 'network' }, rateBasis: { ...row.rateBasis, state: 'unavailable' } } : row) } : null,
+      error: e instanceof Error ? e.message : '조회 실패' })); });
     return () => controller.abort();
   }, [query, requestKey]);
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString() + '명';
@@ -48,13 +55,13 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
       </label>
       <button style={action} disabled={loading} onClick={() => setRetry(v => v + 1)}>새로고침</button>
     </div>
-    {loading && <p role="status" style={muted}>사이트별 집계를 확인하는 중… 응답이 늦으면 자동으로 다시 시도합니다.</p>}
+    {loading && <p role="status" style={muted}>사이트별 집계 {received}/{report?.rows.length ?? 5}곳 확인 중… 빠른 사이트부터 표시합니다.</p>}
     {error && <p role="alert">{error}</p>}
     {report && <>
       <p style={muted}>{report.from} ~ {report.to} · 한국시간 · 일별 방문자 합계</p>
       {report.detailCoverage?.complete === false && <p style={{ ...muted, fontSize: 12 }}>선택 기간에 30일 보관 기한이 지난 상세 기록이 있어 연락처 도착은 —로 표시합니다. 사이트 방문·폼잇 유입·신청 완료 방문은 선택 기간 기준이며, 유입 비율은 방문 기록이 있는 같은 날짜끼리 비교합니다.</p>}
-      <p style={{ ...muted, fontSize: 12 }}>마지막 조회 {dateTime(report.updatedAt)} · 사이트 통계는 최대 1분간 캐시합니다. 누락된 날짜는 0명으로 처리하지 않습니다.</p>
-      <ReferralVisitorChart key={`${report.from}:${report.to}`} report={report} />
+      <p style={{ ...muted, fontSize: 12 }}>{loading ? '조회 시작' : '마지막 조회'} {dateTime(report.updatedAt)} · 사이트 통계는 최대 1분간 캐시합니다. 누락된 날짜는 0명으로 처리하지 않습니다.</p>
+      {(range === '7' || range === '30') && <ReferralVisitorChart key={`${report.from}:${report.to}`} report={report} />}
       <div role="region" aria-label="사이트별 유입 요약" tabIndex={0} style={{ maxWidth: '100%', overflowX: 'auto', border: `1px solid ${C.admin.line}`, borderRadius: 12 }}>
         <table style={{ width: '100%', minWidth: 780, borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
           <thead><tr>{columns.map((label, i) => <th key={label} scope="col" style={{ padding: '11px 12px', textAlign: i === 0 ? 'left' : 'right', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600, color: C.admin.muted, background: i === 2 || i === 4 ? C.admin.accentBg : C.admin.bg, ...(i === 0 ? { minWidth: 230 } : {}) }}>{label}</th>)}</tr></thead>
@@ -65,7 +72,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                 <th scope="row" style={{ ...cell, textAlign: 'left', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                     <a href={'https://' + row.host} title={row.host} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: C.admin.text, textDecoration: 'none' }}>{row.name}<IconExternalLink size={12} style={{ color: C.admin.muted }} /></a>
-                    <span style={{ ...muted, fontSize: 10, fontWeight: 400, borderRadius: 20, background: row.external.status === 'ready' ? C.admin.accentBg : C.admin.bg, padding: '2px 6px' }}>{({ ready: '연결됨', pending: '연결 대기', error: '연결 확인 필요', partial: '부분 집계' })[row.external.status]}</span>
+                    <span style={{ ...muted, fontSize: 10, fontWeight: 400, borderRadius: 20, background: row.external.status === 'ready' ? C.admin.accentBg : C.admin.bg, padding: '2px 6px' }}>{({ ready: '연결됨', pending: '연결 대기', error: '연결 확인 필요', partial: '부분 집계', loading: '조회 중' })[row.external.status]}</span>
                   </div>
                 </th>
                 {[row.external.visitors ?? row.external.recordedVisitors, row.arrivals, row.contacts, row.converted].map((value, i) => <td key={i} style={{ ...metricCell, ...(i === 1 || i === 3 ? { background: C.admin.accentBg } : {}) }} title={i === 0 ? `방문 기록 ${row.external.visitorDays}/${row.external.totalDays}일 · 미수집 날짜를 0명으로 간주하지 않습니다.` : undefined}>
@@ -82,7 +89,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   <p style={{ ...muted, margin: '0 0 6px' }}>{row.host}</p>
                   <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>
                     {row.rate !== null ? `같은 ${row.rateBasis.days}/${row.rateBasis.totalDays}일 기준: 폼잇 유입 ${number(row.rateBasis.arrivals)} ÷ 사이트 방문 ${number(row.rateBasis.visitors)} × 100 = ${row.rate}%` : ({
-                      ready: '', provisional: '', no_visitors: '집계된 사이트 방문이 0명이어서 비율을 계산하지 않습니다.', no_data: '비교할 사이트 방문 기록이 아직 없습니다.', not_connected: '사이트 통계 연결을 기다리는 중입니다.', unavailable: '비율 계산에 필요한 통계 조회를 확인해주세요.',
+                      ready: '', provisional: '', no_visitors: '집계된 사이트 방문이 0명이어서 비율을 계산하지 않습니다.', no_data: '비교할 사이트 방문 기록이 아직 없습니다.', not_connected: '사이트 통계 연결을 기다리는 중입니다.', unavailable: '비율 계산에 필요한 통계 조회를 확인해주세요.', loading: '사이트 통계를 확인하는 중입니다.',
                     })[row.rateBasis.state]}
                   </p>
                   {row.rateBasis.state === 'provisional' && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>집계 중인 수치 또는 방문 기록이 있는 같은 날짜만 비교한 잠정 비율입니다. 위 폼잇 유입 열은 선택 기간 전체 합계이므로 계산에 사용한 수치와 다를 수 있습니다.</p>}
