@@ -21,7 +21,8 @@ export function referralDates(range: string, now = new Date()) {
   const dates = Array.from({length}, (_, i) => new Date(end - (length - 1 - i) * 86400000).toISOString().slice(0, 10));
   return { from: dates[0], to: dates[dates.length - 1], dates };
 }
-type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null;
+export type ReferralVisitorDay = { day: string; visitors: number | null };
+type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null; dailyVisitors: ReferralVisitorDay[];
   recordedVisitors: number | null; recordedClickers: number | null; visitorDays: number; visitorDates: string[]; clickerDays: number; totalDays: number };
 export function validateReferralStats(raw: unknown, source: string, dates: string[]): Aggregate {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid report');
@@ -29,13 +30,14 @@ export function validateReferralStats(raw: unknown, source: string, dates: strin
   if (r.version !== 1 || r.source !== source || r.timezone !== 'Asia/Seoul' || r.metric !== 'daily_unique_browser' ||
       r.from !== dates[0] || r.to !== dates[dates.length - 1] || !Array.isArray(r.days) || r.days.length !== dates.length ||
       !['complete', 'partial'].includes(String(r.coverage))) throw new Error('Invalid report');
-  const seen = new Set<string>(); const visitorDates: string[] = []; let visitors = 0, clickers = 0, visitorDays = 0, clickerDays = 0;
+  const seen = new Set<string>(); const visitorDates: string[] = []; const dailyVisitors: ReferralVisitorDay[] = []; let visitors = 0, clickers = 0, visitorDays = 0, clickerDays = 0;
   for (const item of r.days) {
     if (!item || typeof item !== 'object') throw new Error('Invalid day');
     const d = item as Record<string, unknown>;
     if (typeof d.day !== 'string' || !dates.includes(d.day) || seen.has(d.day)) throw new Error('Invalid day');
     seen.add(d.day);
     for (const key of ['visitors', 'clickers']) if (d[key] !== null && (typeof d[key] !== 'number' || !Number.isSafeInteger(d[key]) || (d[key] as number) < 0)) throw new Error('Invalid count');
+    dailyVisitors.push({ day: d.day, visitors: d.visitors as number | null });
     if (d.visitors !== null) { visitors += d.visitors as number; visitorDays++; visitorDates.push(d.day); }
     if (d.clickers !== null) { clickers += d.clickers as number; clickerDays++; }
   }
@@ -44,7 +46,7 @@ export function validateReferralStats(raw: unknown, source: string, dates: strin
   // Keep full-period totals unknown when days are missing. Recorded totals are separately labelled in the UI.
   return { visitors: visitorDays < dates.length ? null : visitors, clickers: clickerDays < dates.length ? null : clickers, partial,
     recordedVisitors: visitorDays > 0 ? visitors : null, recordedClickers: clickerDays > 0 ? clickers : null,
-    visitorDays, visitorDates: visitorDates.sort(), clickerDays, totalDays: dates.length,
+    visitorDays, visitorDates: visitorDates.sort(), dailyVisitors: dailyVisitors.sort((a, b) => a.day.localeCompare(b.day)), clickerDays, totalDays: dates.length,
     updatedAt: typeof r.dateUpdatedAt === 'string' && Number.isFinite(Date.parse(r.dateUpdatedAt)) ? r.dateUpdatedAt : null };
 }
 // Calendar months can contain 31 days; combine independently validated, <=30-day upstream chunks.
@@ -56,10 +58,11 @@ export function combineReferralStats(parts: Aggregate[]): Aggregate {
   const visitors = parts.reduce((sum, part) => sum + (part.recordedVisitors ?? 0), 0);
   const clickers = parts.reduce((sum, part) => sum + (part.recordedClickers ?? 0), 0);
   const visitorDates = parts.flatMap(part => part.visitorDates).sort();
-  if (!Number.isSafeInteger(visitors) || !Number.isSafeInteger(clickers) || new Set(visitorDates).size !== visitorDays) throw new Error('Invalid total');
+  const dailyVisitors = parts.flatMap(part => part.dailyVisitors).map(day => ({ ...day })).sort((a, b) => a.day.localeCompare(b.day));
+  if (!Number.isSafeInteger(visitors) || !Number.isSafeInteger(clickers) || new Set(visitorDates).size !== visitorDays || new Set(dailyVisitors.map(day => day.day)).size !== totalDays) throw new Error('Invalid total');
   return { visitors: visitorDays === totalDays ? visitors : null, clickers: clickerDays === totalDays ? clickers : null,
     partial: parts.some(part => part.partial), recordedVisitors: visitorDays ? visitors : null, recordedClickers: clickerDays ? clickers : null,
-    visitorDays, visitorDates, clickerDays, totalDays,
+    visitorDays, visitorDates, dailyVisitors, clickerDays, totalDays,
     updatedAt: parts.every(part => part.updatedAt) ? parts.map(part => part.updatedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] : null };
 }
 

@@ -20,6 +20,7 @@ function harness() {
     'react/jsx-runtime':{jsx,jsxs:jsx},'@tabler/icons-react':{IconCopy:'copy-icon',IconExternalLink:'external-icon',IconChevronDown:'chevron-icon'},
     '@/lib/referralSites':{groupReferralRows,summarizeReferralRows,referralTotalRate,REFERRAL_RATE_LABELS,REFERRAL_ISSUE_LABELS},
     '@/lib/adminStatsPeriod':periods,
+    './ReferralVisitorChart':{default:'visitor-chart'},
     './EstimateLayout':{C:{primary:'gold',admin:{line:'line',accentBg:'accent',totalBg:'total-accent',bg:'background',text:'text'}}},
     './adminStyles':{action:{},goldAction:{},muted:{},panel:{},field:{}}};
   const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -33,6 +34,11 @@ function all(node,predicate) {
 function text(node){if(typeof node==='string'||typeof node==='number')return String(node);return[node?.props?.children].flat(Infinity).map(child=>child&&typeof child==='object'?text(child):typeof child==='string'||typeof child==='number'?String(child):'').join('');}
 
 const siteRows=tree=>all(tree,n=>n.type==='tr'&&n.props?.['aria-label']);
+test('daily visitor chart shares the exact loaded report without adding another data request',()=>{
+  const h=harness();const chart=all(h.render(),node=>node.type==='visitor-chart')[0];
+  assert.equal(chart.props.report,h.report);assert.equal(h.requests.length,0);
+  h.state[0]='30';assert.equal(all(h.render(),node=>node.type==='visitor-chart').length,0);
+});
 test('five active sites use one table row each in two ordered groups with details closed',()=>{
   const h=harness(),tree=h.render();
   const wrapper=all(tree,n=>n.props?.['aria-label']==='사이트별 유입 요약')[0];

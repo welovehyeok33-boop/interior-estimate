@@ -88,6 +88,15 @@ test('complete daily aggregates sum but incomplete counts never become zero',()=
   r.days[0].visitors=0;r.days[1].visitors=0;assert.equal(validateReferralStats(r,'interiorfree',dates).visitors,0);
   r.coverage='partial';assert.equal(validateReferralStats(r,'interiorfree',dates).visitors,0);assert.equal(validateReferralStats(r,'interiorfree',dates).partial,true);
 });
+
+test('validated daily visitor series retains real zeroes, null gaps and chronological order without click or identifier fields',()=>{
+  const raw=report();raw.days=[{day:dates[1],visitors:0,clickers:2,visitor_id:'private'}, {day:dates[0],visitors:null,clickers:1}];
+  const stats=validateReferralStats(raw,'interiorfree',dates);
+  assert.deepEqual(stats.dailyVisitors,[{day:dates[0],visitors:null},{day:dates[1],visitors:0}]);
+  assert.equal(stats.recordedVisitors,0);assert.equal(stats.visitors,null);
+  const combined=combineReferralStats([stats]);assert.deepEqual(combined.dailyVisitors,stats.dailyVisitors);
+  combined.dailyVisitors[1].visitors=99;assert.equal(stats.dailyVisitors[1].visitors,0);
+});
 test('reject source mismatch, duplicate dates, negative counts and session metrics',()=>{
   assert.throws(()=>validateReferralStats(report(),'other',dates));
   const r=report();r.days[1].day=dates[0];assert.throws(()=>validateReferralStats(r,'interiorfree',dates));
