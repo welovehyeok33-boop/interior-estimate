@@ -43,6 +43,11 @@ test('visitor exclusion is labelled while actual Formit arrivals and quote compl
   assert.equal(text(office[0]),'3명');assert.equal(text(office[1]),'2명');
   assert.match(text(tree),/폼잇에 실제 수집된 기록 기준/);
 });
+
+test('retained HUB visitor history exposes the actual statistics source and earliest available record',()=>{
+  const h=harness();h.report.rows[1].external.provider='koko_cookie';h.report.rows[1].external.scopeStartedAt='2026-10-12T00:00:00+09:00';h.state[4]='interiorhub_office';
+  const tree=h.render();assert.match(text(tree),/기존 사이트 방문 통계\(Koko Analytics\)/);assert.match(text(tree),/확인 가능한 방문 기록 시작/);
+});
 test('daily visitor chart shares the exact loaded report without adding another data request',()=>{
   const h=harness();const chart=all(h.render(),node=>node.type==='visitor-chart')[0];
   assert.equal(chart.props.report,h.report);assert.equal(h.requests.length,0);

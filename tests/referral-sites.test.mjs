@@ -98,6 +98,15 @@ test('source-confirmed scope requires explicit upstream support and preserves th
   raw.visitorScope='all';assert.throws(()=>validateReferralStats(raw,'interiorfree',dates,'known_referrer'));
 });
 
+test('retained source-qualified cookie statistics keep history, declare their provider and do not require unused click counts',()=>{
+  const raw=report();raw.visitorScope='known_referrer';raw.provider='koko_cookie';raw.trackingStartedAt='2026-10-01T00:00:00+09:00';raw.days.forEach(day=>day.clickers=null);
+  const stats=validateReferralStats(raw,'interiorfree',dates,'known_referrer');
+  assert.equal(stats.visitors,20);assert.equal(stats.partial,false);assert.equal(stats.provider,'koko_cookie');assert.equal(stats.scopeStartedAt,raw.trackingStartedAt);
+  assert.equal(combineReferralStats([stats]).provider,'koko_cookie');
+  assert.throws(()=>combineReferralStats([stats,validateReferralStats(report(),'interiorfree',dates)]),/Mixed visitor providers/);
+  raw.provider='sessions';assert.throws(()=>validateReferralStats(raw,'interiorfree',dates,'known_referrer'),/Unsupported visitor provider/);
+});
+
 test('validated daily visitor series retains real zeroes, null gaps and chronological order without click or identifier fields',()=>{
   const raw=report();raw.days=[{day:dates[1],visitors:0,clickers:2,visitor_id:'private'}, {day:dates[0],visitors:null,clickers:1}];
   const stats=validateReferralStats(raw,'interiorfree',dates);
