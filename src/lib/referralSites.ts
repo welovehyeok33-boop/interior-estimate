@@ -8,6 +8,7 @@ export const REFERRAL_SITES = [
   { source: 'interiorhub_villa', name: '빌라 인테리어', host: 'villa.interiorhub.kr', destination: '/consult', endpoint: '/wp-json/ih-admin/v1/formit-stats' },
 ] as const;
 export type ReferralSource = typeof REFERRAL_SITES[number]['source'];
+export const REFERRAL_VISITOR_SCOPE = 'known_referrer';
 export function referralLink(source: string, destination: string) {
   const url = new URL(destination, 'https://form.it.kr');
   url.searchParams.set('utm_source', source); url.searchParams.set('utm_medium', 'referral');
@@ -22,11 +23,13 @@ export function referralDates(range: string, now = new Date()) {
   return { from: dates[0], to: dates[dates.length - 1], dates };
 }
 export type ReferralVisitorDay = { day: string; visitors: number | null };
-type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null; dailyVisitors: ReferralVisitorDay[];
+type Aggregate = { visitors: number | null; clickers: number | null; partial: boolean; updatedAt: string | null; dailyVisitors: ReferralVisitorDay[]; scopeStartedAt?: string;
   recordedVisitors: number | null; recordedClickers: number | null; visitorDays: number; visitorDates: string[]; clickerDays: number; totalDays: number };
-export function validateReferralStats(raw: unknown, source: string, dates: string[]): Aggregate {
+export function validateReferralStats(raw: unknown, source: string, dates: string[], visitorScope?: typeof REFERRAL_VISITOR_SCOPE): Aggregate {
   if (!raw || typeof raw !== 'object') throw new Error('Invalid report');
   const r = raw as Record<string, unknown>;
+  // Old collectors ignore unknown query parameters. Never silently accept their unfiltered totals.
+  if (visitorScope && r.visitorScope !== visitorScope) throw new Error('Unsupported visitor scope');
   if (r.version !== 1 || r.source !== source || r.timezone !== 'Asia/Seoul' || r.metric !== 'daily_unique_browser' ||
       r.from !== dates[0] || r.to !== dates[dates.length - 1] || !Array.isArray(r.days) || r.days.length !== dates.length ||
       !['complete', 'partial'].includes(String(r.coverage))) throw new Error('Invalid report');
@@ -47,7 +50,8 @@ export function validateReferralStats(raw: unknown, source: string, dates: strin
   return { visitors: visitorDays < dates.length ? null : visitors, clickers: clickerDays < dates.length ? null : clickers, partial,
     recordedVisitors: visitorDays > 0 ? visitors : null, recordedClickers: clickerDays > 0 ? clickers : null,
     visitorDays, visitorDates: visitorDates.sort(), dailyVisitors: dailyVisitors.sort((a, b) => a.day.localeCompare(b.day)), clickerDays, totalDays: dates.length,
-    updatedAt: typeof r.dateUpdatedAt === 'string' && Number.isFinite(Date.parse(r.dateUpdatedAt)) ? r.dateUpdatedAt : null };
+    updatedAt: typeof r.dateUpdatedAt === 'string' && Number.isFinite(Date.parse(r.dateUpdatedAt)) ? r.dateUpdatedAt : null,
+    ...(visitorScope && typeof r.trackingStartedAt === 'string' && Number.isFinite(Date.parse(r.trackingStartedAt)) ? { scopeStartedAt: r.trackingStartedAt } : {}) };
 }
 // Calendar months can contain 31 days; combine independently validated, <=30-day upstream chunks.
 export function combineReferralStats(parts: Aggregate[]): Aggregate {
@@ -63,7 +67,8 @@ export function combineReferralStats(parts: Aggregate[]): Aggregate {
   return { visitors: visitorDays === totalDays ? visitors : null, clickers: clickerDays === totalDays ? clickers : null,
     partial: parts.some(part => part.partial), recordedVisitors: visitorDays ? visitors : null, recordedClickers: clickerDays ? clickers : null,
     visitorDays, visitorDates, dailyVisitors, clickerDays, totalDays,
-    updatedAt: parts.every(part => part.updatedAt) ? parts.map(part => part.updatedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] : null };
+    updatedAt: parts.every(part => part.updatedAt) ? parts.map(part => part.updatedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] : null,
+    ...(parts.every(part => part.scopeStartedAt) ? { scopeStartedAt: parts.map(part => part.scopeStartedAt!).sort((a,b) => Date.parse(a) - Date.parse(b))[0] } : {}) };
 }
 
 export type ReferralIssue = 'timeout' | 'network' | 'auth' | 'upstream' | 'invalid';

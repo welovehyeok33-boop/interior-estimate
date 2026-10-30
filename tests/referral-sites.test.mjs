@@ -89,6 +89,15 @@ test('complete daily aggregates sum but incomplete counts never become zero',()=
   r.coverage='partial';assert.equal(validateReferralStats(r,'interiorfree',dates).visitors,0);assert.equal(validateReferralStats(r,'interiorfree',dates).partial,true);
 });
 
+test('source-confirmed scope requires explicit upstream support and preserves the new collection baseline',()=>{
+  const raw=report();assert.throws(()=>validateReferralStats(raw,'interiorfree',dates,'known_referrer'));
+  raw.visitorScope='known_referrer';raw.trackingStartedAt='2026-10-16T01:00:00Z';raw.days[0].visitors=null;raw.coverage='partial';
+  const filtered=validateReferralStats(raw,'interiorfree',dates,'known_referrer');
+  assert.equal(filtered.recordedVisitors,10);assert.equal(filtered.visitors,null);assert.equal(filtered.scopeStartedAt,raw.trackingStartedAt);
+  assert.equal(combineReferralStats([filtered]).scopeStartedAt,raw.trackingStartedAt);
+  raw.visitorScope='all';assert.throws(()=>validateReferralStats(raw,'interiorfree',dates,'known_referrer'));
+});
+
 test('validated daily visitor series retains real zeroes, null gaps and chronological order without click or identifier fields',()=>{
   const raw=report();raw.days=[{day:dates[1],visitors:0,clickers:2,visitor_id:'private'}, {day:dates[0],visitors:null,clickers:1}];
   const stats=validateReferralStats(raw,'interiorfree',dates);

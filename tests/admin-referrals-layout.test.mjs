@@ -36,6 +36,13 @@ function all(node,predicate) {
 function text(node){if(typeof node==='string'||typeof node==='number')return String(node);return[node?.props?.children].flat(Infinity).map(child=>child&&typeof child==='object'?text(child):typeof child==='string'||typeof child==='number'?String(child):'').join('');}
 
 const siteRows=tree=>all(tree,n=>n.type==='tr'&&n.props?.['aria-label']);
+test('visitor exclusion is labelled while actual Formit arrivals and quote completions remain visible',()=>{
+  const h=harness(),tree=h.render();
+  assert.match(text(tree),/출처 확인 방문만 집계/);assert.match(text(tree),/직접접속·출처 확인 불가는 제외/);
+  const rows=siteRows(tree),office=all(rows[1],n=>n.type==='td');
+  assert.equal(text(office[0]),'3명');assert.equal(text(office[1]),'2명');
+  assert.match(text(tree),/폼잇에 실제 수집된 기록 기준/);
+});
 test('daily visitor chart shares the exact loaded report without adding another data request',()=>{
   const h=harness();const chart=all(h.render(),node=>node.type==='visitor-chart')[0];
   assert.equal(chart.props.report,h.report);assert.equal(h.requests.length,0);
