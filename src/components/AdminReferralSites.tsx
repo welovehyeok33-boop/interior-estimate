@@ -46,6 +46,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
   return <section style={panel} aria-label="외부 유입처 관리" aria-busy={loading}>
     <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>유입처 관리</h1>
     <p style={muted}>폼잇 유입 비율 = 해당 사이트에서 온 폼잇 유입자 ÷ 해당 사이트 방문자 × 100</p>
+    <p style={{ ...muted, fontSize: 12 }}>사이트 방문은 네이버·구글·다른 외부 사이트에서 들어온 출처 확인 방문만 집계합니다. 직접접속·출처 확인 불가는 제외합니다.</p>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '16px 0' }}>
       {[['today', '오늘'], ['yesterday', '어제'], ['7', '최근 7일'], ['30', '최근 30일']].map(([id, label]) => <button key={id} style={range === id ? goldAction : action} aria-pressed={range === id} onClick={() => setRange(id)}>{label}</button>)}
       <label style={{ ...(range === 'month' ? goldAction : action), display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 12px', maxWidth: '100%' }}>월별
@@ -98,6 +99,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
                   {(row.external.status === 'pending' || row.external.status === 'error') && <p style={{ ...muted, fontSize: 12, margin: '2px 0' }}>사이트 통계를 확인할 수 없습니다. 폼잇 유입은 별도 표시합니다.</p>}
                   {row.external.issue && <p style={{ ...muted, fontSize: 12, margin: '4px 0' }}>{REFERRAL_ISSUE_LABELS[row.external.issue]}</p>}
                   {row.external.updatedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>사이트 통계 갱신 {dateTime(row.external.updatedAt)}</p>}
+                  {row.external.scopeStartedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>출처 확인 방문 집계 시작 {dateTime(row.external.scopeStartedAt)}</p>}
                   {row.external.fetchedAt && <p style={{ ...muted, fontSize: 11, margin: '4px 0' }}>원본 조회 {dateTime(row.external.fetchedAt)}{row.external.cached ? ' · 1분 이내 캐시' : ''}</p>}
                   <label style={{ ...muted, display: 'block', marginTop: 10 }} htmlFor={'link-' + row.source}>이 사이트에 사용할 폼잇 링크</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
@@ -127,6 +129,7 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}
     <details style={{ marginTop: 16 }}>
       <summary style={{ ...muted, fontSize: 12, cursor: 'pointer', width: 'fit-content' }}>집계 기준 안내</summary>
+      <p style={muted}>사이트 방문은 진입 시 외부 사이트 주소가 확인된 브라우저를 하루 한 번 셉니다. 사이트 안에서 이동할 때는 진입 경로를 유지하며, 직접접속·출처 확인 불가·내부 이동만 있는 방문은 제외합니다. 이전 기록에서 경로를 구분할 수 없는 날짜는 미집계로 표시합니다. 폼잇 유입·연락처 도착·신청 완료 방문은 폼잇에 실제 수집된 기록 기준입니다.</p>
       <p style={muted}>유입 비율은 해당 사이트의 방문자 대비 폼잇 유입자 비율입니다. 방문 기록이 있는 같은 날짜끼리 비교하며 집계 중이거나 날짜가 빠진 경우 잠정 비율로 표시합니다. 방문 0명·데이터 부족·조회 오류는 비율과 구분합니다. 각 단계는 동일인을 이어서 추적한 수치가 아닌, 사이트별 일별 브라우저 집계의 비교입니다. 폼잇은 하루 첫 유입처 기준이며, 다른 곳에 공유한 링크·추적 차단·관리자 제외로 차이가 날 수 있습니다. 연락처 도착은 최근 30일의 수집된 상세 기록 기준입니다. 신청 완료 방문은 실제 신청 건수와 다를 수 있습니다.</p>
     </details>
   </section>;

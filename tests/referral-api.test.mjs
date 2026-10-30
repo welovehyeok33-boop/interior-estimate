@@ -40,7 +40,7 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
     const dates=[];for(let stamp=Date.parse(from);stamp<=Date.parse(to);stamp+=86400000)dates.push(new Date(stamp).toISOString().slice(0,10));
     const source=referrals.REFERRAL_SITES.find(site=>site.host===new URL(url).hostname).source;
     if(source===slowSource) await slowGate;
-    return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays||missingClickDays||inProgress?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:upstreamVisitors,clickers:i<Math.max(missingDays,missingClickDays)?null:4}))});
+    return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',visitorScope:'known_referrer',from,to,coverage:missingDays||missingClickDays||inProgress?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:upstreamVisitors,clickers:i<Math.max(missingDays,missingClickDays)?null:4}))});
   };
   const loaderSource=readFileSync(new URL('../src/lib/serverReferralStats.ts',import.meta.url),'utf8');
   const loaderOutput=ts.transpileModule(loaderSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;

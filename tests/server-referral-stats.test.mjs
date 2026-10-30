@@ -15,7 +15,7 @@ function response(url,visitors=10) {
   const u=new URL(url),from=u.searchParams.get('from'),to=u.searchParams.get('to');
   const days=[];for(let n=Date.parse(from);n<=Date.parse(to);n+=86400000)days.push({day:new Date(n).toISOString().slice(0,10),visitors,clickers:0});
   return Response.json({version:1,source:referrals.REFERRAL_SITES.find(s=>s.host===u.hostname).source,
-    timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:'partial',days,dateUpdatedAt:'2026-10-22T07:00:00Z'});
+    timezone:'Asia/Seoul',metric:'daily_unique_browser',visitorScope:'known_referrer',from,to,coverage:'partial',days,dateUpdatedAt:'2026-10-22T07:00:00Z'});
 }
 const timeout=()=>Object.assign(new Error('private failure'),{name:'TimeoutError'});
 
@@ -28,7 +28,15 @@ test('20-second requests retry one transient failure while preserving private fi
   assert.deepEqual(limits,[20000,20000]);assert.deepEqual(pauses,[250]);
   assert.ok(calls.every(call=>call.url.hostname==='villa.interiorhub.kr'&&call.url.pathname==='/wp-json/ih-admin/v1/formit-stats'));
   assert.ok(calls.every(call=>call.options.cache==='no-store'&&call.options.redirect==='error'&&call.options.headers.Authorization==='Bearer '+token));
+  assert.ok(calls.every(call=>call.url.searchParams.get('visitor_scope')==='known_referrer'));
   assert.ok(!JSON.stringify(result).includes(token));assert.ok(!JSON.stringify(result).includes('private failure'));
+});
+
+test('a legacy collector that ignores the filter never silently becomes a source-confirmed visitor count',async()=>{
+  let reads=0;
+  const load=loaderModule.createReferralStatsLoader({request:async url=>{reads++;const raw=await response(url,99).json();delete raw.visitorScope;return Response.json(raw);},pause:async()=>{throw Error('No retry for unsupported scope');}});
+  const result=await load('interiorfree',dates,token);
+  assert.equal(result.status,'error');assert.equal(result.issue,'invalid');assert.equal(result.visitors,null);assert.equal(result.recordedVisitors,null);assert.equal(reads,1);
 });
 
 test('fresh cache and concurrent requests deduplicate by source, exact dates and credential without exposing mutable arrays',async()=>{

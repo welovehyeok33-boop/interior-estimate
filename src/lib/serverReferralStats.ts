@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
-import { REFERRAL_SITES, validateReferralStats, combineReferralStats, type ReferralSource, type ReferralRow, type ReferralIssue } from './referralSites';
+import { REFERRAL_SITES, REFERRAL_VISITOR_SCOPE, validateReferralStats, combineReferralStats, type ReferralSource, type ReferralRow, type ReferralIssue } from './referralSites';
 
 const CACHE_MS = 60_000, CACHE_LIMIT = 64, REQUEST_MS = 20_000, BUDGET_MS = 45_000;
 type External = ReferralRow['external'];
@@ -35,7 +35,7 @@ export function createReferralStatsLoader(options: {
       !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(day)) ||
       (i > 0 && Date.parse(day) - Date.parse(dates[i - 1]) !== 86_400_000))) return { ...empty, issue: 'invalid' };
     // Rotation and different periods cannot share cached aggregates. Never retain the raw token as a key.
-    const key = createHash('sha256').update(JSON.stringify([source, dates, token])).digest('hex');
+    const key = createHash('sha256').update(JSON.stringify([source, dates, token, REFERRAL_VISITOR_SCOPE])).digest('hex');
     const hit = cache.get(key);
     if (hit && hit.expires > now()) return copy(hit.value, true);
     cache.delete(key);
@@ -49,6 +49,7 @@ export function createReferralStatsLoader(options: {
           try {
             const url = new URL(site!.endpoint, 'https://' + site!.host);
             url.searchParams.set('from', chunk[0]); url.searchParams.set('to', chunk[chunk.length - 1]);
+            url.searchParams.set('visitor_scope', REFERRAL_VISITOR_SCOPE);
             const response = await request(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
               redirect: 'error', signal: signal(Math.max(1, Math.min(REQUEST_MS, remaining))) });
             if (!response.ok) {
@@ -58,7 +59,7 @@ export function createReferralStatsLoader(options: {
             const text = await response.text();
             try {
               if (text.length > 32_000) throw new Error('Oversized report');
-              return validateReferralStats(JSON.parse(text), source, chunk);
+              return validateReferralStats(JSON.parse(text), source, chunk, REFERRAL_VISITOR_SCOPE);
             } catch { throw new UpstreamFailure('invalid', false); }
           } catch (error) {
             const problem = failure(error);
