@@ -14,6 +14,8 @@ export default function ReferralVisitorChart({ report }: { report: ReferralRepor
   const [hover, setHover] = useState<{ day: string; left: number; top: number; below: boolean } | null>(null);
   const tooltipId = useId();
   const days = referralVisitorTrend(report, source);
+  const pending = report.rows.some(row => (source === 'all' || row.source === source) && row.external.status === 'loading');
+  const valueLabel = (value: number | null) => value === null && pending ? '조회 중' : count(value);
   const index = Math.max(0, days.findIndex(day => day.day === activeDay));
   const selectedIndex = activeDay && days.some(day => day.day === activeDay) ? index : days.length - 1;
   const selected = days[selectedIndex];
@@ -51,7 +53,7 @@ export default function ReferralVisitorChart({ report }: { report: ReferralRepor
       </button>)}
     </div>
     <p role="status" aria-live="polite" style={{ ...muted, fontSize: 12, margin: '0 0 10px', minHeight: 21 }}>
-      {selected ? <><strong style={{ color: C.admin.text }}>{selected.day.replaceAll('-', '.')} · {count(selected.visitors)}</strong><span style={{ marginLeft: 8 }}>{selected.knownSites}/{selected.totalSites}곳 수집{selected.knownSites > 0 && selected.knownSites < selected.totalSites ? ' · 부분 집계' : ''}</span></> : '선택 기간의 방문 기록이 없어요.'}
+      {selected ? <><strong style={{ color: C.admin.text }}>{selected.day.replaceAll('-', '.')} · {valueLabel(selected.visitors)}</strong><span style={{ marginLeft: 8 }}>{selected.knownSites}/{selected.totalSites}곳 수집{selected.knownSites > 0 && selected.knownSites < selected.totalSites ? ' · 부분 집계' : ''}</span></> : '선택 기간의 방문 기록이 없어요.'}
     </p>
     <div style={{ display: 'grid', gridTemplateColumns: '36px minmax(0, 1fr)', gap: 4 }}>
       <div aria-hidden="true" style={{ position: 'relative', height: 180, fontSize: 10, color: C.admin.muted, textAlign: 'right' }}>
@@ -71,9 +73,9 @@ export default function ReferralVisitorChart({ report }: { report: ReferralRepor
           </svg>
           {days.map((day, i) => day.visitors === null ? null : <span key={day.day} aria-hidden="true" style={{ position: 'absolute', left: `${x(i) / 720 * 100}%`, top: `${y(day.visitors) / 180 * 100}%`, transform: 'translate(-50%, -50%)',
             width: i === selectedIndex ? 10 : 6, height: i === selectedIndex ? 10 : 6, boxSizing: 'border-box', borderRadius: '50%', border: `2px solid ${C.admin.chart}`, background: day.knownSites < day.totalSites ? C.admin.surface : C.admin.chart, pointerEvents: 'none' }} />)}
-          {!known.length && <p style={{ ...muted, fontSize: 12, position: 'absolute', inset: '40px 8px auto', textAlign: 'center', pointerEvents: 'none' }}>선택 기간에 수집된 방문 기록이 없어요.</p>}
+          {!known.length && <p style={{ ...muted, fontSize: 12, position: 'absolute', inset: '40px 8px auto', textAlign: 'center', pointerEvents: 'none' }}>{pending ? '사이트별 방문자를 확인하는 중…' : '선택 기간에 수집된 방문 기록이 없어요.'}</p>}
           <div role="group" aria-label="날짜별 방문자 선택" onPointerLeave={() => setHover(null)} style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, days.length)}, minmax(0, 1fr))` }}>
-            {days.map((day, i) => <button key={day.day} type="button" aria-label={`${day.day} ${count(day.visitors)}, ${day.knownSites}/${day.totalSites}곳 수집`} aria-pressed={selectedIndex === i} tabIndex={selectedIndex === i ? 0 : -1}
+            {days.map((day, i) => <button key={day.day} type="button" aria-label={`${day.day} ${valueLabel(day.visitors)}, ${day.knownSites}/${day.totalSites}곳 수집`} aria-pressed={selectedIndex === i} tabIndex={selectedIndex === i ? 0 : -1}
               aria-describedby={hover?.day === day.day ? tooltipId : undefined}
               onPointerEnter={event => showTooltip(i, event)} onPointerMove={event => showTooltip(i, event)} onFocus={event => showTooltip(i, event)} onClick={event => showTooltip(i, event)} onBlur={() => setHover(null)}
               onKeyDown={event => {
@@ -86,7 +88,7 @@ export default function ReferralVisitorChart({ report }: { report: ReferralRepor
           </div>
           {hover && hovered && <div id={tooltipId} role="tooltip" data-visitor-tooltip="true" style={{ position: 'absolute', zIndex: 2, left: hover.left, top: hover.top, transform: hover.below ? 'translateX(-50%)' : 'translate(-50%, -100%)', pointerEvents: 'none', width: 152, boxSizing: 'border-box', border: `1px solid ${C.admin.line}`, borderRadius: 8, background: C.admin.surface, color: C.admin.text, padding: '8px 10px', lineHeight: 1.5 }}>
             <span style={{ ...muted, display: 'block', fontSize: 11 }}>{hovered.day.replaceAll('-', '.')}</span>
-            <strong style={{ fontSize: 19, display: 'block', fontVariantNumeric: 'tabular-nums' }}>{count(hovered.visitors)}</strong>
+            <strong style={{ fontSize: 19, display: 'block', fontVariantNumeric: 'tabular-nums' }}>{valueLabel(hovered.visitors)}</strong>
             <span style={{ ...muted, fontSize: 10 }}>{hovered.knownSites}/{hovered.totalSites}곳 확인{hovered.knownSites < hovered.totalSites ? ' · 부분 집계' : ''}</span>
           </div>}
         </div>
