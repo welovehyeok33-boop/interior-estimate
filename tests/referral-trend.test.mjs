@@ -102,3 +102,11 @@ test('real zeroes and a single day are graphed, while unavailable data has an ex
   report.rows.forEach(row=>{row.external.status='error';});tree=h.render();
   assert.match(text(tree),/선택 기간에 수집된 방문 기록이 없어요/);assert.match(text(tree),/미수집/);
 });
+
+test('pending chart data says loading rather than no visitors, scoped to the selected site',()=>{
+  const h=harness();h.report.rows.forEach(row=>{row.external.status='loading';});let tree=h.render();
+  assert.match(text(tree),/사이트별 방문자를 확인하는 중/);assert.match(text(tree),/조회 중/);assert.doesNotMatch(text(tree),/수집된 방문 기록이 없어요/);
+  h.report.rows[1].external.status='ready';h.report.rows[1].external.dailyVisitors=[];
+  all(tree,node=>node.type==='button'&&text(node)==='오피스')[0].props.onClick();tree=h.render();
+  assert.match(text(tree),/수집된 방문 기록이 없어요/);assert.match(text(tree),/미수집/);assert.doesNotMatch(text(tree),/조회 중/);
+});
