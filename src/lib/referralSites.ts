@@ -73,8 +73,8 @@ export const REFERRAL_ISSUE_LABELS: Record<ReferralIssue, string> = {
   upstream: '사이트 통계 서버가 오류를 반환했습니다.', invalid: '사이트 통계 응답의 기간 또는 형식을 확인할 수 없습니다.',
 };
 export type ReferralRow = { source: string; name: string; host: string; link: string;
-  external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial'; fetchedAt?: string; cached?: boolean; issue?: ReferralIssue };
-  arrivals: number; contacts: number | null; converted: number; rate: number | null; rateBasis: ReferralRateBasis };
+  external: Aggregate & { status: 'ready' | 'pending' | 'error' | 'partial' | 'loading'; fetchedAt?: string; cached?: boolean; issue?: ReferralIssue };
+  arrivals: number | null; contacts: number | null; converted: number | null; rate: number | null; rateBasis: ReferralRateBasis };
 export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; updatedAt: string; detailCoverage?: DetailCoverage };
 
 type ReferralTotal = { value: number | null; knownSites: number; totalSites: number; partial: boolean; periodComplete: boolean };
@@ -106,16 +106,17 @@ export function referralTotalRate(totals: readonly ReferralTotal[]): number | nu
 }
 
 export type ReferralRateBasis = {
-  state: 'ready' | 'provisional' | 'no_visitors' | 'no_data' | 'not_connected' | 'unavailable';
+  state: 'ready' | 'provisional' | 'no_visitors' | 'no_data' | 'not_connected' | 'unavailable' | 'loading';
   arrivals: number | null; visitors: number | null; days: number; totalDays: number;
 };
 export const REFERRAL_RATE_LABELS: Record<ReferralRateBasis['state'], string> = {
-  ready: '—', provisional: '—', no_visitors: '방문 없음', no_data: '데이터 부족', not_connected: '연결 대기', unavailable: '조회 오류',
+  ready: '—', provisional: '—', no_visitors: '방문 없음', no_data: '데이터 부족', not_connected: '연결 대기', unavailable: '조회 오류', loading: '조회 중',
 };
 export function calculateReferralRate(external: ReferralRow['external'], arrivals: number | null): Pick<ReferralRow, 'rate' | 'rateBasis'> {
   const visitors = external.visitors ?? external.recordedVisitors;
   const basis = { arrivals, visitors, days: external.visitorDays, totalDays: external.totalDays };
   const empty = (state: ReferralRateBasis['state']) => ({ rate: null, rateBasis: { ...basis, state } });
+  if (external.status === 'loading') return empty('loading');
   if (external.status === 'pending') return empty('not_connected');
   if (external.status === 'error') return empty('unavailable');
   if (visitors === null || external.visitorDays === 0) return empty('no_data');

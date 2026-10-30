@@ -45,7 +45,7 @@ function harness(report=fixture()) {
   const state=[];let cursor=0,requests=0;
   const jsx=(type,props,key)=>({type,props,key}),exports={};
   const source=readFileSync(new URL('../src/components/ReferralVisitorChart.tsx',import.meta.url),'utf8');
-  const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=value;}];}},
+  const deps={react:{useId:()=> 'visitor-tooltip',useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],value=>{state[i]=value;}];}},
     'react/jsx-runtime':{jsx,jsxs:jsx},'@/lib/referralTrend':{referralVisitorTrend},
     './EstimateLayout':{C:{primary:'gold',admin:{line:'line',text:'text',chart:'chart',surface:'surface',accentBg:'accent'}}},'./adminStyles':{action:{},muted:{}}};
   runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText,
@@ -54,6 +54,7 @@ function harness(report=fixture()) {
 }
 function all(node,predicate) {if(!node||typeof node!=='object')return[];return[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>all(child,predicate))];}
 function text(node) {if(typeof node==='string'||typeof node==='number')return String(node);if(!node||typeof node!=='object')return'';return[node.props?.children].flat(Infinity).map(text).join('');}
+const pointer=(clientX=100,clientY=100)=>({clientX,clientY,currentTarget:{parentElement:{getBoundingClientRect:()=>({left:0,top:0,width:300,height:180})}}});
 
 test('chart shows known totals, leaves null gaps unconnected, and changes sites without fetching',()=>{
   const h=harness();let tree=h.render();
@@ -72,12 +73,25 @@ test('mouse, touch and keyboard date selection expose exact counts and collectio
   const group=()=>all(tree,node=>node.props?.['aria-label']==='날짜별 방문자 선택')[0];
   const buttons=()=>all(group(),node=>node.type==='button');
   assert.equal(buttons().filter(button=>button.props.tabIndex===0).length,1);
-  buttons()[3].props.onPointerEnter();tree=h.render();assert.match(text(tree),/2026\.10\.04 · 20명.*1\/2곳 수집 · 부분 집계/);
-  buttons()[1].props.onClick();tree=h.render();assert.match(text(tree),/2026\.10\.02 · 미수집/);
+  buttons()[3].props.onPointerEnter(pointer());tree=h.render();assert.match(text(tree),/2026\.10\.04 · 20명.*1\/2곳 수집 · 부분 집계/);
+  buttons()[1].props.onClick(pointer());tree=h.render();assert.match(text(tree),/2026\.10\.02 · 미수집/);
   let focused=-1,prevented=false;
   buttons()[1].props.onKeyDown({key:'End',preventDefault(){prevented=true;},currentTarget:{parentElement:{querySelectorAll(){return Array.from({length:5},(_,i)=>({focus(){focused=i;}}));}}}});
   assert.equal(prevented,true);assert.equal(focused,4);
-  buttons()[2].props.onFocus();tree=h.render();assert.match(text(tree),/2026\.10\.03 · 0명/);
+  buttons()[2].props.onFocus(pointer());tree=h.render();assert.match(text(tree),/2026\.10\.03 · 0명/);
+});
+
+test('hover immediately opens a count tooltip at the pointer, stays in bounds, and closes when leaving or changing site',()=>{
+  const h=harness();let tree=h.render();const points=()=>all(all(tree,node=>node.props?.['aria-label']==='날짜별 방문자 선택')[0],node=>node.type==='button');
+  assert.equal(all(tree,node=>node.props?.role==='tooltip').length,0);
+  points()[3].props.onPointerEnter(pointer(5,20));tree=h.render();let tooltip=all(tree,node=>node.props?.role==='tooltip')[0];
+  assert.match(text(tooltip),/2026\.10\.0420명1\/2곳 확인/);assert.equal(tooltip.props.style.left,76);assert.equal(tooltip.props.style.top,34);
+  assert.equal(points()[3].props['aria-describedby'],tooltip.props.id);
+  points()[3].props.onPointerMove(pointer(299,150));tree=h.render();tooltip=all(tree,node=>node.props?.role==='tooltip')[0];
+  assert.equal(tooltip.props.style.left,224);assert.equal(tooltip.props.style.top,138);
+  all(tree,node=>node.props?.['aria-label']==='날짜별 방문자 선택')[0].props.onPointerLeave();tree=h.render();assert.equal(all(tree,node=>node.props?.role==='tooltip').length,0);
+  points()[2].props.onFocus(pointer());tree=h.render();assert.match(text(all(tree,node=>node.props?.role==='tooltip')[0]),/0명/);
+  all(tree,node=>node.type==='button'&&text(node)==='오피스')[0].props.onClick();tree=h.render();assert.equal(all(tree,node=>node.props?.role==='tooltip').length,0);
 });
 
 test('real zeroes and a single day are graphed, while unavailable data has an explicit empty state',()=>{

@@ -6,8 +6,9 @@ import ts from 'typescript';
 import * as crypto from 'node:crypto';
 import * as referrals from '../src/lib/referralSites.ts';
 import * as periods from '../src/lib/adminStatsPeriod.ts';
+import { readReferralReport } from '../src/lib/readReferralReport.ts';
 
-function setup({ admin = true, token = false, allTokens = false, upstreamFails = false, contactsFail = false, missingDays = 0, missingClickDays = 0, inProgress = false, upstreamVisitors = 10, matchedArrivals = 1, rateCountFails = false, now } = {}) {
+function setup({ admin = true, token = false, allTokens = false, upstreamFails = false, contactsFail = false, missingDays = 0, missingClickDays = 0, inProgress = false, upstreamVisitors = 10, matchedArrivals = 1, rateCountFails = false, now, slowSource, slowGate, summaryFails = false } = {}) {
   const calls = [];
   const rpcs = [];
   const counts = [];
@@ -24,7 +25,7 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
   };
   const deps = {
     '@/lib/serverAuth': {isAdmin: async()=>admin, apiJson:(b,s=200)=>Response.json(b,{status:s})},
-    '@/lib/serverDb': {serverDb:()=>({rpc:async(name,args)=>{calls.push('db');rpcs.push({name,args});return {data:{sources:[{source:'interiorfree',visitors:3,converted:1},{source:'buildhyeok_apt',visitors:2,converted:1}]}};},from:query})},
+    '@/lib/serverDb': {serverDb:()=>({rpc:async(name,args)=>{calls.push('db');rpcs.push({name,args});return {error:summaryFails?'private database error':null,data:{sources:[{source:'interiorfree',visitors:3,converted:1},{source:'buildhyeok_apt',visitors:2,converted:1}]}};},from:query})},
     '@/lib/referralSites': referrals,
     '@/lib/adminStatsPeriod': { ...periods, parseStatsPeriod: params => periods.parseStatsPeriod(params, now) },
   };
@@ -38,6 +39,7 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
     const from=new URL(url).searchParams.get('from'),to=new URL(url).searchParams.get('to');
     const dates=[];for(let stamp=Date.parse(from);stamp<=Date.parse(to);stamp+=86400000)dates.push(new Date(stamp).toISOString().slice(0,10));
     const source=referrals.REFERRAL_SITES.find(site=>site.host===new URL(url).hostname).source;
+    if(source===slowSource) await slowGate;
     return Response.json({version:1,source,timezone:'Asia/Seoul',metric:'daily_unique_browser',from,to,coverage:missingDays||missingClickDays||inProgress?'partial':'complete',days:dates.map((day,i)=>({day,visitors:i<missingDays?null:upstreamVisitors,clickers:i<Math.max(missingDays,missingClickDays)?null:4}))});
   };
   const loaderSource=readFileSync(new URL('../src/lib/serverReferralStats.ts',import.meta.url),'utf8');
@@ -45,10 +47,35 @@ function setup({ admin = true, token = false, allTokens = false, upstreamFails =
   const loader={};
   runInNewContext(loaderOutput,{exports:loader,URL,AbortSignal,Date,setTimeout,fetch:fakeFetch,require:n=>({'server-only':{},'node:crypto':crypto,'./referralSites':referrals})[n]});
   deps['@/lib/serverReferralStats']={loadReferralStats:loader.createReferralStatsLoader({pause:async()=>{}})};
-  runInNewContext(output,{exports,URL,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n]});
+  runInNewContext(output,{exports,URL,Response,ReadableStream,TextEncoder,process:{env:{FORMIT_REFERRAL_TOKENS:JSON.stringify(tokens)}},require:n=>deps[n]});
   return {...exports,calls,counts,rpcs};
 }
 const request=(range='today')=>new Request('https://form.it.kr/api/admin/referrals?range='+range);
+
+test('streamed rows show fast sites before a blocked upstream finishes, using one summary and the same five upstream reads', {timeout:5000}, async()=>{
+  let release,fast;
+  const slowGate=new Promise(resolve=>{release=resolve;});const firstFast=new Promise(resolve=>{fast=resolve;});
+  const s=setup({allTokens:true,slowSource:'interiorhub_villa',slowGate});
+  const response=await s.GET(request('7&stream=1'));
+  assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/application\/x-ndjson/);assert.equal(response.headers.get('cache-control'),'no-store');
+  const updates=[];
+  const reading=readReferralReport(response,(report,pending)=>{updates.push({report,pending});if(report.rows[0].external.status!=='loading')fast();},new AbortController().signal);
+  try {
+    await firstFast;const current=updates.at(-1);
+    assert.equal(current.pending,true);assert.equal(current.report.rows[0].external.visitors,70);
+    assert.equal(current.report.rows.at(-1).external.status,'loading');assert.equal(current.report.rows.at(-1).arrivals,null);
+    assert.equal(referrals.summarizeReferralRows(current.report.rows)[0].value,null);
+  } finally { release(); }
+  await reading;assert.equal(updates.at(-1).pending,false);assert.ok(updates.at(-1).report.rows.every(row=>row.external.status!=='loading'));
+  assert.equal(s.rpcs.length,1);assert.equal(s.counts.length,5);assert.equal(s.calls.filter(call=>typeof call==='object').length,5);
+  assert.ok(!JSON.stringify(updates).includes('x'.repeat(40)));
+});
+
+test('stream authorization is checked before reads and fatal summary errors terminate without leaking internal details',async()=>{
+  const blocked=setup({admin:false,allTokens:true});assert.equal((await blocked.GET(request('7&stream=1'))).status,401);assert.equal(blocked.calls.length,0);
+  const failed=setup({allTokens:true,summaryFails:true});const response=await failed.GET(request('7&stream=1'));
+  const body=await response.text();assert.match(body,/"type":"error"/);assert.doesNotMatch(body,/private database error|"type":"done"/);
+});
 
 test('31-day referral months split upstream requests without truncating Formit dates or fabricating old contacts',async()=>{
   const s=setup({allTokens:true});const response=await s.GET(request('month&month=2000-01'));
