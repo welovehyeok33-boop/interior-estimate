@@ -13,14 +13,14 @@ test('site footer sums only its four displayed metrics without mutating rows or 
   assert.equal(JSON.stringify(rows),before);
 });
 
-test('footer never labels a subset of sites as a full total and keeps missing dates, zero and unsafe totals distinct',()=>{
+test('footer labels known visitor subsets while preserving unknown Formit totals, zero and unsafe sums',()=>{
   const rows=[{external:{status:'partial',visitors:null,recordedVisitors:13},arrivals:2,contacts:null,converted:1},
     {external:{status:'error',visitors:null,recordedVisitors:null},arrivals:0,contacts:null,converted:0}];
   const totals=summarizeReferralRows(rows);
-  assert.deepEqual(totals[0],{value:null,knownSites:1,totalSites:2,partial:true,periodComplete:false});
+  assert.deepEqual(totals[0],{value:13,knownSites:1,totalSites:2,partial:true,periodComplete:false});
   assert.deepEqual(totals[2],{value:null,knownSites:0,totalSites:2,partial:true,periodComplete:false});
   assert.equal(totals[1].value,2);assert.equal(totals[1].partial,false);
-  rows[0].external.recordedVisitors=0;assert.equal(summarizeReferralRows(rows)[0].value,null);
+  rows[0].external.recordedVisitors=0;assert.equal(summarizeReferralRows(rows)[0].value,0);
   rows[1].external={status:'partial',visitors:0,recordedVisitors:0};assert.equal(summarizeReferralRows(rows)[0].value,0);assert.equal(summarizeReferralRows(rows)[0].partial,true);
   assert.ok(summarizeReferralRows([]).every(item=>item.value===null));
   rows.forEach(row=>{row.arrivals=Number.MAX_SAFE_INTEGER;});assert.equal(summarizeReferralRows(rows)[1].value,null);
@@ -46,18 +46,27 @@ test('overall ratio cannot turn zero, missing or unsafe denominators into a perc
   assert.equal(referralTotalRate([{value:Number.MAX_SAFE_INTEGER+1,periodComplete:true},{value:1,periodComplete:true}]),null);
 });
 
-test('unknown sites block the overall rate but known historical partial sums provide a reference percentage',()=>{
+test('finalized unavailable sites preserve the known visitor sum and reference percentage',()=>{
   const rows=[{external:{status:'partial',visitors:13,recordedVisitors:13,visitorDays:7,totalDays:7},arrivals:0,contacts:0,converted:0},
     {external:{status:'partial',visitors:14,recordedVisitors:14,visitorDays:7,totalDays:7},arrivals:4,contacts:3,converted:2}];
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),14.8);
   rows[1].external={...rows[1].external,status:'error',visitors:null,recordedVisitors:null,visitorDays:0};
-  assert.equal(summarizeReferralRows(rows)[0].value,null);assert.equal(referralTotalRate(summarizeReferralRows(rows)),null); // Never 4/13 = 30.8%.
+  const known=summarizeReferralRows(rows);assert.equal(known[0].value,13);assert.equal(known[0].knownSites,1);assert.equal(known[0].periodComplete,false);assert.equal(referralTotalRate(known),30.8);
   rows[1].external={...rows[1].external,status:'partial',visitors:null,recordedVisitors:14,visitorDays:6};
   const partial=summarizeReferralRows(rows);assert.equal(partial[0].value,27);assert.equal(partial[0].periodComplete,false);assert.equal(referralTotalRate(partial),14.8);
   rows[1].arrivals=0;assert.equal(referralTotalRate(summarizeReferralRows(rows)),0);
   rows[0].external={...rows[0].external,status:'partial',visitors:null,recordedVisitors:37,visitorDays:18,totalDays:22};
   rows[1].external={...rows[1].external,recordedVisitors:14,visitorDays:6,totalDays:22};rows[1].arrivals=4;
   assert.equal(referralTotalRate(summarizeReferralRows(rows)),7.8);
+});
+
+test('one zero-traffic site and one missing site do not hide four confirmed site totals',()=>{
+  const rows=[2,3,null,14,2].map(visitors=>({external:{status:visitors===null?'partial':'ready',visitors,recordedVisitors:visitors,visitorDays:visitors===null?0:1,totalDays:1},arrivals:0,contacts:0,converted:0}));
+  rows[0].arrivals=rows[3].arrivals=1;
+  let totals=summarizeReferralRows(rows);assert.deepEqual(totals[0],{value:21,knownSites:4,totalSites:5,partial:true,periodComplete:false});assert.equal(referralTotalRate(totals),9.5);
+  rows[2].external={...rows[2].external,status:'ready',visitors:0,recordedVisitors:0,visitorDays:1};
+  totals=summarizeReferralRows(rows);assert.equal(totals[0].value,21);assert.equal(totals[0].knownSites,5);assert.equal(totals[0].periodComplete,true);assert.equal(referralTotalRate(totals),9.5);
+  rows[2].external.status='loading';totals=summarizeReferralRows(rows);assert.equal(totals[0].value,null);assert.equal(referralTotalRate(totals),null);
 });
 test('period boundaries use Korean day and reject unsupported ranges',()=>{
   assert.equal(referralDates('today',new Date('2026-10-15T15:00:00Z')).from,'2026-10-16');

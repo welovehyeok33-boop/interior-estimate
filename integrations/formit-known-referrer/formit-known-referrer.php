@@ -1,5 +1,5 @@
 <?php
-// Formit known-referrer module v1.1.0. Uses retained source-qualified visitor statistics.
+// Formit known-referrer module v1.2.0. Uses retained source-qualified visitor statistics.
 defined('ABSPATH') || exit;
 
 function fkr_source() {
@@ -18,7 +18,30 @@ function fkr_external_referrer($value, $own_host) {
     return $canonical !== $own && substr($canonical, -strlen('.' . $own)) !== '.' . $own;
 }
 
-function fkr_report($request) {
+// Koko stores no site row on a day without pageviews. A missing row alone is not proof of zero.
+// Reuse the already-authorized daily-browser report only to confirm zero total visitors;
+// a positive, missing, expired or failed legacy count can never replace source-qualified data.
+function fkr_confirmed_zero_days($legacy, $from, $to, $today, $first) {
+    if (!is_array($legacy) || ($legacy['version'] ?? null) !== 1 || ($legacy['source'] ?? null) !== fkr_source() || ($legacy['timezone'] ?? null) !== 'Asia/Seoul' || ($legacy['metric'] ?? null) !== 'daily_unique_browser' || isset($legacy['visitorScope']) || ($legacy['from'] ?? null) !== $from->format('Y-m-d') || ($legacy['to'] ?? null) !== $to->format('Y-m-d') || !in_array($legacy['coverage'] ?? null, ['complete', 'partial'], true) || !is_array($legacy['days'] ?? null) || count($legacy['days']) !== $from->diff($to)->days + 1 || !is_string($first) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $first)) return [];
+    $started = $legacy['trackingStartedAt'] ?? null;
+    if (!is_string($started) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/D', $started)) return [];
+    try { $start = new DateTimeImmutable($started); } catch (Exception $error) { return []; }
+    $errors = DateTimeImmutable::getLastErrors();
+    if ($errors && ($errors['warning_count'] || $errors['error_count'])) return [];
+    $start = $start->setTimezone(new DateTimeZone('Asia/Seoul'));
+    $retained = $today->modify('-89 days'); $seen = []; $zeroes = [];
+    foreach ($legacy['days'] as $row) {
+        if (!is_array($row) || !is_string($row['day'] ?? null) || !array_key_exists('visitors', $row)) return [];
+        $day = $row['day']; $value = $row['visitors'];
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', $day, $today->getTimezone());
+        if (!$date || $date->format('Y-m-d') !== $day || $date < $from || $date > $to || isset($seen[$day]) || ($value !== null && (!is_int($value) || $value < 0))) return [];
+        $seen[$day] = true;
+        if ($value === 0 && $date >= $start->setTime(0, 0) && $date >= $retained && $day >= $first && !($day === $start->format('Y-m-d') && $start->format('H:i:s') !== '00:00:00')) $zeroes[$day] = true;
+    }
+    return $zeroes;
+}
+
+function fkr_report($request, $legacy = null) {
     global $wpdb;
     $tz = new DateTimeZone('Asia/Seoul'); $dates = [];
     foreach (['from', 'to'] as $key) {
@@ -40,7 +63,7 @@ function fkr_report($request) {
     $first = $wpdb->get_var('SELECT MIN(date) FROM ' . $prefix . 'site_stats');
     $failed = $failed || (bool) $wpdb->last_error; $wpdb->suppress_errors($previous);
     if ($failed || !is_array($site_rows) || !is_array($referrer_rows)) return new WP_Error('storage', 'Visitor statistics unavailable', ['status' => 503]);
-    $totals = []; $qualified = [];
+    $totals = []; $qualified = []; $referrer_dates = [];
     foreach ($site_rows as $row) {
         $value = filter_var($row['visitors'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
         $totals[$row['day']] = $value === false ? null : $value; $qualified[$row['day']] = $value === false ? null : 0;
@@ -50,6 +73,7 @@ function fkr_report($request) {
     // Read raw counters; Koko's display helper promotes zero unique_hits to one.
     foreach ($referrer_rows as $row) {
         $day = $row['day'];
+        $referrer_dates[$day] = true;
         if (!array_key_exists($day, $qualified) || $qualified[$day] === null) continue;
         $referrer = $row['referrer'] ?? '';
         if (!is_string($referrer) || !fkr_external_referrer('https://' . $referrer, $own)) continue;
@@ -57,10 +81,11 @@ function fkr_report($request) {
         if ($value === false || $value > PHP_INT_MAX - $qualified[$day]) { $qualified[$day] = null; continue; }
         $qualified[$day] += $value;
     }
+    $zeroes = fkr_confirmed_zero_days($legacy, $from, $to, $today, $first);
     $days = []; $partial = false;
     for ($date = $from; $date <= $to; $date = $date->modify('+1 day')) {
         $day = $date->format('Y-m-d');
-        $visitors = array_key_exists($day, $qualified) ? $qualified[$day] : ($date == $today ? 0 : null);
+        $visitors = array_key_exists($day, $qualified) ? $qualified[$day] : (isset($zeroes[$day]) && !isset($referrer_dates[$day]) ? 0 : null);
         if (isset($totals[$day]) && $visitors !== null && $visitors > $totals[$day]) $visitors = null;
         if ($visitors === null || $date == $today || $day === $first) $partial = true;
         $days[] = ['day' => $day, 'visitors' => $visitors, 'clickers' => null];
@@ -73,7 +98,7 @@ function fkr_report($request) {
 // Keep existing authentication/default reports; replace only successful scoped GETs.
 add_filter('rest_request_after_callbacks', function ($response, $handler, $request) {
     if (!fkr_source() || is_wp_error($response)) return $response;
-    if ($request->get_route() === '/ih-admin/v1/formit-stats' && $request->get_method() === 'GET' && rest_ensure_response($response)->get_status() === 200 && $request->get_param('visitor_scope') === 'known_referrer') return fkr_report($request);
+    if ($request->get_route() === '/ih-admin/v1/formit-stats' && $request->get_method() === 'GET' && rest_ensure_response($response)->get_status() === 200 && $request->get_param('visitor_scope') === 'known_referrer') return fkr_report($request, rest_ensure_response($response)->get_data());
     return $response;
 }, 30, 3);
 

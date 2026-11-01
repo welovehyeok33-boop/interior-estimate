@@ -199,12 +199,12 @@ test('unretained monthly contact totals stay unknown while site traffic and arri
 
 test('a compact yellow footer shows four totals and their weighted ratio without numeric sublabels',()=>{
   const h=harness(),tree=h.render(),footer=all(tree,n=>n.type==='tfoot')[0];
-  assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/총합.*5곳/);
-  const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['—','2명','—','0명','—']);
+  assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/확인된 합계.*3\/5곳/);
+  const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['13명','2명','—','0명','15.4%']);
   assert.doesNotMatch(text(footer),/부분 합계/);
   const metricCells=all(footer,n=>n.type==='td');
-  assert.match(metricCells[0].props.title,/3\/5곳만 확인/);assert.match(metricCells[2].props.title,/4\/5곳만 확인/);
-  assert.match(metricCells[4].props.title,/합계가 없거나 0명/);
+  assert.match(metricCells[0].props.title,/3\/5곳의 확인된 기록 합계/);assert.match(metricCells[2].props.title,/4\/5곳만 확인/);
+  assert.match(metricCells[4].props.title,/확인된 기록 기준의 참고 비율/);
   assert.ok(metricCells.every(cell=>all(cell,n=>n.type==='span').length===0));
   const cells=all(footer,n=>n.type==='th'||n.type==='td');assert.equal(cells.reduce((sum,n)=>sum+(n.props.colSpan||1),0),7);
   assert.ok(cells.every(n=>n.props.style.background==='total-accent'));
@@ -228,7 +228,16 @@ test('footer ratio stays unknown for missing or zero visitor totals, but zero ar
   assert.equal(rate(),'14.8%');assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계/);
   assert.match(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='td')[4].props.title,/확인된 기록 기준의 참고 비율/);
   assert.match(text(h.render()),/폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100/);
-  h.report.rows[1].external.status='error';assert.equal(rate(),'—');
+  h.report.rows[1].external.status='error';assert.equal(rate(),'14.8%');
+  assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계.*4\/5곳/);
+});
+
+test('a single empty Academy day keeps the remaining total and rate visible until zero is confirmed',()=>{
+  const h=harness();h.report.rows.forEach((row,i)=>{const visitors=[2,3,null,14,2][i];row.external={...row.external,status:visitors===null?'partial':'ready',visitors,recordedVisitors:visitors,visitorDays:visitors===null?0:1,totalDays:1};row.arrivals=i===0||i===3?1:0;row.contacts=i===0?1:0;row.converted=i===0?1:0;});
+  const footer=()=>all(h.render(),n=>n.type==='tfoot')[0];
+  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/확인된 합계.*4\/5곳/);
+  const academy=h.report.rows[2];academy.external={...academy.external,status:'ready',visitors:0,recordedVisitors:0,visitorDays:1};
+  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/총합.*5곳/);
 });
 
 test('upstream delay details and a cached fetch timestamp never add numeric visitor sublabels',()=>{
