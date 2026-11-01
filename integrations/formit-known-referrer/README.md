@@ -11,18 +11,20 @@
 
 별도 플러그인을 설치하지 않고 이 PHP 모듈을 **기존 파일 끝에 한 번만** 추가한다. 첫 `<?php`는 제거하고 원래 코드의 PHP 영역 안에 붙인다. 원본은 백업하고 편집기에서 실제 저장 파일·앞부분을 확인한다.
 
-이미 v1.0.0이 있으면 `// Formit known-referrer module v1.0.0.` 마커부터 끝의 모듈 영역만 v1.1.0으로 교체한다. 기존 수집기 본문은 보존하고 모듈을 중복 추가하지 않는다.
+이미 v1.0.0 또는 v1.1.0이 있으면 `// Formit known-referrer module v1.` 마커부터 끝의 모듈 영역만 v1.2.0으로 교체한다. 기존 수집기 본문은 보존하고 모듈을 중복 추가하지 않는다.
 
 - OFFICE·ACADEMY: 기존 `ih-admin/formit.php`
 - APT·VILLA: 기존 `formit-residential-bridge/ih-formit-bridge.php`
 
-**v1.1.0은 기존 Koko Analytics의 출처별 순방문 기록을 읽는다.** v1.0.0의 신규 빈 테이블 때문에 HUB 과거 방문이 0명처럼 보이던 문제를 바로잡는다. 새 테이블이나 수집기를 만들지 않는다. 기존 통계·인증·기본 응답·수집 설정은 변경하지 않는다.
+**v1.2.0은 기존 Koko Analytics의 출처별 순방문 기록을 읽고, 확인된 무방문 날짜를 구분한다.** v1.0.0의 신규 빈 테이블 때문에 HUB 과거 방문이 0명처럼 보이던 문제를 바로잡은 v1.1.0에 이어, Koko에 행이 생성되지 않는 무방문 날짜 때문에 총합이 사라지는 문제를 보완한다. 새 테이블이나 수집기를 만들지 않는다. 기존 통계·인증·기본 응답·수집 설정은 변경하지 않는다.
 
 설치된 Koko Analytics 2.5.3의 `Pageview_Aggregator.php`를 확인했다. `referrer_stats.unique_hits`는 사이트 전체의 동일한 `new_visitor` 플래그로 증가한다. 페이지뷰나 Koko 화면의 최소 1명 보정값을 합산하지 않고, 실제 외부 참조처의 raw unique_hits만 합산한다. Cookie 방식(사이트 자정에 만료)과 요청 기간의 UTC+9 날짜 경계를 확인하며, 일별 출처 합계가 같은 공급자 전체 방문보다 많으면 해당 날짜는 미확인이다. 단순 30분 세션 수나 현재 source별 비율로 과거 브라우저 방문을 추정하지 않는다.
 
-기존 site_stats 기록이 없는 과거 날짜는 `null`, site_stats에는 방문이 있지만 외부 참조처가 없으면 실제 출처 확인 방문 0명이다. API는 `provider: koko_cookie`와 기존 보관 기록의 시작 날짜를 반환한다. 클릭은 수집 근거가 없어 `null`이며 사용하지 않는 클릭 누락으로 방문 기록을 부분 집계 처리하지 않는다. v1.0.0에서 이미 생성한 테이블은 추가 쓰기 없이 보존하고 90일 만료 정책만 유지한다.
+site_stats에 방문이 있지만 외부 참조처가 없으면 실제 출처 확인 방문 0명이다. site_stats 행이 없는 날짜는 원칙적으로 `null`이다. 다만 기존 인증 콜백이 이미 조회한 **동일한 source·기간·한국시간·일별 브라우저 지표의 전체 방문이 정확히 정수 0명**이면 출처 확인 방문도 0명으로 표시한다. 기존 수집 시작 전·시작일 일부·90일 보관 만료·기록 누락·DB 오류·양수 방문·고아 referrer 행·잘못된 형식은 이 보완 대상이 아니다. 오늘도 근거 없이 0명을 만들지 않는다. 추가 외부 요청이나 DB 쓰기가 없다.
 
-검증은 PHP 8 이상에서 `php integrations/formit-known-referrer/tests/retained-source.php`로 실행한다. 동일한 파일을 WordPress 공식 PHP.wasm의 PHP 8.3에서도 실행해 35개 assertion을 확인했다. 배경: [Koko의 쿠키 만료와 중복 제거](https://www.kokoanalytics.com/docs/faq/does-koko-analytics-use-cookies/), [출처별 raw 집계 구현](https://github.com/ibericode/koko-analytics/blob/main/src/Pageview_Aggregator.php).
+API는 `provider: koko_cookie`와 기존 보관 기록의 시작 날짜를 반환한다. 클릭은 수집 근거가 없어 `null`이며 사용하지 않는 클릭 누락으로 방문 기록을 부분 집계 처리하지 않는다. v1.0.0에서 이미 생성한 테이블은 추가 쓰기 없이 보존하고 90일 만료 정책만 유지한다. 폼잇의 총합은 일부 사이트가 미확인이어도 확인된 방문 합계를 표시하며, 확인된 사이트 수와 참고 비율임을 구분한다. 조회 진행 중·모두 미확인인 합계를 0명으로 표시하지 않는다.
+
+검증은 PHP 8 이상에서 `php integrations/formit-known-referrer/tests/retained-source.php`로 실행한다. 동일한 파일을 WordPress 공식 PHP.wasm의 PHP 8.3에서도 실행해 60개 assertion을 확인했다. 배경: [Koko의 쿠키 만료와 중복 제거](https://www.kokoanalytics.com/docs/faq/does-koko-analytics-use-cookies/), [출처별 raw 집계 구현](https://github.com/ibericode/koko-analytics/blob/main/src/Pageview_Aggregator.php).
 
 ## 인테리어프리
 

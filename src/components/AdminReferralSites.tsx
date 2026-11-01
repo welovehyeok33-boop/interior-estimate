@@ -113,8 +113,8 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
             </Fragment>)}
           </tbody>)}
           <tfoot aria-label="전체 유입처 합계"><tr>
-            <th scope="row" style={{ ...totalCell, textAlign: 'left', fontSize: 14, fontWeight: 700 }}>{totals[0]?.value !== null && !totals[0]?.periodComplete ? '확인된 합계' : '총합'} <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: C.admin.accentText }}>{report.rows.length}곳</span></th>
-            {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? `${total.knownSites}/${total.totalSites}곳만 확인되어 전체 합계는 표시하지 않습니다.` : !total.periodComplete ? '누락된 날짜를 제외한 확인된 기록의 합계입니다.' : total.partial ? '오늘 진행 중인 집계를 포함한 합계입니다.' : '전체 합계'}>
+            <th scope="row" style={{ ...totalCell, textAlign: 'left', fontSize: 14, fontWeight: 700 }}>{totals[0]?.value !== null && !totals[0]?.periodComplete ? '확인된 합계' : '총합'} <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: C.admin.accentText }}>{totals[0]?.value !== null && totals[0]?.knownSites < report.rows.length ? `${totals[0].knownSites}/${report.rows.length}` : report.rows.length}곳</span></th>
+            {totals.map((total, i) => <td key={i} style={totalCell} title={total.value === null ? `${total.knownSites}/${total.totalSites}곳만 확인되어 전체 합계는 표시하지 않습니다.` : total.knownSites < total.totalSites ? `${total.knownSites}/${total.totalSites}곳의 확인된 기록 합계입니다. 조회되지 않은 사이트와 날짜는 제외합니다.` : !total.periodComplete ? '누락된 날짜를 제외한 확인된 기록의 합계입니다.' : total.partial ? '오늘 진행 중인 집계를 포함한 합계입니다.' : '전체 합계'}>
               <strong style={{ fontSize: 17, whiteSpace: 'nowrap' }}>{number(total.value)}</strong>
             </td>)}
             <td style={totalCell} title={totalRate === null ? '확인된 사이트 방문 합계가 없거나 0명이면 비율을 계산하지 않습니다.' : `폼잇 유입 합계 ${number(totals[1].value)} ÷ 확인된 사이트 방문 합계 ${number(totals[0].value)} × 100${!totals[0].periodComplete ? ' · 확인된 기록 기준의 참고 비율이며 전체 기간의 완전한 비율과 다를 수 있습니다.' : totalRatePartial ? ' · 오늘 집계 중인 잠정 비율입니다.' : ''}`}>
@@ -124,14 +124,14 @@ export default function AdminReferralSites({ refresh }: { refresh: number }) {
           </tr></tfoot>
         </table>
       </div>
-      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합 유입 비율은 폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100입니다. 날짜가 누락되면 확인된 기록 기준의 참고 비율입니다. 사이트 조회 실패로 합계를 확인할 수 없거나 방문이 0명이면 —로 표시합니다. 사이트 간 중복 방문자는 제거하지 않습니다. 오늘 수치는 집계 중입니다.</p>
+      <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>총합 유입 비율은 폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100입니다. 일부 사이트나 날짜가 빠져도 확인된 합계와 참고 비율을 표시합니다. 방문 합계가 모두 미확인이거나 0명이면 비율은 —로 표시합니다. 사이트 간 중복 방문자는 제거하지 않습니다. 오늘 수치는 집계 중입니다.</p>
       <p style={{ ...muted, fontSize: 11, marginTop: 8 }}>좁은 화면에서는 표를 좌우로 밀어 볼 수 있어요. 행 끝의 화살표를 누르면 집계 상세와 홍보 링크가 열립니다.</p>
     </>}
     {copied === 'failed' && <p role="status">주소를 선택해서 직접 복사해주세요.</p>}
     <details style={{ marginTop: 16 }}>
       <summary style={{ ...muted, fontSize: 12, cursor: 'pointer', width: 'fit-content' }}>집계 기준 안내</summary>
       <p style={muted}>사이트 방문은 진입 시 외부 사이트 주소가 확인된 브라우저를 하루 한 번 셉니다. 사이트 안에서 이동할 때는 진입 경로를 유지하며, 직접접속·출처 확인 불가·내부 이동만 있는 방문은 제외합니다. 이전 기록에서 경로를 구분할 수 없는 날짜는 미집계로 표시합니다. 폼잇 유입·연락처 도착·신청 완료 방문은 폼잇에 실제 수집된 기록 기준입니다.</p>
-      <p style={muted}>유입 비율은 해당 사이트의 방문자 대비 폼잇 유입자 비율입니다. 방문 기록이 있는 같은 날짜끼리 비교하며 집계 중이거나 날짜가 빠진 경우 잠정 비율로 표시합니다. 방문 0명·데이터 부족·조회 오류는 비율과 구분합니다. 각 단계는 동일인을 이어서 추적한 수치가 아닌, 사이트별 일별 브라우저 집계의 비교입니다. 폼잇은 하루 첫 유입처 기준이며, 다른 곳에 공유한 링크·추적 차단·관리자 제외로 차이가 날 수 있습니다. 연락처 도착은 최근 30일의 수집된 상세 기록 기준입니다. 신청 완료 방문은 실제 신청 건수와 다를 수 있습니다.</p>
+      <p style={muted}>사이트별 유입 비율은 방문 기록이 있는 같은 날짜끼리 비교하며 집계 중이거나 날짜가 빠진 경우 잠정 비율로 표시합니다. 총합 비율은 선택 기간의 폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100이며, 일부 사이트·날짜가 빠진 경우 참고 비율입니다. 방문 0명·데이터 부족·조회 오류는 비율과 구분합니다. 각 단계는 동일인을 이어서 추적한 수치가 아닌, 사이트별 일별 브라우저 집계의 비교입니다. 폼잇은 하루 첫 유입처 기준이며, 다른 곳에 공유한 링크·추적 차단·관리자 제외로 차이가 날 수 있습니다. 연락처 도착은 최근 30일의 수집된 상세 기록 기준입니다. 신청 완료 방문은 실제 신청 건수와 다를 수 있습니다.</p>
     </details>
   </section>;
 }

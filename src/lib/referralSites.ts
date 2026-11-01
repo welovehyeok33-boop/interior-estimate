@@ -88,18 +88,19 @@ export type ReferralReport = { from: string; to: string; rows: ReferralRow[]; up
 
 type ReferralTotal = { value: number | null; knownSites: number; totalSites: number; partial: boolean; periodComplete: boolean };
 export function summarizeReferralRows(rows: readonly ReferralRow[]): ReferralTotal[] {
-  const sum = (values: { value: number | null; partial?: boolean; periodComplete?: boolean }[]): ReferralTotal => {
+  const sum = (values: { value: number | null; partial?: boolean; periodComplete?: boolean }[], allowKnownSubset = false): ReferralTotal => {
     const known = values.filter(item => item.value !== null && Number.isSafeInteger(item.value) && item.value >= 0);
     const total = known.reduce((result, item) => result + item.value!, 0);
-    const valid = known.length > 0 && known.length === values.length && Number.isSafeInteger(total);
+    const allKnown = known.length === values.length;
+    const valid = known.length > 0 && (allKnown || allowKnownSubset) && Number.isSafeInteger(total);
     return { value: valid ? total : null, knownSites: known.length, totalSites: values.length,
-      partial: !valid || values.some(item => item.partial), periodComplete: valid && values.every(item => item.periodComplete !== false) };
+      partial: !valid || !allKnown || values.some(item => item.partial), periodComplete: valid && allKnown && values.every(item => item.periodComplete !== false) };
   };
   // Match the displayed site values; partial/unknown dates must not become full-period zeroes.
   return [
-    sum(rows.map(row => ({ value: row.external.status === 'error' || row.external.status === 'pending' ? null : row.external.visitors ?? row.external.recordedVisitors,
+    sum(rows.map(row => ({ value: ['error', 'pending', 'loading'].includes(row.external.status) ? null : row.external.visitors ?? row.external.recordedVisitors,
       partial: row.external.status !== 'ready' || row.external.visitors === null,
-      periodComplete: row.external.visitors !== null && row.external.visitorDays > 0 && row.external.visitorDays === row.external.totalDays }))),
+      periodComplete: row.external.visitors !== null && row.external.visitorDays > 0 && row.external.visitorDays === row.external.totalDays })), !rows.some(row => row.external.status === 'loading')),
     sum(rows.map(row => ({ value: row.arrivals }))),
     sum(rows.map(row => ({ value: row.contacts }))),
     sum(rows.map(row => ({ value: row.converted }))),
@@ -110,7 +111,7 @@ export function referralTotalRate(totals: readonly ReferralTotal[]): number | nu
   const visitors = totals[0]?.value, arrivals = totals[1]?.value;
   if (visitors == null || arrivals == null || !Number.isSafeInteger(visitors) || !Number.isSafeInteger(arrivals) || visitors <= 0 || arrivals < 0) return null;
   // Use the displayed known totals even with historical gaps, labelled as a reference rate in the UI.
-  // An unavailable site still makes the visitor total null; never average individual percentages.
+  // Finalized partial reports use their labelled known visitor sum; never average individual percentages.
   return Math.round(arrivals / visitors * 1000) / 10;
 }
 
