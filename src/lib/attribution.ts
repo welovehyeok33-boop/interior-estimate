@@ -1,4 +1,17 @@
 export type Attribution = { source: string; medium: string; campaign: string; landing: string };
+// A syntactically valid UTM is not proof of a real acquisition source.
+// Keep this list explicit; accepting arbitrary strings lets parameter probes pollute traffic.
+const TRAFFIC_SOURCES = new Set([
+  'direct', 'naver', 'google', 'instagram', 'kakao', 'facebook', 'youtube', 'daum', 'bing', 'other',
+  'interiorfree', 'interiorhub_office', 'interiorhub_academy', 'interiorhub_apt', 'interiorhub_villa',
+  'interiorpick', 'buildhyeok',
+]);
+export function hasUnrecognizedTrafficSource(input: unknown): boolean {
+  if (!input || typeof input !== 'object') return false;
+  const source = (input as Record<string, unknown>).source;
+  if (source === undefined || source === null || source === '') return false;
+  return typeof source !== 'string' || !TRAFFIC_SOURCES.has(source.toLowerCase());
+}
 export const SOURCE_LABELS: Record<string, string> = {
   direct: '직접 방문·출처 확인 불가', naver: '네이버', google: '구글', instagram: '인스타그램',
   kakao: '카카오', facebook: '페이스북', youtube: '유튜브', daum: '다음', bing: '빙', other: '기타 외부 사이트',
