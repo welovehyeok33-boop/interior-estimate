@@ -1,7 +1,7 @@
 import { apiJson, isAdmin, sameOrigin } from "@/lib/serverAuth";
 import { serverDb } from "@/lib/serverDb";
 import { isTrafficExcluded, trafficBucket, visitorIdentity } from "@/lib/serverAnalytics";
-import { normalizeAttribution } from '@/lib/attribution';
+import { hasUnrecognizedTrafficSource, normalizeAttribution } from '@/lib/attribution';
 import { trackedPage } from '@/lib/trafficDetails';
 import { trafficMetadata } from '@/lib/serverTrafficDetails';
 import { trafficKind } from '@/lib/analytics';
@@ -19,6 +19,8 @@ export async function POST(request: Request) {
     let body;
     try { body = JSON.parse(raw); } catch { return apiJson({ error: "Invalid input" }, 400); }
     if (!["visit", "consult", "engine"].includes(body?.kind)) return apiJson({ error: "Invalid input" }, 400);
+    // Skip before issuing a visitor identity or recording any traffic. Quote intake is separate.
+    if (hasUnrecognizedTrafficSource(body.attribution)) return apiJson({ skipped: true });
     const page = trackedPage(body.page);
     if (body.page !== undefined && (!page || trafficKind(page) !== body.kind)) return apiJson({ error: "Invalid page" }, 400);
     const db = serverDb();
