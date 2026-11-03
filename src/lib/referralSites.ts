@@ -6,6 +6,7 @@ export const REFERRAL_SITES = [
   { source: 'interiorhub_academy', name: '학원 인테리어', host: 'academy.interiorhub.kr', destination: '/consult', endpoint: '/wp-json/ih-admin/v1/formit-stats' },
   { source: 'interiorhub_apt', name: '아파트 인테리어', host: 'apt.interiorhub.kr', destination: '/consult', endpoint: '/wp-json/ih-admin/v1/formit-stats' },
   { source: 'interiorhub_villa', name: '빌라 인테리어', host: 'villa.interiorhub.kr', destination: '/consult', endpoint: '/wp-json/ih-admin/v1/formit-stats' },
+  { source: 'interiorpick', name: '인테리어픽', host: 'interiorpick.com', destination: '/consult', endpoint: null },
 ] as const;
 export type ReferralSource = typeof REFERRAL_SITES[number]['source'];
 export const REFERRAL_VISITOR_SCOPE = 'known_referrer';

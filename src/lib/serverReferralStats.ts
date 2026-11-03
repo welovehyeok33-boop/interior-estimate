@@ -31,9 +31,12 @@ export function createReferralStatsLoader(options: {
       recordedVisitors: null, recordedClickers: null, visitorDays: 0, visitorDates: [], dailyVisitors: [], clickerDays: 0, totalDays: dates.length };
     if (typeof token !== 'string' || token.length < 32) return { ...empty, status: 'pending' };
     const site = REFERRAL_SITES.find(item => item.source === source);
+    // An unconnected site still has Formit arrivals, but no verified visitor endpoint.
+    if (site && !site.endpoint) return { ...empty, status: 'pending' };
     if (!site || !dates.length || dates.length > 31 || dates.some((day, i) =>
       !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(day)) ||
       (i > 0 && Date.parse(day) - Date.parse(dates[i - 1]) !== 86_400_000))) return { ...empty, issue: 'invalid' };
+    const endpoint = site.endpoint!;
     // Rotation and different periods cannot share cached aggregates. Never retain the raw token as a key.
     const key = createHash('sha256').update(JSON.stringify([source, dates, token, REFERRAL_VISITOR_SCOPE])).digest('hex');
     const hit = cache.get(key);
@@ -47,7 +50,7 @@ export function createReferralStatsLoader(options: {
           const remaining = deadline - now();
           if (remaining <= 0) throw new UpstreamFailure('timeout', false);
           try {
-            const url = new URL(site!.endpoint, 'https://' + site!.host);
+            const url = new URL(endpoint, 'https://' + site!.host);
             url.searchParams.set('from', chunk[0]); url.searchParams.set('to', chunk[chunk.length - 1]);
             url.searchParams.set('visitor_scope', REFERRAL_VISITOR_SCOPE);
             const response = await request(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',

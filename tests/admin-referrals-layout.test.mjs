@@ -10,8 +10,8 @@ import { readReferralReport } from '../src/lib/readReferralReport.ts';
 function harness(responseFactory) {
   const report={from:'2026-10-16',to:'2026-10-22',updatedAt:'2026-10-21T15:00:00Z',rows:REFERRAL_SITES.map((site,i)=>({
     ...site,link:referralLink(site.source,site.destination),arrivals:i===1?2:0,contacts:i===2?null:0,converted:0,rate:i===0?0:i===1?33.3:null,
-    rateBasis:{state:['ready','provisional','unavailable','no_visitors','not_connected'][i],arrivals:i===0?0:i===1?1:null,visitors:i===0?10:i===1?3:i===3?0:null,days:i===0?7:i===1?5:i===3?1:0,totalDays:7},
-    external:{status:['ready','partial','error','partial','pending'][i],visitors:i===0?10:null,clickers:i===0?4:null,
+    rateBasis:{state:['ready','provisional','unavailable','no_visitors','not_connected','not_connected'][i],arrivals:i===0?0:i===1?1:null,visitors:i===0?10:i===1?3:i===3?0:null,days:i===0?7:i===1?5:i===3?1:0,totalDays:7},
+    external:{status:['ready','partial','error','partial','pending','pending'][i],visitors:i===0?10:null,clickers:i===0?4:null,
       recordedVisitors:i===1?3:i===3?0:null,recordedClickers:i===1?1:null,visitorDays:i===0?7:i===1?5:i===3?1:0,clickerDays:i===0?7:i===1?5:0,totalDays:7,updatedAt:'2026-10-21T15:00:00Z'},
   }))};
   const state=['7',0,{key:'7:0:0',report,error:''},''],effects=[],requests=[],copied=[];let cursor=0;
@@ -60,15 +60,15 @@ test('only seven and thirty day presets show the graph; today, yesterday and cal
     h.state[0]=range;h.state[5]=range==='month'?'2000-01':'';
     h.state[2]={key:range==='month'?'month:2000-01:0:0':`${range}:0:0`,report:h.report,error:''};
     assert.equal(all(h.render(),node=>node.type==='visitor-chart').length,['7','30'].includes(range)?1:0);
-    assert.equal(siteRows(h.render()).length,5);
+    assert.equal(siteRows(h.render()).length,6);
   }
 });
 
 test('partial streamed results remain visible while other sites load, with unknown totals instead of zero',()=>{
   const h=harness();h.state[2].pending=true;h.report.rows[1].external.status='loading';h.report.rows[1].external.visitors=null;h.report.rows[1].external.recordedVisitors=null;
   h.report.rows[1].arrivals=h.report.rows[1].contacts=h.report.rows[1].converted=null;h.report.rows[1].rateBasis.state='loading';
-  const tree=h.render();assert.equal(tree.props['aria-busy'],true);assert.equal(siteRows(tree).length,5);
-  assert.match(text(tree),/4\/5곳 확인 중/);assert.match(text(siteRows(tree)[0]),/10명/);assert.match(text(siteRows(tree)[1]),/조회 중/);
+  const tree=h.render();assert.equal(tree.props['aria-busy'],true);assert.equal(siteRows(tree).length,6);
+  assert.match(text(tree),/5\/6곳 확인 중/);assert.match(text(siteRows(tree)[0]),/10명/);assert.match(text(siteRows(tree)[1]),/조회 중/);
   assert.equal(text(all(siteRows(tree)[1],node=>node.type==='strong')[0]),'—');
   assert.equal(text(all(all(tree,node=>node.type==='tfoot')[0],node=>node.type==='strong')[0]),'—');
 });
@@ -84,15 +84,15 @@ test('a broken stream retains received numbers and changes unfinished rows to an
   assert.match(text(siteRows(tree)[0]),/10명/);assert.match(text(siteRows(tree)[1]),/연결 확인 필요/);
   assert.doesNotMatch(text(siteRows(tree)[1]),/조회 중/);assert.equal(text(all(siteRows(tree)[1],node=>node.type==='strong')[0]),'—');
 });
-test('five active sites use one table row each in two ordered groups with details closed',()=>{
+test('six active sites use one table row each in three ordered groups with details closed',()=>{
   const h=harness(),tree=h.render();
   const wrapper=all(tree,n=>n.props?.['aria-label']==='사이트별 유입 요약')[0];
   assert.equal(wrapper.props.style.overflowX,'auto');assert.equal(wrapper.props.tabIndex,0);
   assert.equal(all(tree,n=>n.type==='table').length,1);
-  assert.deepEqual(all(tree,n=>n.type==='tbody').map(n=>n.props['aria-label']),['인테리어프리','Interior HUB']);
-  const rows=siteRows(tree);assert.equal(rows.length,5);
-  assert.deepEqual(rows.map(row=>row.props['aria-label']),['인테리어프리','오피스 인테리어','학원 인테리어','아파트 인테리어','빌라 인테리어']);
-  assert.doesNotMatch(text(tree),/아파트 길잡이|기타 유입처/);
+  assert.deepEqual(all(tree,n=>n.type==='tbody').map(n=>n.props['aria-label']),['인테리어프리','Interior HUB','기타 유입처']);
+  const rows=siteRows(tree);assert.equal(rows.length,6);
+  assert.deepEqual(rows.map(row=>row.props['aria-label']),['인테리어프리','오피스 인테리어','학원 인테리어','아파트 인테리어','빌라 인테리어','인테리어픽']);
+  assert.doesNotMatch(text(tree),/아파트 길잡이/);
   for(const row of rows) {
     assert.equal(all(row,n=>n.type==='strong').length,5);
     assert.equal(all(row,n=>n.type==='td').length,6);
@@ -144,7 +144,7 @@ test('link copy still uses the individual site URL and reports success',async()=
   assert.equal(all(detail,n=>n.type==='td')[0].props.colSpan,7);
   assert.equal(all(detail,n=>n.type==='input')[0].props.readOnly,true);
   await all(detail,n=>n.type==='button')[0].props.onClick();
-  assert.equal(h.copied[0],h.report.rows.at(-1).link);
+  assert.equal(h.copied[0],h.report.rows.find(row=>row.source==='interiorhub_villa').link);
   assert.match(text(h.render()),/링크를 복사했어요/);
   all(siteRows(h.render()).find(row=>row.props['aria-label']==='빌라 인테리어'),n=>n.type==='button')[0].props.onClick();
   assert.equal(all(h.render(),n=>n.type==='input'&&n.props.readOnly).length,0);
@@ -199,11 +199,11 @@ test('unretained monthly contact totals stay unknown while site traffic and arri
 
 test('a compact yellow footer shows four totals and their weighted ratio without numeric sublabels',()=>{
   const h=harness(),tree=h.render(),footer=all(tree,n=>n.type==='tfoot')[0];
-  assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/확인된 합계.*3\/5곳/);
+  assert.equal(footer.props['aria-label'],'전체 유입처 합계');assert.match(text(footer),/확인된 합계.*3\/6곳/);
   const metrics=all(footer,n=>n.type==='strong');assert.deepEqual(metrics.map(text),['13명','2명','—','0명','15.4%']);
   assert.doesNotMatch(text(footer),/부분 합계/);
   const metricCells=all(footer,n=>n.type==='td');
-  assert.match(metricCells[0].props.title,/3\/5곳의 확인된 기록 합계/);assert.match(metricCells[2].props.title,/4\/5곳만 확인/);
+  assert.match(metricCells[0].props.title,/3\/6곳의 확인된 기록 합계/);assert.match(metricCells[2].props.title,/5\/6곳만 확인/);
   assert.match(metricCells[4].props.title,/확인된 기록 기준의 참고 비율/);
   assert.ok(metricCells.every(cell=>all(cell,n=>n.type==='span').length===0));
   const cells=all(footer,n=>n.type==='th'||n.type==='td');assert.equal(cells.reduce((sum,n)=>sum+(n.props.colSpan||1),0),7);
@@ -229,15 +229,15 @@ test('footer ratio stays unknown for missing or zero visitor totals, but zero ar
   assert.match(all(all(h.render(),n=>n.type==='tfoot')[0],n=>n.type==='td')[4].props.title,/확인된 기록 기준의 참고 비율/);
   assert.match(text(h.render()),/폼잇 유입 합계 ÷ 확인된 사이트 방문 합계 × 100/);
   h.report.rows[1].external.status='error';assert.equal(rate(),'14.8%');
-  assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계.*4\/5곳/);
+  assert.match(text(all(h.render(),n=>n.type==='tfoot')[0]),/확인된 합계.*5\/6곳/);
 });
 
 test('a single empty Academy day keeps the remaining total and rate visible until zero is confirmed',()=>{
-  const h=harness();h.report.rows.forEach((row,i)=>{const visitors=[2,3,null,14,2][i];row.external={...row.external,status:visitors===null?'partial':'ready',visitors,recordedVisitors:visitors,visitorDays:visitors===null?0:1,totalDays:1};row.arrivals=i===0||i===3?1:0;row.contacts=i===0?1:0;row.converted=i===0?1:0;});
+  const h=harness();h.report.rows.forEach((row,i)=>{const visitors=[2,3,null,14,2,null][i];row.external={...row.external,status:visitors===null?'partial':'ready',visitors,recordedVisitors:visitors,visitorDays:visitors===null?0:1,totalDays:1};row.arrivals=i===0||i===3?1:0;row.contacts=i===0?1:0;row.converted=i===0?1:0;});
   const footer=()=>all(h.render(),n=>n.type==='tfoot')[0];
-  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/확인된 합계.*4\/5곳/);
+  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/확인된 합계.*4\/6곳/);
   const academy=h.report.rows[2];academy.external={...academy.external,status:'ready',visitors:0,recordedVisitors:0,visitorDays:1};
-  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/총합.*5곳/);
+  assert.deepEqual(all(footer(),n=>n.type==='strong').map(text),['21명','2명','1명','1명','9.5%']);assert.match(text(footer()),/확인된 합계.*5\/6곳/);
 });
 
 test('upstream delay details and a cached fetch timestamp never add numeric visitor sublabels',()=>{
