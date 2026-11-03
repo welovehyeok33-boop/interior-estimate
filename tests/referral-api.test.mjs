@@ -63,11 +63,12 @@ test('streamed rows show fast sites before a blocked upstream finishes, using on
   try {
     await firstFast;const current=updates.at(-1);
     assert.equal(current.pending,true);assert.equal(current.report.rows[0].external.visitors,70);
-    assert.equal(current.report.rows.at(-1).external.status,'loading');assert.equal(current.report.rows.at(-1).arrivals,null);
+    const slow=current.report.rows.find(row=>row.source==='interiorhub_villa');
+    assert.equal(slow.external.status,'loading');assert.equal(slow.arrivals,null);
     assert.equal(referrals.summarizeReferralRows(current.report.rows)[0].value,null);
   } finally { release(); }
   await reading;assert.equal(updates.at(-1).pending,false);assert.ok(updates.at(-1).report.rows.every(row=>row.external.status!=='loading'));
-  assert.equal(s.rpcs.length,1);assert.equal(s.counts.length,5);assert.equal(s.calls.filter(call=>typeof call==='object').length,5);
+  assert.equal(s.rpcs.length,1);assert.equal(s.counts.length,6);assert.equal(s.calls.filter(call=>typeof call==='object').length,5);
   assert.ok(!JSON.stringify(updates).includes('x'.repeat(40)));
 });
 
@@ -83,7 +84,7 @@ test('31-day referral months split upstream requests without truncating Formit d
   assert.equal(report.from,'2000-01-01');assert.equal(report.to,'2000-01-31');
   assert.equal(s.rpcs[0].name,'admin_dashboard_range');assert.deepEqual({...s.rpcs[0].args},{p_from:'2000-01-01',p_to:'2000-01-31'});
   assert.equal(s.calls.filter(call=>typeof call==='object').length,10);assert.equal(s.counts.length,0);
-  for(const row of report.rows){assert.equal(row.external.visitors,310);assert.equal(row.external.totalDays,31);assert.equal(row.external.visitorDays,31);assert.equal(row.contacts,null);}
+  for(const row of report.rows){assert.equal(row.external.visitors,row.source==='interiorpick'?null:310);assert.equal(row.external.totalDays,31);assert.equal(row.external.visitorDays,row.source==='interiorpick'?0:31);assert.equal(row.contacts,null);}
   assert.deepEqual(report.detailCoverage,{complete:false,from:null,to:null});
   const requests=s.calls.filter(call=>typeof call==='object').map(call=>new URL(call.url));
   assert.ok(requests.every(url=>Date.parse(url.searchParams.get('to'))-Date.parse(url.searchParams.get('from'))<=29*86400000));
@@ -95,7 +96,7 @@ test('current referral month stops today and invalid or unauthenticated months d
   const s=setup({token:true,now:new Date('2026-10-22T03:00:00Z')});
   const report=await(await s.GET(request('month&month=2026-10'))).json();
   assert.equal(report.from,'2026-10-01');assert.equal(report.to,'2026-10-22');assert.equal(report.detailCoverage.complete,true);
-  assert.equal(s.counts.length,5);assert.equal(report.rows[0].contacts,60001);
+  assert.equal(s.counts.length,6);assert.equal(report.rows[0].contacts,60001);
   const invalid=setup({token:true,now:new Date('2026-10-22T03:00:00Z')});
   for(const range of ['month','month&month=2026-11','month&month=2026-00','month&month=2026-10&month=2026-09'])assert.equal((await invalid.GET(request(range))).status,400);
   assert.equal(invalid.calls.length,0);assert.equal(invalid.counts.length,0);
@@ -110,13 +111,24 @@ test('referrals combine daily aggregates with fixed private upstream and no toke
   assert.equal(r.rows[0].external.visitors,10);assert.equal(r.rows[0].rate,30);assert.equal(r.rows[0].contacts,60001);
   assert.deepEqual(r.rows[0].external.dailyVisitors,[{day:r.from,visitors:10}]);
   assert.equal(r.rows[0].rateBasis.state,'ready');assert.equal(r.rows[0].rateBasis.arrivals,3);assert.equal(r.rows[0].rateBasis.visitors,10);
-  assert.equal(s.counts.length,5);
+  assert.equal(s.counts.length,6);
   for (const c of s.counts) { assert.equal(c.options.head,true);assert.equal(c.options.count,'exact');assert.equal(c.filter,'traffic_daily.source');assert.equal(c.contains.column,'pages');assert.equal(c.contains.value[0],'/consult/step4');assert.equal(c.from,c.to); }
   assert.equal(r.rows[1].external.status,'pending');assert.equal(r.rows[1].external.visitors,null);
   assert.equal(r.rows[1].rateBasis.state,'not_connected');
   assert.deepEqual(r.rows[1].external.dailyVisitors,[]);
   const f=s.calls.find(c=>typeof c==='object');assert.equal(new URL(f.url).hostname,'interiorfree.kr');assert.equal(f.opts.redirect,'error');assert.equal(f.opts.cache,'no-store');
   assert.ok(!JSON.stringify(r).includes('x'.repeat(40)));assert.ok(!JSON.stringify(r).includes('visitor_id'));
+});
+
+test('Interiorpick appears with Formit metrics and its link while own-site visits remain unknown',async()=>{
+  const s=setup({allTokens:true});const report=await(await s.GET(request())).json();
+  const row=report.rows.find(item=>item.source==='interiorpick');
+  assert.equal(row.name,'인테리어픽');assert.equal(row.host,'interiorpick.com');
+  assert.equal(row.link,'https://form.it.kr/consult?utm_source=interiorpick&utm_medium=referral');
+  assert.equal(row.arrivals,0);assert.equal(row.contacts,0);assert.equal(row.converted,0);
+  assert.equal(row.external.status,'pending');assert.equal(row.external.visitors,null);
+  assert.equal(row.rate,null);assert.equal(row.rateBasis.state,'not_connected');
+  assert.ok(!s.calls.some(call=>typeof call==='object'&&new URL(call.url).hostname==='interiorpick.com'));
 });
 test('upstream or detail failure does not fabricate zeros or hide Formit arrivals',async()=>{
   const s=setup({token:true,upstreamFails:true,contactsFail:true});const r=await(await s.GET(request())).json();
@@ -127,7 +139,7 @@ test('upstream or detail failure does not fabricate zeros or hide Formit arrival
 
 test('apartment and villa use their own allowlisted upstream and matching source',async()=>{
   const s=setup({allTokens:true});const r=await(await s.GET(request())).json();
-  assert.equal(r.rows.length,5);
+  assert.equal(r.rows.length,6);
   for(const source of ['interiorhub_apt','interiorhub_villa']) {
     const row=r.rows.find(row=>row.source===source);
     assert.equal(row.external.status,'ready');assert.equal(row.external.visitors,10);
@@ -146,7 +158,7 @@ test('retired source history and an old token do not add a row or upstream/count
   assert.equal(s.calls.filter(call=>typeof call==='object').length,5);
   assert.ok(!s.calls.some(call=>typeof call==='object'&&new URL(call.url).hostname==='apt.buildhyeok.com'));
   assert.ok(!s.counts.some(count=>count.source==='buildhyeok_apt'));
-  assert.equal(s.counts.length,5);
+  assert.equal(s.counts.length,6);
   assert.equal(r.rows[0].arrivals,3);assert.equal(r.rows[0].converted,1);
 });
 
@@ -171,9 +183,9 @@ test('seven and thirty day ratios compare only matching known visitor dates with
 
 test('ongoing today and missing click logs do not block traffic-based ratios or add count queries',async()=>{
   const today=setup({token:true,inProgress:true});const row=(await(await today.GET(request())).json()).rows[0];
-  assert.equal(row.rate,30);assert.equal(row.rateBasis.state,'provisional');assert.equal(today.counts.length,5);
+  assert.equal(row.rate,30);assert.equal(row.rateBasis.state,'provisional');assert.equal(today.counts.length,6);
   const clicks=setup({token:true,missingClickDays:1});const c=(await(await clicks.GET(request('7'))).json()).rows[0];
-  assert.equal(c.rate,4.3);assert.equal(c.rateBasis.visitors,70);assert.equal(c.rateBasis.arrivals,3);assert.equal(clicks.counts.length,5);
+  assert.equal(c.rate,4.3);assert.equal(c.rateBasis.visitors,70);assert.equal(c.rateBasis.arrivals,3);assert.equal(clicks.counts.length,6);
 });
 
 test('zero arrivals produce zero percent, while zero visitors, missing data and count errors remain distinct',async()=>{
@@ -182,7 +194,7 @@ test('zero arrivals produce zero percent, while zero visitors, missing data and 
   const zero=setup({token:true,upstreamVisitors:0});const z=(await(await zero.GET(request())).json()).rows[0];
   assert.equal(z.rate,null);assert.equal(z.rateBasis.state,'no_visitors');
   const empty=setup({token:true,missingDays:1});const e=(await(await empty.GET(request())).json()).rows[0];
-  assert.equal(e.rate,null);assert.equal(e.rateBasis.state,'no_data');assert.equal(empty.counts.length,5);
+  assert.equal(e.rate,null);assert.equal(e.rateBasis.state,'no_data');assert.equal(empty.counts.length,6);
   assert.equal(e.external.visitors,null);assert.equal(e.external.recordedVisitors,null);assert.equal(e.external.visitorDays,0);
   const failed=setup({token:true,missingDays:2,rateCountFails:true});const f=(await(await failed.GET(request('7'))).json()).rows[0];
   assert.equal(f.arrivals,3);assert.equal(f.external.recordedVisitors,50);assert.equal(f.rate,null);assert.equal(f.rateBasis.state,'unavailable');
