@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { koreaDay, trafficKind } from "@/lib/analytics";
 import { captureAttribution } from '@/lib/attribution';
 import { trackedPage } from '@/lib/trafficDetails';
+import { deliverTraffic } from '@/lib/trafficDelivery';
 
 // Serialize requests so first-page navigation cannot issue multiple visitor cookies.
 let queue = Promise.resolve();
@@ -22,16 +23,15 @@ export default function VisitTracker() {
       const attribution = captureAttribution(window.location.href, document.referrer);
       queue = queue.then(async () => {
         try {
-          const response = await fetch("/api/analytics", { method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, attribution, page }), keepalive: true });
-          if (!response.ok) recorded.delete(eventKey);
+          if (!await deliverTraffic(JSON.stringify({ kind, attribution, page }))) recorded.delete(eventKey);
         } catch { recorded.delete(eventKey); }
       });
     };
     record();
     document.addEventListener("visibilitychange", record);
+    window.addEventListener("online", record);
     const interval = window.setInterval(record, 60000);
-    return () => { document.removeEventListener("visibilitychange", record); window.clearInterval(interval); };
+    return () => { document.removeEventListener("visibilitychange", record); window.removeEventListener("online", record); window.clearInterval(interval); };
   }, [pathname]);
   return null;
 }
