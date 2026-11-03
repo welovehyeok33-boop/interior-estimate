@@ -1,10 +1,10 @@
 export const CONSULT_STATUSES: Record<string, string> = {
   new: '신규', contacted: '연락 완료 (기존)', consulting: '진행 중',
-  quoted: '견적 전달', lost: '무산', contracted: '계약', closed: '종료',
+  quoted: '견적 전달', lost: '무산', contracted: '계약', passed: '패스', closed: '종료',
   contact_attempted: '연락 시도 (기존)',
 };
-// New edits use four choices; historical values remain valid and searchable.
-export const CONSULT_EDIT_STATUS_OPTIONS = ['new', 'consulting', 'contracted', 'lost'].map(id => [id, CONSULT_STATUSES[id]] as const);
+// Historical values remain valid and searchable.
+export const CONSULT_EDIT_STATUS_OPTIONS = ['new', 'consulting', 'contracted', 'lost', 'passed'].map(id => [id, CONSULT_STATUSES[id]] as const);
 export const CONSULT_STATUS_OPTIONS = Object.entries(CONSULT_STATUSES).filter(([id]) => id !== 'contact_attempted');
 // A status edit moves one existing record; it never changes the overall count.
 export function updateConsultationCounts<T extends { status: string; count: number }>(counts: T[], before: string, after: string): T[] {
@@ -26,15 +26,18 @@ export type Consultation = {
   space_description: string | null; consent_at: string | null; schedule: string | null;
   budget: string | null; memo: string | null; admin_note: string; next_contact_at: string | null; admin_version: number;
   experience: string | null; work_scope: string | null;
+  meeting_completed?: boolean | null;
 };
 export function crmPatch(body: Record<string, unknown>) {
   if (typeof body.status !== 'string' || !Object.hasOwn(CONSULT_STATUSES, body.status)) return null;
   if (typeof body.admin_note !== 'string' || body.admin_note.length > 4000) return null;
   if (typeof body.admin_version !== 'number' || !Number.isSafeInteger(body.admin_version) || body.admin_version < 0) return null;
+  if (body.meeting_completed !== undefined && body.meeting_completed !== null && typeof body.meeting_completed !== 'boolean') return null;
   if (body.next_contact_at !== undefined && body.next_contact_at !== null && (typeof body.next_contact_at !== 'string' ||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(body.next_contact_at) ||
     !Number.isFinite(Date.parse(body.next_contact_at)) || new Date(body.next_contact_at).toISOString() !== body.next_contact_at)) return null;
   return { status: body.status, admin_note: body.admin_note.trim(),
+    ...(body.meeting_completed === undefined ? {} : { meeting_completed: body.meeting_completed as boolean | null }),
     ...(body.next_contact_at === undefined ? {} : { next_contact_at: body.status === 'lost' ? null : body.next_contact_at as string | null }),
     admin_version: body.admin_version + 1 };
 }

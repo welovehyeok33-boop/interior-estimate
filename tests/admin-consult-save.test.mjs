@@ -13,8 +13,8 @@ test('contract rate uses period summary, not filtered rows, and handles empty/lo
   }
 });
 
-test('editing offers four simple statuses while preserving historical values', () => {
-  assert.deepEqual(crm.CONSULT_EDIT_STATUS_OPTIONS.map(([id]) => id), ['new', 'consulting', 'contracted', 'lost']);
+test('editing offers five simple statuses including pass while preserving historical values', () => {
+  assert.deepEqual(crm.CONSULT_EDIT_STATUS_OPTIONS.map(([id]) => id), ['new', 'consulting', 'contracted', 'lost', 'passed']);
   assert.ok(crm.CONSULT_STATUSES.closed);
   assert.ok(crm.CONSULT_STATUSES.quoted);
 });
@@ -25,6 +25,37 @@ test('status counts move between contract and lost without changing total', () =
   assert.deepEqual(updated.map(row => row.count), [4, 0, 1]);
   assert.equal(counts[1].count, 1);
   assert.equal(crm.updateConsultationCounts(updated, 'lost', 'lost'), updated);
+});
+
+test('pass moves the status count without changing total or fabricating a contract', () => {
+  const counts=[{status:'all',count:4},{status:'contracted',count:1},{status:'passed',count:0}];
+  assert.deepEqual(crm.updateConsultationCounts(counts,'contracted','passed').map(row=>row.count),[4,0,1]);
+});
+
+test('meeting state stays a draft through collapse and persists only on manual save with status and note',async()=>{
+  let item={id:'test',status:'new',phone:'',admin_note:'original',admin_version:2,meeting_completed:null};
+  const requests=[];
+  const render=editorHarness(async(_url,options)=>{const body=JSON.parse(options.body);requests.push(body);
+    return {ok:true,json:async()=>({item:{...item,...body,admin_version:item.admin_version+1}})};});
+  const props=(hidden=false)=>({item,hidden,onSaved:updated=>{item=updated;}});
+  const meeting=tree=>find(tree,node=>node.type==='select'&&node.props['aria-label']==='실측(미팅) 여부');
+  assert.equal(meeting(render(props())).props.value,'unknown');
+  meeting(render(props())).props.onChange({target:{value:'done'}});
+  find(render(props()),node=>node.type==='select').props.onChange({target:{value:'passed'}});
+  assert.equal(meeting(render(props(true))).props.value,'done');assert.equal(requests.length,0);
+  await find(render(props()),node=>node.type==='button').props.onClick();
+  assert.equal(requests[0].meeting_completed,true);assert.equal(requests[0].status,'passed');
+  assert.equal(item.meeting_completed,true);assert.equal(item.admin_version,3);
+  meeting(render(props())).props.onChange({target:{value:'not_done'}});
+  await find(render(props()),node=>node.type==='button').props.onClick();
+  assert.equal(requests[1].meeting_completed,false);assert.equal(requests[1].admin_version,3);
+});
+
+test('meeting validation distinguishes unknown from false and preserves fields omitted by old clients',()=>{
+  const base={status:'passed',admin_note:'memo',admin_version:0};
+  for(const meeting_completed of [null,false,true])assert.equal(crm.crmPatch({...base,meeting_completed}).meeting_completed,meeting_completed);
+  for(const meeting_completed of ['true','false',1,{},[]])assert.equal(crm.crmPatch({...base,meeting_completed}),null);
+  assert.equal(Object.hasOwn(crm.crmPatch(base),'meeting_completed'),false);
 });
 
 function editorHarness(fetch, initial = [], root = false, runtime = {}) {

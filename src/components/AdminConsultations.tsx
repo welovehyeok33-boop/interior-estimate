@@ -16,7 +16,8 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [composing, setComposing] = useState(false);
-  const dirty = status !== (item.status || 'new') || note !== (item.admin_note || '');
+  const [meeting, setMeeting] = useState<boolean | null>(item.meeting_completed ?? null);
+  const dirty = status !== (item.status || 'new') || note !== (item.admin_note || '') || meeting !== (item.meeting_completed ?? null);
   useEffect(() => {
     if (!dirty && !busy) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -28,12 +29,13 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
     setBusy(true); setError(''); setSaved(false);
     try {
       const r = await fetch('/api/admin/consultations', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, status, admin_note: note, admin_version: item.admin_version }) });
+        body: JSON.stringify({ id: item.id, status, admin_note: note, meeting_completed: meeting, admin_version: item.admin_version }) });
       const body = await r.json();
       if (!r.ok) throw new Error(body.error || '저장 실패');
       const updated: Consultation = body.item;
       setStatus(updated.status);
       setNote(updated.admin_note || '');
+      setMeeting(updated.meeting_completed ?? null);
       onSaved(updated);
       setSaved(true);
     } catch (e) { setError(e instanceof Error ? e.message : '저장하지 못했어요.'); }
@@ -71,6 +73,9 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
         <label style={{ fontSize: 12, fontWeight: 650 }}>상담 상태<select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status), width: '100%', display: 'block', marginTop: 6 }}>
           {!CONSULT_EDIT_STATUS_OPTIONS.some(([id]) => id === status) && <option value={status}>현재: {CONSULT_STATUSES[status] || status}</option>}
           {CONSULT_EDIT_STATUS_OPTIONS.map(([id, label]) => <option key={id} value={id} style={consultStatusStyle(id)}>{label}</option>)}
+        </select></label>
+        <label style={{ fontSize: 12, fontWeight: 650 }}>실측(미팅) 여부<select aria-label="실측(미팅) 여부" value={meeting === null ? 'unknown' : meeting ? 'done' : 'not_done'} onChange={e => setMeeting(e.target.value === 'unknown' ? null : e.target.value === 'done')} style={{ ...field, width: '100%', display: 'block', marginTop: 6 }}>
+          <option value="unknown">미확인</option><option value="not_done">미실시</option><option value="done">완료</option>
         </select></label>
       </div>
       <label style={{ display: 'block', marginTop: 20, fontSize: 12, fontWeight: 650 }}>관리자 상담 메모
@@ -160,7 +165,7 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
               <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><IconBuildingStore size={14} aria-hidden="true" color={C.admin.muted} />{item.building_type === 'residential' ? '주거' : `${INDUSTRY_LABELS[item.commercial_type || ''] || item.commercial_type || '업종 미입력'}${item.commercial_sub?.trim() && !['unknown', 'etc'].includes(item.commercial_type || '') ? ` · ${item.commercial_sub.trim()}` : ''}`}</span>
               <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><IconRulerMeasure size={14} aria-hidden="true" color={C.admin.muted} />{typeof item.area === 'number' && Number.isFinite(item.area) && item.area > 0 ? `${item.area.toLocaleString('ko-KR')}평` : '평수 미입력'}</span>
             </span>
-            <span style={{ ...muted, fontSize: 11, fontWeight: 400 }}>접수 {dateLabel(item.created_at)}</span>
+            <span style={{ ...muted, fontSize: 11, fontWeight: 400 }}>접수 {dateLabel(item.created_at)} · 실측(미팅) {item.meeting_completed === true ? '완료' : item.meeting_completed === false ? '미실시' : '미확인'}</span>
           </span>
           <span style={{ minWidth: 110 }}><span style={{ ...muted, display: 'block', fontSize: 11, fontWeight: 400 }}>희망 예산</span><strong style={{ display: 'block', marginTop: 3, fontSize: 15 }}>{formatConsultBudget(item.budget ?? undefined)}</strong></span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
