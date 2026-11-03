@@ -37,6 +37,9 @@ test('CRM rejects malformed pages and writes, checks expected version',async()=>
   assert.equal((await s.PATCH(req())).status,200);
   assert.ok(s.calls.some(c=>c[0]==='eq'&&c[1]==='admin_version'&&c[2]===0));
   assert.equal((await setup(true,false).PATCH(req())).status,409);
+  assert.equal((await s.PATCH(req({...body,status:'passed',meeting_completed:true}))).status,200);
+  assert.ok(s.calls.some(c=>c[0]==='update'&&c[1].meeting_completed===true&&c[1].status==='passed'));
+  assert.equal((await s.PATCH(req({...body,meeting_completed:'true'}))).status,400);
 });
 test('CRM uses server pagination and literal phone search',async()=>{
   const s=setup();

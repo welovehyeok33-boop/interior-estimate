@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     let query = db.from('consultations').select('*', { count: 'exact' });
     if (range) query = query.gte('created_at', range.start).lt('created_at', range.end);
     if (status !== 'all') query = query.eq('status', status);
-    if (params.get('due') === '1') query = query.lte('next_contact_at', new Date().toISOString()).not('status', 'in', '(closed,contracted,lost)');
+    if (params.get('due') === '1') query = query.lte('next_contact_at', new Date().toISOString()).not('status', 'in', '(closed,contracted,lost,passed)');
     if (q) query = /^[\d\s-]+$/.test(q) ? query.ilike('phone', `%${q.replace(/\D/g, '')}%`) : query.ilike('name', `%${q}%`);
     const result = await query.order('created_at', { ascending: false }).order('id').range((page - 1) * 25, page * 25 - 1);
     if (result.error) throw result.error;
@@ -44,7 +44,7 @@ export async function PATCH(request: Request) {
     try { body = JSON.parse(raw); } catch { return apiJson({ error: '입력을 확인해주세요.' }, 400); }
     if (!body || typeof body !== 'object' || !/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(body.id || '')) return apiJson({ error: '신청을 확인해주세요.' }, 400);
     const patch = crmPatch(body);
-    if (!patch) return apiJson({ error: '상태·메모·연락 일시를 확인해주세요.' }, 400);
+    if (!patch) return apiJson({ error: '상태·메모·실측(미팅) 여부를 확인해주세요.' }, 400);
     const { data, error } = await serverDb().from('consultations').update(patch).eq('id', body.id).eq('admin_version', body.admin_version).select('*').maybeSingle();
     if (error) throw error;
     if (!data) return apiJson({ error: '다른 화면에서 변경되었거나 삭제됐어요. 작성 내용을 복사한 뒤 목록을 새로고침해주세요.' }, 409);
