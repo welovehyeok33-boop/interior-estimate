@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { C } from "@/components/EstimateLayout";
 import HomePhoneDemo from "@/components/HomePhoneDemo";
+import HomeSpaceGallery from "@/components/HomeSpaceGallery";
 
 // ── 컬러 팔레트 ────────────────────────────────────────────
 const Y  = C.primary;
@@ -151,6 +152,8 @@ export default function Home() {
           </FadeUp>
         </div>
       </section>
+
+      <HomeSpaceGallery mobile={m} />
 
       {/* ── 두 가지 서비스 ── */}
       <section style={{ background: K, padding: m ? "64px 20px" : "96px 32px" }}>
