@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { C } from "@/components/EstimateLayout";
@@ -13,6 +12,7 @@ const Y  = C.primary;
 const YL = C.selectedBg;
 const K  = C.home.ink;
 const GY = C.home.stone;
+const WORDMARK_STYLE: React.CSSProperties = { display: "inline-flex", alignItems: "center", fontWeight: 900, fontSize: 18, lineHeight: 1.5, color: C.textDark, background: C.primary, borderRadius: 7, padding: "6px 10px", whiteSpace: "nowrap" };
 // 외부 폰트 요청 없이 제목 일부에만 기기 기본 명조체를 사용한다.
 const EDITORIAL_FONT = "'Iowan Old Style', 'AppleMyungjo', 'Batang', 'Noto Serif CJK KR', serif";
 
@@ -65,11 +65,10 @@ export default function Home() {
       }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", padding: m ? "0 20px" : "0 32px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <Image src="/logo.png" alt="폼잇." width={32} height={28} style={{ objectFit: "contain" }} />
+            <span style={WORDMARK_STYLE}>폼잇.</span>
           </Link>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {!m && <Link href="/estimate/scan" style={{ padding: "7px 14px", color: "#555", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>견적 스캔</Link>}
-            {!m && <Link href="/blog" style={{ padding: "7px 14px", color: "#888", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>가이드</Link>}
+          <div style={{ display: "flex", gap: m ? 10 : 20, alignItems: "center" }}>
+            {!m && <Link href="/blog" style={{ padding: "7px 14px", color: C.home.muted, textDecoration: "none", fontSize: 14, fontWeight: 500 }}>가이드</Link>}
             <Link href="/partners" style={{ padding: m ? "8px 10px" : "8px 14px", border: `1px solid ${C.home.line}`, borderRadius: 8, color: C.home.bronze, textDecoration: "none", fontSize: m ? 12 : 14, fontWeight: 700, whiteSpace: "nowrap" }}>파트너 모집</Link>
             <Link href="/estimate" style={{
               padding: m ? "8px 16px" : "9px 20px", borderRadius: 8,
@@ -473,7 +472,7 @@ export default function Home() {
           justifyContent: "space-between", alignItems: m ? "flex-start" : "center",
           gap: m ? 16 : 12,
         }}>
-          <Image src="/logo.png" alt="폼잇." width={28} height={24} style={{ objectFit: "contain" }} />
+          <span style={WORDMARK_STYLE}>폼잇.</span>
           <span style={{ fontSize: 12, color: C.home.muted, order: m ? 3 : 0 }}>© 2026 폼잇. 인테리어 견적 상담</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }, { label: "파트너 모집", href: "/partners" }].map(l => (
