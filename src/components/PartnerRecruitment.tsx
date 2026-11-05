@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import Image from 'next/image';
+import PartnerPhotoGrid from './PartnerPhotoGrid';
 import Link from 'next/link';
 import { IconArrowUpRight, IconCheck, IconArrowRight } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
@@ -40,9 +40,7 @@ export default function PartnerRecruitment() {
     <main>
       <section style={{ maxWidth: 1120, margin: 'auto', padding: '72px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 44, alignItems: 'center' }}>
         <div style={{ flex: '1 1 360px', minWidth: 0 }}><p style={{ color: H.bronze, fontSize: 12, letterSpacing: '0.16em', fontWeight: 800 }}>FORMIT PARTNERS</p><h1 style={{ fontSize: 'clamp(36px, 5vw, 58px)', lineHeight: 1.2, letterSpacing: '-0.055em', margin: '20px 0 24px' }}>좋은 공간을 만드는<br />파트너를 찾습니다.</h1><p style={{ color: H.muted, lineHeight: 1.9, fontSize: 16, maxWidth: 430 }}>주거부터 상가까지. 각자의 전문성을 바탕으로<br />고객의 다음 공간을 함께 만들어갈 인테리어 업체를 모집합니다.</p><a href="#apply" style={{ ...button, marginTop: 20 }}>파트너로 함께하기 <IconArrowRight size={18} /></a><p style={{ color: H.muted, fontSize: 12, marginTop: 16 }}>제휴 조건은 신청 검토 후 상담 시 안내드립니다.</p></div>
-        <div style={{ flex: '1 1 360px', minWidth: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {[['13', '주거 공간 스타일'], ['18', '오피스 공간 스타일'], ['10', '카페 공간 스타일'], ['17', '주거 공간 스타일']].map(([number, alt], i) => <div key={number} style={{ position: 'relative', aspectRatio: '1', borderRadius: 22, overflow: 'hidden', transform: i % 2 ? 'translateY(18px)' : undefined }}><Image src={`/home/forma/space-${number}.webp`} alt={alt} fill sizes="(max-width: 760px) 44vw, 260px" priority={i < 2} style={{ objectFit: 'cover' }} /></div>)}<span style={{ gridColumn: '1 / -1', color: H.muted, fontSize: 11, paddingTop: 18 }}>공간 스타일 이미지</span>
-        </div>
+        <PartnerPhotoGrid />
       </section>
       <section style={{ background: H.ink, color: H.onDark, padding: '56px 24px' }}><div style={{ maxWidth: 1120, margin: 'auto' }}><p style={{ color: H.mutedOnDark, fontSize: 12 }}>함께하는 방식</p><h2 style={{ fontSize: 30, letterSpacing: '-0.04em', margin: '12px 0 30px' }}>잘하는 분야에, 맞는 고객을.</h2><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 28 }}>{[['01', '공사 계획을 함께 확인합니다', '지역, 공간 유형, 면적과 희망 예산 등 고객이 남긴 계획을 바탕으로 상담을 준비합니다.'], ['02', '전문 분야를 중요하게 봅니다', '시공 가능 지역과 실제 포트폴리오를 확인하고, 서로 맞는 협업 방향을 논의합니다.'], ['03', '상담부터 마무리까지', '견적의 명확함, 원활한 소통, 공사 후 관리까지 함께 고려합니다.']].map(([n, title, body]) => <article key={n} style={{ borderTop: `1px solid ${H.darkLine}`, paddingTop: 20 }}><span style={{ color: C.primary, fontSize: 13 }}>{n}</span><h3 style={{ fontSize: 18 }}>{title}</h3><p style={{ lineHeight: 1.8, color: H.mutedOnDark, fontSize: 14 }}>{body}</p></article>)}</div></div></section>
       <section style={{ maxWidth: 1120, margin: 'auto', padding: '64px 24px' }}><p style={{ color: H.bronze, fontSize: 12, fontWeight: 800 }}>모집 분야</p><h2 style={{ fontSize: 30, letterSpacing: '-0.04em' }}>주거와 상가, 모두 환영합니다.</h2><div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>{[['주거 인테리어', '아파트 · 빌라 · 단독주택', '생활을 이해하고 주거 공간을 완성하는 업체'], ['상가 인테리어', '오피스 · 카페 · 음식점 · 학원 · 매장 등', '업종과 운영 방식을 공간에 담아내는 업체']].map(([title, category, text]) => <article key={title} style={{ flex: '1 1 280px', border: `1px solid ${H.line}`, padding: 28, borderRadius: 18, background: C.card }}><h3 style={{ margin: '0 0 16px', fontSize: 22 }}>{title}</h3><p style={{ color: H.bronze, fontWeight: 700, fontSize: 14 }}>{category}</p><p style={{ color: H.muted, lineHeight: 1.8, fontSize: 14 }}>{text}</p></article>)}</div>
