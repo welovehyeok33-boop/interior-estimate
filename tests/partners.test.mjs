@@ -44,3 +44,22 @@ test('admin manual save checks expected version, never overwrites stale notes, r
  const s=setup();assert.equal((await s.admin.PATCH(adminReq())).status,200);assert.ok(s.calls.some(c=>c[0]==='eq'&&c[1]==='admin_version'&&c[2]===0));assert.ok(s.calls.some(c=>c[0]==='update'&&c[1].admin_version===1));assert.equal((await setup({exists:false}).admin.PATCH(adminReq())).status,409);
  for(const value of [null,{...patch,status:'bad'},{...patch,admin_version:-1},{...patch,admin_note:'x'.repeat(4001)}]) assert.equal((await s.admin.PATCH(adminReq(value))).status,400);
 });
+function find(node,predicate){if(!node||typeof node!=='object')return;if(predicate(node))return node;for(const child of [node.props?.children].flat(Infinity)){const found=find(child,predicate);if(found)return found;}}
+test('partner editor keeps drafts through collapse and tab changes; only the save button writes',async()=>{
+ const state=[],effects=[],requests=[];let cursor=0;
+ const jsx=(type,props)=>({type,props});
+ const row={...valid,id:valid.submissionId,created_at:'2026-11-05T00:00:00Z',status:'new',admin_note:'기존 메모',admin_version:2};
+ const palette=new Proxy({},{get:()=>''});
+ const deps={react:{useState:initial=>{const i=cursor++;if(!(i in state))state[i]=initial;return[state[i],v=>{state[i]=typeof v==='function'?v(state[i]):v;}];},useEffect:fn=>effects.push(fn)},'react/jsx-runtime':{jsx,jsxs:jsx},'next/link':{default:'a'},'./EstimateLayout':{C:{admin:palette,consultStatus:{lost:{color:''}}}},'./adminStyles':{},'@/lib/partners':partners};
+ const exports={};runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/AdminPartners.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:n=>deps[n],AbortController,Date,fetch:async(url,options={})=>{requests.push({url,options});return{ok:true,json:async()=>options.method==='PATCH'?{row:{...row,...JSON.parse(options.body),admin_version:3}}:{rows:[row],total:1}};}});
+ const render=active=>{cursor=0;effects.length=0;return exports.default({active,refresh:0});};
+ render(false);assert.equal(effects[0](),undefined);assert.equal(requests.length,0);
+ render(true);effects[0]();await new Promise(resolve=>setImmediate(resolve));let tree=render(true);
+ find(tree,n=>n.type==='textarea').props.onChange({target:{value:'작성 중인 메모'}});
+ tree=render(true);find(tree,n=>n.type==='select').props.onChange({target:{value:'reviewing'}});
+ tree=render(true);find(tree,n=>n.type==='button'&&n.props['aria-controls']).props.onClick();tree=render(true);find(tree,n=>n.type==='button'&&n.props['aria-controls']).props.onClick();
+ tree=render(false);effects[0]();assert.equal(find(tree,n=>n.type==='textarea').props.value,'작성 중인 메모');assert.equal(requests.length,1);
+ tree=render(true);await find(tree,n=>n.type==='button'&&n.props.children==='검토 내용 저장').props.onClick();
+ assert.equal(requests.length,2);const payload=JSON.parse(requests[1].options.body);assert.equal(payload.admin_note,'작성 중인 메모');assert.equal(payload.status,'reviewing');assert.equal(payload.admin_version,2);
+ tree=render(true);assert.equal(find(tree,n=>n.type==='button'&&n.props.children==='검토 내용 저장').props.disabled,true);
+});
