@@ -70,6 +70,7 @@ export default function Home() {
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {!m && <Link href="/estimate/scan" style={{ padding: "7px 14px", color: "#555", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>견적 스캔</Link>}
             {!m && <Link href="/blog" style={{ padding: "7px 14px", color: "#888", textDecoration: "none", fontSize: 14, fontWeight: 500 }}>가이드</Link>}
+            <Link href="/partners" style={{ padding: m ? "8px 10px" : "8px 14px", border: `1px solid ${C.home.line}`, borderRadius: 8, color: C.home.bronze, textDecoration: "none", fontSize: m ? 12 : 14, fontWeight: 700, whiteSpace: "nowrap" }}>파트너 모집</Link>
             <Link href="/estimate" style={{
               padding: m ? "8px 16px" : "9px 20px", borderRadius: 8,
               background: Y, color: K,
