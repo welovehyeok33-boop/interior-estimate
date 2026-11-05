@@ -56,7 +56,7 @@ test('admin tabs place referral management second and retain their original pane
   let tree=h.render({});
   const nav=()=>find(tree,n=>n.type==='nav'&&n.props['aria-label']==='관리자 카테고리');
   let buttons=nav().props.children;
-  assert.deepEqual(Array.from(buttons,button=>button.props.children[0]),['대시보드','유입처 관리','유입 트래픽','상담 관리']);
+  assert.deepEqual(Array.from(buttons,button=>button.props.children[0]),['대시보드','유입처 관리','유입 트래픽','상담 관리','파트너 신청']);
   assert.equal(nav().props.style.flexWrap,'wrap');
   assert.equal(buttons[1].props['aria-controls'],'admin-referrals');
   assert.equal(buttons[2].props['aria-controls'],'admin-traffic');

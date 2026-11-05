@@ -1,4 +1,5 @@
 "use client";
+import AdminPartners from '@/components/AdminPartners';
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,7 @@ export default function AdminPage() {
   const [leads, setLeads]       = useState<Lead[]>([]);
   const [consultationCount, setConsultationCount] = useState(0);
   const [leadSummary, setLeadSummary] = useState<StatusCount[]>([]);
-  const [flow, setFlow] = useState<'overview' | 'sources' | 'referrals' | 'consult' | 'engine'>('overview');
+  const [flow, setFlow] = useState<'overview' | 'sources' | 'referrals' | 'consult' | 'engine' | 'partners'>('overview');
   const [consultOpened, setConsultOpened] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -266,6 +267,7 @@ export default function AdminPage() {
             { id: 'referrals', title: '유입처 관리', count: null },
             { id: 'sources', title: '유입 트래픽', count: null },
             { id: 'consult', title: '상담 관리', count: consultationCount },
+            { id: 'partners', title: '파트너 신청', count: null },
             { id: 'engine', title: '상세견적 관리', count: leadSummary.find(s => s.status === 'all')?.count ?? 0 },
           ] as const).filter(item => DETAIL_ESTIMATE_ENABLED || item.id !== "engine").map(item => (
             <button key={item.id} type="button" onClick={() => { if (item.id === 'consult') setConsultOpened(true); setFlow(item.id); }} aria-pressed={flow === item.id} aria-controls={item.id === 'overview' || item.id === 'sources' ? 'admin-traffic' : `admin-${item.id}`}
@@ -285,6 +287,7 @@ export default function AdminPage() {
         {loadError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{loadError}</p>}
         {actionError && <p role="alert" style={{ color: "#F87171", fontSize: 13 }}>{actionError}</p>}
 
+        <div id="admin-partners" hidden={flow !== 'partners'}><AdminPartners active={flow === 'partners'} refresh={trafficRefresh} /></div>
         <div id="admin-consult" hidden={flow !== 'consult'}>
           {consultOpened && <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} />}
         </div>

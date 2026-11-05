@@ -86,11 +86,11 @@ test('canonical and share URLs stay on Formit; utilities clear inherited canonic
 test('sitemap includes only indexable, working public routes and approved guides without fake update dates', () => {
   const module = load('src/app/sitemap.ts', { '@/data/posts': posts, '@/lib/siteMetadata': seo, '@/lib/guideAudiences': audiences });
   const entries = module.default();
-  assert.deepEqual(Array.from(entries, entry => entry.url), ['https://form.it.kr/', 'https://form.it.kr/landing']);
+  assert.deepEqual(Array.from(entries, entry => entry.url), ['https://form.it.kr/', 'https://form.it.kr/landing', 'https://form.it.kr/partners']);
   assert.ok(entries.every(entry => entry.lastModified === undefined));
   const post = approved();
   const future = load('src/app/sitemap.ts', { '@/data/posts': { getPublishedPosts: () => [post] }, '@/lib/siteMetadata': seo, '@/lib/guideAudiences': audiences }).default();
-  assert.equal(future.length, 4);
+  assert.equal(future.length, 5);
   assert.equal(future.at(-1).url, seo.siteUrl(seo.blogPath(post.slug)));
   assert.equal(future.at(-1).lastModified, '2026-10-21');
   assert.ok(!JSON.stringify(future).includes('interiorhub.co.kr'));

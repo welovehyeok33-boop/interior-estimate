@@ -6,6 +6,7 @@ export const SITE_NAME = '폼잇.';
 export const PUBLIC_SEARCH_PAGES = [
   { path: '/', title: shareTitle, description: shareDescription },
   { path: '/landing', title: '인테리어 무료 견적 상담 안내 | 폼잇.', description: '주거·상가 인테리어를 계획하고 있다면 지역, 공간과 공사 계획을 알려주세요. 폼잇 무료 견적 상담 신청 과정과 이용 안내를 확인하세요.' },
+  { path: '/partners', title: '인테리어 파트너 모집 | 폼잇.', description: '주거·상가 인테리어 파트너 모집. 활동 지역과 전문 분야, 포트폴리오를 알려주세요.' },
 ] as const;
 
 export function siteUrl(path: string): string {
