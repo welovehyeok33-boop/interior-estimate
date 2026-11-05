@@ -474,8 +474,8 @@ export default function Home() {
         }}>
           <Image src="/logo.png" alt="폼잇." width={28} height={24} style={{ objectFit: "contain" }} />
           <span style={{ fontSize: 12, color: C.home.muted, order: m ? 3 : 0 }}>© 2026 폼잇. 인테리어 견적 상담</span>
-          <div style={{ display: "flex", gap: 20 }}>
-            {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }].map(l => (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+            {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }, { label: "파트너 모집", href: "/partners" }].map(l => (
               <Link key={l.href} href={l.href} style={{ fontSize: 13, color: C.home.muted, textDecoration: "none" }}>{l.label}</Link>
             ))}
           </div>
