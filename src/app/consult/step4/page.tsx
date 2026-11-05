@@ -9,6 +9,7 @@ import { loadConsult, clearConsult, formatConsultBudget, formatConsultSchedule, 
 import { CONSENT_VERSION, INDUSTRY_LABELS, consultStage, validPhone } from "@/lib/intakeValidation";
 import { C, FlightPath } from "@/components/EstimateLayout";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
+import HomeSpaceGallery from "@/components/HomeSpaceGallery";
 
 const CONSULT_STEP_LABELS = ["지역·유형", "면적", "계획", "신청"] as const;
 const TYPE_LABEL: Record<string, string> = { residential: "주거", commercial: "상가" };
@@ -27,11 +28,11 @@ export default function ConsultStep4() {
 
   useEffect(() => {
     // localStorage is restored after hydration so the server and initial client markup match.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     const saved = loadConsult();
     const missing = consultStage(saved);
     if (missing) { router.replace(missing); return; }
     submissionId.current = crypto.randomUUID();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSummary(saved);
   }, [router]);
 
@@ -234,6 +235,7 @@ export default function ConsultStep4() {
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: C.textLight }}>
             입력하신 정보는 상담 신청 접수에 사용됩니다
           </div>
+          <HomeSpaceGallery mobile compact />
         </motion.div>
       </div>
     </div>
