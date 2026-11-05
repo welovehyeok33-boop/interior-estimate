@@ -8,7 +8,9 @@ import { IconArrowUpRight, IconPlayerPause, IconPlayerPlay } from '@tabler/icons
 import { C } from './EstimateLayout';
 import { HOME_SPACE_PHOTOS as SPACES, HOME_SPACE_ROWS } from '@/lib/homeSpacePhotos';
 
-export function PhotoRow({ mobile, reverse, paused, order, cardWidth, captions = true, radius = 16 }: { mobile: boolean; reverse?: boolean; paused: boolean; order: readonly number[]; cardWidth?: number; captions?: boolean; radius?: number }) {
+export type SpacePhoto = { category: string; name: string; src: string; alt?: string };
+
+export function PhotoRow({ mobile, reverse, paused, order, cardWidth, captions = true, radius = 16, photos = SPACES, eager = false }: { mobile: boolean; reverse?: boolean; paused: boolean; order: readonly number[]; cardWidth?: number; captions?: boolean; radius?: number; photos?: readonly SpacePhoto[]; eager?: boolean }) {
   const x = useMotionValue(0);
   const phase = useRef(0);
   const [dragging, setDragging] = useState(false);
@@ -26,10 +28,10 @@ export function PhotoRow({ mobile, reverse, paused, order, cardWidth, captions =
       onDragStart={() => setDragging(true)} onDragEnd={() => { phase.current = ((reverse ? x.get() + distance : -x.get()) + distance) % distance; setDragging(false); }}
       style={{ x, display: 'flex', gap, width: 'max-content', touchAction: 'pan-y', willChange: paused || reduced ? 'auto' : 'transform' }}>
       {[0, 1].map(copy => <div key={copy} aria-hidden={copy === 1 ? true : undefined} style={{ display: 'flex', gap }}>
-        {order.map(index => {
-          const space = SPACES[index];
+        {order.map((index, slot) => {
+          const space = photos[index];
           return <figure key={index} style={{ position: 'relative', flex: '0 0 auto', width, height: width, margin: 0, borderRadius: radius, overflow: 'hidden', background: C.home.stone }}>
-            <Image src={space.src} alt={`${space.category} 인테리어 예시 · ${space.name}`} fill sizes={cardWidth ? `${Math.ceil(cardWidth)}px` : "(max-width: 768px) 154px, 198px"} draggable={false} style={{ objectFit: 'cover', objectPosition: 'center', pointerEvents: 'none' }} />
+            <Image src={space.src} alt={space.alt ?? `${space.category} 인테리어 예시 · ${space.name}`} fill loading={eager && copy === 0 && slot < 2 ? 'eager' : 'lazy'} sizes={cardWidth ? `${Math.ceil(cardWidth)}px` : "(max-width: 768px) 154px, 198px"} draggable={false} style={{ objectFit: 'cover', objectPosition: 'center', pointerEvents: 'none' }} />
             {captions && <figcaption style={{ position: 'absolute', left: 10, right: 10, bottom: 10, padding: '8px 10px', borderRadius: 8, background: C.home.nav, color: C.home.ink, display: 'flex', gap: 7, alignItems: 'center', fontSize: mobile ? 10 : 11 }}>
               <span style={{ color: C.home.bronze, fontWeight: 750, flexShrink: 0 }}>{space.category}</span>
               <span style={{ whiteSpace: 'nowrap', letterSpacing: '-0.3px' }}>{space.name}</span>

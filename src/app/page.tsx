@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { C } from "@/components/EstimateLayout";
 import HomePhoneDemo from "@/components/HomePhoneDemo";
-import HomeSpaceGallery from "@/components/HomeSpaceGallery";
+import HomeProjectGallery from "@/components/HomeProjectGallery";
 
 // ── 컬러 팔레트 ────────────────────────────────────────────
 const Y  = C.primary;
@@ -79,81 +79,39 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{ background: C.home.ivory, padding: m ? "56px 20px 60px" : "88px 32px 80px", borderBottom: `1px solid ${C.home.accentLine}`, overflow: "hidden" }}>
-        <div style={{
-          maxWidth: 1080, margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: m ? "1fr" : "1fr 1fr",
-          gap: m ? 0 : 60,
-          alignItems: "center",
-        }}>
-          {/* 텍스트 */}
-          <div style={{ textAlign: m ? "center" : "left" }}>
-            <FadeUp>
-              <span style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 12, fontWeight: 600, color: C.home.bronze, letterSpacing: "0.04em",
-                background: C.home.paper, border: `1px solid ${C.home.line}`, padding: "6px 14px", borderRadius: 20, marginBottom: m ? 22 : 28,
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: Y, display: "inline-block" }} />
-                인테리어 견적 상담 플랫폼
-              </span>
-              <h1 style={{
-                fontSize: m ? "clamp(34px, 9vw, 48px)" : "clamp(36px, 4.2vw, 58px)",
-                fontWeight: 800, lineHeight: 1.22,
-                letterSpacing: "-1.8px", margin: m ? "0 0 22px" : "0 0 28px",
-                color: K, wordBreak: "keep-all",
-              }}>
-                <span style={{ fontFamily: EDITORIAL_FONT, fontSize: "0.94em", fontWeight: 500, letterSpacing: "-0.04em" }}>인테리어 견적,</span><br />이제는 알고<br />시작하세요
-              </h1>
-            </FadeUp>
-            <FadeUp delay={0.1}>
-              <p style={{ fontSize: m ? 15 : 16, color: C.home.muted, lineHeight: 1.9, margin: m ? "0 0 28px" : "0 0 36px", letterSpacing: "-0.2px", wordBreak: "keep-all" }}>
-                공간과 공사 계획을 간단히 알려주세요.<br />접수 후 상담을 통해 견적을 안내해드려요.
-              </p>
-            </FadeUp>
-            <FadeUp delay={0.18}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: m ? 36 : 48, alignItems: "center", justifyContent: m ? "center" : "flex-start" }}>
-                <Link href="/estimate" style={{
-                  padding: m ? "14px 28px" : "16px 38px", borderRadius: 9,
-                  background: Y, color: K,
-                  textDecoration: "none", fontSize: m ? 15 : 17, fontWeight: 800, letterSpacing: "-0.3px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  height: m ? 50 : 56, boxSizing: "border-box",
-                  boxShadow: `0 4px 12px ${C.home.shadow}`,
-                }}>견적 알아보기 →</Link>
-                <Link href="/estimate/scan" style={{
-                  padding: m ? "14px 18px" : "16px 24px", borderRadius: 9,
-                  background: C.home.paper, color: C.home.muted,
-                  border: `1px solid ${C.home.line}`,
-                  textDecoration: "none", fontSize: m ? 13 : 14, fontWeight: 600,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  height: m ? 50 : 56, boxSizing: "border-box",
-                }}>
-                  📷 견적 스캔
-                  <span style={{ fontSize: 9, background: "#E0E0E0", color: "#888", padding: "2px 7px", borderRadius: 20, fontWeight: 700 }}>출시예정</span>
-                </Link>
-              </div>
-            </FadeUp>
-            <FadeStagger style={{ display: "flex", gap: m ? 20 : 32, flexWrap: "wrap", justifyContent: m ? "center" : "flex-start", borderTop: `1px solid ${C.home.line}`, paddingTop: 22 }}>
-              {[["4단계", "간단한 신청"], ["선택형", "쉬운 질문"], ["미정도", "신청 가능"], ["무료", "견적 상담"]].map(([n, d]) => (
-                <motion.div key={n} variants={fadeUp}>
-                  <div style={{ fontSize: m ? 18 : 22, fontWeight: 800, color: K, letterSpacing: "-0.4px" }}>{n}</div>
-                  <div style={{ fontSize: 11, color: C.home.muted, marginTop: 5 }}>{d}</div>
-                </motion.div>
-              ))}
-            </FadeStagger>
+      {/* ── 완공 사진이 중심이 되는 첫 화면 ── */}
+      <section aria-labelledby="home-hero-title" style={{ background: C.home.ivory, padding: m ? "36px 20px 32px" : "56px 32px", borderBottom: `1px solid ${C.home.line}`, overflow: "hidden" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gridTemplateColumns: m ? "minmax(0, 1fr)" : "0.85fr 1.15fr", gap: m ? 28 : 48, alignItems: "center" }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ color: C.home.bronze, fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", margin: "0 0 18px" }}>주거부터 상가까지 · 인테리어 무료 상담</p>
+            <h1 id="home-hero-title" style={{ fontSize: m ? "clamp(32px, 8.6vw, 40px)" : "clamp(40px, 4vw, 54px)", lineHeight: 1.23, letterSpacing: "-0.055em", margin: "0 0 22px", wordBreak: "keep-all", fontWeight: 800 }}><span style={{ fontFamily: EDITORIAL_FONT, fontWeight: 500 }}>인테리어,</span><br />완성된 공간부터<br />그려보세요.</h1>
+            <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>마음에 드는 공간을 둘러보고,<br />공사 계획에 맞는 무료 상담을 시작하세요.</p>
+            <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", gap: 16, padding: m ? "14px 22px" : "16px 26px", borderRadius: 10, background: Y, color: K, textDecoration: "none", fontSize: m ? 14 : 15, fontWeight: 800 }}>내 공간 견적 알아보기 <span aria-hidden="true">→</span></Link>
+            <p style={{ margin: "16px 0 0", fontSize: 11, color: C.home.muted }}>가입 없이 · 4단계 신청 · 상담 신청 무료</p>
           </div>
-
-          {/* 폰 목업 — 독립된 시연으로 실제 견적 입력 상태와 분리한다. */}
-          <FadeUp delay={0.25} style={{ display: "flex", justifyContent: "center", minWidth: 0, marginTop: m ? 40 : 0 }}>
-            <HomePhoneDemo />
-          </FadeUp>
+          <HomeProjectGallery mobile={m} />
         </div>
       </section>
 
-      <HomeSpaceGallery mobile={m} />
+      {/* ── 완공 사진 바로 아래, 실제 공사 과정 ── */}
+      <section aria-labelledby="construction-title" style={{ background: K, color: C.home.onDark, padding: m ? "48px 20px" : "64px 32px", overflow: "hidden" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 22, marginBottom: m ? 28 : 36 }}>
+            <div><p style={{ color: C.home.mutedOnDark, fontSize: 11, letterSpacing: "0.12em", fontWeight: 700, margin: "0 0 16px" }}>실제 시공 현장</p><h2 id="construction-title" style={{ fontSize: m ? 29 : 40, lineHeight: 1.3, letterSpacing: "-0.045em", margin: 0, fontWeight: 750, wordBreak: "keep-all" }}>완성된 공간 뒤에는,<br />제대로 쌓은 과정이 있습니다.</h2></div>
+            <p style={{ color: C.home.mutedOnDark, fontSize: 14, lineHeight: 1.9, maxWidth: 380, margin: 0, wordBreak: "keep-all" }}>직접 진행한 시공 현장의 기록입니다.<br />철거부터 목공·설비·마감까지,<br />공간이 완성되는 과정을 함께 보여드립니다.</p>
+          </div>
+          <HomeProjectGallery mobile={m} construction />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: m ? 8 : 12, paddingTop: 24, marginTop: 22, borderTop: `1px solid ${C.home.darkLine}` }}>{["철거와 현장 정리", "공간을 나누는 벽체·목공", "보이지 않는 배관·단열", "공간을 완성하는 마감"].map((label, i) => <span key={label} style={{ color: C.home.mutedOnDark, fontSize: 12, padding: "8px 12px", border: `1px solid ${C.home.darkLine}`, borderRadius: 8 }}><span style={{ color: Y, marginRight: 8 }}>0{i + 1}</span>{label}</span>)}</div>
+        </div>
+      </section>
+
+      {/* ── 휴대폰 미리보기는 현장 사진 다음으로 이동 ── */}
+      <section aria-labelledby="home-preview-title" style={{ background: C.home.paper, padding: m ? "52px 20px" : "72px 32px", borderBottom: `1px solid ${C.home.line}` }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: m ? "minmax(0,1fr)" : "1fr 1fr", gap: m ? 32 : 64, alignItems: "center" }}>
+          <div><p style={{ color: C.home.bronze, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", margin: "0 0 16px" }}>서비스 이용 미리보기</p><h2 id="home-preview-title" style={{ fontSize: m ? 30 : 40, lineHeight: 1.3, letterSpacing: "-0.045em", margin: "0 0 22px", wordBreak: "keep-all" }}>공사 준비는 차근차근,<br />상담 신청은 간단하게.</h2><p style={{ color: C.home.muted, fontSize: 14, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>지역과 공간, 면적, 공사 계획을 알려주세요.<br />접수 내용을 확인한 뒤 상담을 통해 안내해드립니다.</p><Link href="/consult" style={{ color: K, textDecoration: "none", fontSize: 14, fontWeight: 750, borderBottom: `1px solid ${C.home.accentLine}`, paddingBottom: 6 }}>무료 상담 시작하기 →</Link><p style={{ color: C.home.muted, fontSize: 11, lineHeight: 1.8, marginTop: 24 }}>화면은 서비스 설명을 위한 미리보기입니다.<br />예시 금액은 실제 시공 견적이 아닙니다.</p></div>
+          <div style={{ display: "flex", justifyContent: "center", minWidth: 0 }}><HomePhoneDemo /></div>
+        </div>
+      </section>
 
       {/* ── 두 가지 서비스 ── */}
       <section style={{ background: K, padding: m ? "64px 20px" : "96px 32px" }}>
