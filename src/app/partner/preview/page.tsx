@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { isAdmin } from '@/lib/serverAuth';
 import PartnerLeadBoard from '@/components/PartnerLeadBoard';
 import type { PartnerLead } from '@/lib/partnerPortal';
+import { partnerLeadCard } from '@/lib/partnerPortal';
 export const dynamic = 'force-dynamic';
 export default async function PartnerPreview() {
   if (process.env.VERCEL_ENV !== 'preview') {
@@ -17,5 +18,5 @@ export default async function PartnerPreview() {
     { code: 'EX-005', publishedAt: '2026-11-02T01:00:00Z', customer: '정 고객님', phone: '***-****-****', region: '경기', kind: 'commercial', space: '학원·교육', area: 42, budget: '6,000만원', schedule: '6개월 이내', open: true },
     { code: 'EX-006', publishedAt: '2026-11-01T01:00:00Z', customer: '윤 고객님', phone: '***-****-****', region: '부산', kind: 'commercial', space: '매장·뷰티', area: 18, budget: '3,000만원', schedule: '1개월 이내', open: false },
   ];
-  return <PartnerLeadBoard company="폼잇 인테리어 (예시)" mode="demo" examples={examples} />;
+  return <PartnerLeadBoard company="폼잇 인테리어 (예시)" mode="demo" examples={examples.map((row, i) => partnerLeadCard(row, `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`, i % 3, false, true))} />;
 }

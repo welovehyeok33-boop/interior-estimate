@@ -1,7 +1,7 @@
 import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
 import { PARTNER_UUID, partnerLead } from '@/lib/partnerPortal';
-import { PARTNER_SOURCE_COLUMNS, partnerCutoff, publishedPartnerLeads } from '@/lib/serverPartnerPortal';
+import { PARTNER_SOURCE_COLUMNS, partnerCutoff, publishedPartnerLeads, partnerLeadEntries } from '@/lib/serverPartnerPortal';
 export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
@@ -14,7 +14,10 @@ export async function GET(request: Request) {
     ]);
     if (sources.error || publications.error) throw new Error('read failed');
     const published = new Map((publications.data || []).map(row => [row.consultation_id, row.published_at]));
-    return apiJson({ items: (sources.data || []).map(row => ({ id: row.id, published: published.has(row.id), ...partnerLead(row, published.get(row.id) || row.created_at) })) });
+    const entries = await partnerLeadEntries((sources.data || []).map(row => row.id));
+    return apiJson({ items: (sources.data || []).map(row => ({ id: row.id, published: published.has(row.id),
+      bidders: entries.filter(entry => entry.consultation_id === row.id).map(entry => ({ company: entry.company, slot: entry.slot })),
+      ...partnerLead(row, published.get(row.id) || row.created_at) })) });
   } catch { return apiJson({ error: '공개 관리 목록을 불러오지 못했어요.' }, 503); }
 }
 export async function POST(request: Request) {
