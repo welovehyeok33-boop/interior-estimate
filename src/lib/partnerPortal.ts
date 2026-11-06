@@ -3,6 +3,15 @@ export const PARTNER_SESSION_SECONDS = 8 * 3600;
 export const PARTNER_UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 export type PartnerAccount = { id: string; company: string; email: string; active: boolean; session_version: string; created_at: string };
 export type PartnerLead = { code: string; publishedAt: string; customer: string; phone: string; region: string; space: string; kind: 'residential' | 'commercial'; area: number | null; budget: string; schedule: string; open: boolean };
+export const PARTNER_LEAD_CAPACITY = 2;
+export type PartnerLeadCard = Omit<PartnerLead, 'customer' | 'phone' | 'budget' | 'schedule'> & {
+  id: string; participants: number; joined: boolean;
+  detail: Pick<PartnerLead, 'customer' | 'phone' | 'budget' | 'schedule'> | null;
+};
+export function partnerLeadCard(lead: PartnerLead, id: string, participants: number, joined: boolean, admin = false): PartnerLeadCard {
+  const { customer, phone, budget, schedule, ...preview } = lead;
+  return { ...preview, id, participants, joined, detail: joined || admin ? { customer, phone, budget, schedule } : null };
+}
 const REGIONS = ['서울', '경기', '인천', '강원', '충북', '충남', '대전', '세종', '전북', '전남', '광주', '경북', '경남', '대구', '울산', '부산', '제주'];
 const SCHEDULES: Record<string, string> = { '1month': '1개월 이내', '3months': '3개월 이내', '6months': '6개월 이내', undecided: '일정 협의' };
 const SPACES: Record<string, string> = { food: '카페·음식점', office: '오피스', education: '학원·교육', medical: '의료공간', accommodation: '숙박공간', fitness: '운동·여가', beauty: '매장·뷰티', retail: '판매시설', etc: '기타 상업공간', unknown: '상가' };

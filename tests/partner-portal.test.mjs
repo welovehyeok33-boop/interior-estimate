@@ -23,7 +23,7 @@ function harness(options = {}) {
   let currentVersion = version;
   const db = () => {
     let signedIn = false;
-    return { auth: {
+    return { rpc: async (name, params) => { calls.push(['rpc', name, params]); return { data: { status: options.bidStatus || 'joined' }, error: options.rpcFailure ? {} : null }; }, auth: {
       signInWithPassword: async credentials => { calls.push(['signIn', credentials.email]); signedIn = true; if (options.rotated) currentVersion = nextVersion; return { error: options.badPassword ? {} : null, data: { user: { id, app_metadata: { formit_partner: !options.wrongRole } } } }; },
       admin: { getUserById: async () => ({ data: { user: { id, app_metadata: { formit_partner: !options.wrongRole }, ...(options.banned ? { banned_until: '2099-01-01T00:00:00Z' } : {}) } }, error: null }),
         createUser: async v => { calls.push(['createUser', v]); return { data: { user: { id } }, error: options.duplicate ? {} : null }; },
@@ -31,7 +31,7 @@ function harness(options = {}) {
     }, from: table => {
       if (signedIn) throw new Error('Never use a password-mutated Supabase client for service-role queries');
       calls.push(['from', table]); const filters = [], query = {}; let action = 'read', payload;
-      for (const method of ['select', 'eq', 'gte', 'order', 'limit']) query[method] = (...args) => { calls.push([method, ...args]); if (method === 'eq') filters.push(args); return query; };
+      for (const method of ['select', 'eq', 'gte', 'order', 'limit', 'in']) query[method] = (...args) => { calls.push([method, ...args]); if (method === 'eq') filters.push(args); return query; };
       for (const method of ['insert', 'update', 'upsert', 'delete']) query[method] = v => { action = method; payload = v; calls.push([method, v]); return query; };
       function result(single = false) {
         if (options.dbFailure) return { data: null, error: {} };
@@ -41,6 +41,7 @@ function harness(options = {}) {
         }
         if (table === 'consultations') return { data: options.missingSource ? null : single ? source : [source], error: null };
         if (table === 'partner_lead_publications') return { data: [{ consultation_id: id, published_at: '2026-11-06T00:00:00Z', consultations: source }], error: null };
+        if (table === 'partner_lead_entries') return { data: options.entries || [], error: null };
         throw new Error(table);
       }
       query.maybeSingle = query.single = async () => result(true);
@@ -59,7 +60,7 @@ function harness(options = {}) {
   const server = load('lib/serverPartnerPortal.ts', deps, globals);
   deps['@/lib/serverPartnerPortal'] = server;
   return { calls, values, writes, server, session: load('app/api/partner/session/route.ts', deps, globals), leads: load('app/api/partner/leads/route.ts', deps, globals),
-    accounts: load('app/api/admin/partner-portal/route.ts', deps, globals), publishing: load('app/api/admin/partner-leads/route.ts', deps, globals),
+    accounts: load('app/api/admin/partner-portal/route.ts', deps, globals), publishing: load('app/api/admin/partner-leads/route.ts', deps, globals), bids: load('app/api/partner/bids/route.ts', deps, globals),
     authenticate: () => values.set(portal.PARTNER_PORTAL_COOKIE, sessions.signPartnerSession(id, version, Date.now() + 100000, server.partnerSessionSecret())) };
 }
 test('partner DTO contains only coarse, allowlisted fields; never names, phone, notes or addresses', () => {
@@ -92,7 +93,9 @@ test('every partner read checks active account, version, Auth identity and role'
 });
 test('valid partner sees explicit publications only; query omits phone and private free text', async () => {
   const h = harness(); h.authenticate(); const response = await h.leads.GET(); assert.equal(response.status, 200); assert.equal(response.headers.get('cache-control'), 'no-store');
-  const body = await response.json(); assert.equal(body.items.length, 1); assert.equal(body.items[0].customer, '김 고객님');
+  const body = await response.json(); assert.equal(body.items.length, 1); assert.equal(body.items[0].detail, null);
+  assert.equal(body.items[0].joined, false); assert.equal(body.items[0].participants, 0);
+  for (const field of ['customer', 'phone', 'budget', 'schedule']) assert.equal(Object.hasOwn(body.items[0], field), false);
   const query = h.calls.find(c => c[0] === 'select' && c[1].includes('consultations!inner'))[1];
   assert.doesNotMatch(query, /phone|memo|description|admin_note|\*/);
   assert.ok(h.calls.some(c => c[0] === 'gte' && c[1] === 'consultations.created_at'));
@@ -165,9 +168,9 @@ test('partner board filters masked summaries by type/region and expands without 
   const state = [], effects = []; let cursor = 0;
   const palette = new Proxy({}, { get: () => '' });
   const deps = { react: { useState: initial => { const i = cursor++; if (!(i in state)) state[i] = initial; return [state[i], value => state[i] = typeof value === 'function' ? value(state[i]) : value]; }, useEffect: f => effects.push(f) },
-    'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/link': { default: 'a' }, './EstimateLayout': { C: { home: palette, consultStatus: { lost: palette } } }, '@tabler/icons-react': {} };
+    'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/link': { default: 'a' }, '@/lib/partnerPortal': portal, './EstimateLayout': { C: { home: palette, consultStatus: { lost: palette } } }, '@tabler/icons-react': {} };
   const component = load('components/PartnerLeadBoard.tsx', deps, { AbortController, fetch: () => { throw new Error('Demo and expansion never fetch raw data'); } }).default;
-  const examples = [portal.partnerLead(source, source.created_at), portal.partnerLead({ ...source, id: nextVersion, building_type: 'residential', region: '경기' }, source.created_at)];
+  const examples = [portal.partnerLeadCard(portal.partnerLead(source, source.created_at), id, 0, false, true), portal.partnerLeadCard(portal.partnerLead({ ...source, id: nextVersion, building_type: 'residential', region: '경기' }, source.created_at), nextVersion, 0, false, true)];
   const render = () => { cursor = 0; effects.length = 0; return component({ company: '예시 업체', mode: 'demo', examples }); };
   let tree = render(); effects.forEach(f => f()); assert.equal(nodes(tree, n => n.type === 'article').length, 2);
   nodes(tree, n => n.type === 'button' && n.props.children === '주거')[0].props.onClick(); tree = render(); assert.equal(nodes(tree, n => n.type === 'article').length, 1);
@@ -179,12 +182,12 @@ test('partner board filters masked summaries by type/region and expands without 
 });
 test('production preview and lead page are server guarded; public previews use fictional rows only', async () => {
   const deps = { 'react/jsx-runtime': { jsx, jsxs: jsx }, 'next/navigation': { notFound: () => { throw new Error('not-found'); }, redirect: path => { throw new Error('redirect:' + path); } },
-    '@/lib/serverAuth': { isAdmin: async () => false }, '@/lib/serverPartnerPortal': { currentPartner: async () => null }, '@/components/PartnerLeadBoard': { default: 'board' } };
+    '@/lib/serverAuth': { isAdmin: async () => false }, '@/lib/serverPartnerPortal': { currentPartner: async () => null }, '@/components/PartnerLeadBoard': { default: 'board' }, '@/lib/partnerPortal': portal };
   const prod = load('app/partner/preview/page.tsx', deps, { process: { env: { VERCEL_ENV: 'production' } } });
   await assert.rejects(prod.default(), /not-found/);
   const preview = await load('app/partner/preview/page.tsx', deps, { process: { env: { VERCEL_ENV: 'preview' } } }).default();
   assert.equal(preview.props.mode, 'demo'); assert.equal(preview.props.examples.length, 6);
-  assert.ok(preview.props.examples.every(row => row.code.startsWith('EX-') && row.phone === '***-****-****'));
+  assert.ok(preview.props.examples.every(row => row.code.startsWith('EX-') && row.detail.phone === '***-****-****'));
   await assert.rejects(load('app/partner/leads/page.tsx', deps).default(), /redirect:\/partner\/login/);
 });
 test('admin session opens partner board with admin-only data access, without issuing a partner session', async () => {
@@ -203,4 +206,55 @@ test('admin session opens partner board with admin-only data access, without iss
   await assert.rejects(load('app/partner/login/page.tsx', deps).default(), /redirect:\/partner\/leads/);
   deps['@/lib/serverPartnerPortal'].currentPartner = async () => null;
   assert.equal((await load('app/partner/login/page.tsx', deps).default()).type, 'login');
+});
+test('two-slot details are absent before participation, available only to own participant or admin', async () => {
+  const entry = { consultation_id: id, partner_id: id, slot: 1, created_at: source.created_at, partner_portal_accounts: { company: '숨겨야 할 다른 업체명' } };
+  const own = harness({ entries: [entry] }); own.authenticate();
+  const card = (await (await own.leads.GET()).json()).items[0];
+  assert.equal(card.joined, true); assert.equal(card.participants, 1); assert.equal(card.detail.customer, '김 고객님');
+  assert.equal(card.detail.phone, '***-****-****');
+  assert.equal(JSON.stringify(card).includes('숨겨야 할 다른 업체명'), false);
+  const other = harness({ entries: [{ ...entry, partner_id: nextVersion }, { ...entry, partner_id: version, slot: 2 }] }); other.authenticate();
+  const locked = (await (await other.leads.GET()).json()).items[0];
+  assert.equal(locked.participants, 2); assert.equal(locked.joined, false); assert.equal(locked.detail, null);
+  assert.equal(JSON.stringify(locked).includes('3,000만원'), false);
+  const adminCards = await other.server.publishedPartnerLeads();
+  assert.equal(adminCards[0].detail.budget, '3,000만원');
+  assert.equal(other.calls.some(call => call[0] === 'rpc'), false);
+});
+test('bidding endpoint uses authenticated identity, denies admins/anonymous/CSRF and maps capacity failures', async () => {
+  const anonymous = harness({ admin: false });
+  assert.equal((await anonymous.bids.POST(request({ id }))).status, 401);
+  const admin = harness(); admin.authenticate();
+  assert.equal((await admin.bids.POST(request({ id }))).status, 403);
+  assert.equal(admin.calls.length, 0);
+  for (const [bidStatus, status] of [['joined', 200], ['full', 409], ['closed', 409], ['unavailable', 404], ['inactive', 401], ['unknown', 503]]) {
+    const h = harness({ admin: false, bidStatus }); h.authenticate();
+    assert.equal((await h.bids.POST(request({ id, partnerId: nextVersion, slot: 1 }))).status, status, bidStatus);
+    const rpc = h.calls.find(call => call[0] === 'rpc');
+    assert.equal(rpc[1], 'claim_partner_lead'); assert.equal(rpc[2].p_partner_id, account.id);
+    assert.equal(rpc[2].p_session_version, account.session_version); assert.equal(rpc[2].p_consultation_id, id);
+  }
+  const h = harness({ admin: false }); h.authenticate();
+  assert.equal((await h.bids.POST(request({ id }, 'https://evil.example'))).status, 403);
+  assert.equal((await h.bids.POST(request({ id: 'bad' }))).status, 400);
+  assert.equal(h.calls.some(call => call[0] === 'rpc'), false);
+  const limited = harness({ admin: false, limited: true }); limited.authenticate();
+  assert.equal((await limited.bids.POST(request({ id }))).status, 429);
+  assert.equal(limited.calls.some(call => call[0] === 'rpc'), false);
+});
+test('slot persistence enforces two fixed positions, one per partner; RPC serializes and denies direct writes', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261106_partner_bid_slots.sql', import.meta.url), 'utf8');
+  assert.match(sql, /check \(slot in \(1, 2\)\)/);
+  assert.match(sql, /primary key \(consultation_id, slot\)/);
+  assert.match(sql, /unique \(consultation_id, partner_id\)/);
+  assert.match(sql, /consultations[^;]+for update/);
+  assert.match(sql, /partner_portal_accounts[^;]+session_version[^;]+for share/);
+  assert.match(sql, /partner_lead_publications[^;]+for share/);
+  assert.match(sql, /v_count >= 2/);
+  assert.ok(sql.indexOf("'status','joined'") < sql.indexOf('v_count >= 2'), 'revisits stay idempotent at full capacity');
+  assert.match(sql, /revoke all on public\.partner_lead_entries from public, anon, authenticated, service_role/);
+  assert.match(sql, /grant select on public\.partner_lead_entries to service_role/);
+  assert.doesNotMatch(sql, /grant (?:insert|all)[^;]+on public\.partner_lead_entries/);
+  assert.match(sql, /revoke all on function[^;]+from public, anon, authenticated/);
 });
