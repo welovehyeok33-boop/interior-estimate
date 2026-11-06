@@ -152,3 +152,16 @@ test('root mask covers restored form summaries and no customer identifiers are s
   const component = readFileSync(new URL('../src/components/ClarityAnalytics.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(component, /clarity\?\.\('identify'|localStorage|sessionStorage|consultStore|estimateStore/);
 });
+
+ test('UTM campaign tokens are eligible while sensitive and private URLs stay excluded', async () => {
+ for (const source of ['interiorfree','interiorhub_office','interiorhub_academy','interiorhub_apt','interiorhub_villa','interiorpick']) {
+ const query='utm_source='+source+'&utm_medium=referral&utm_campaign=autumn_2026';
+ assert.equal(clarity.clarityPageAllowed('/consult','?'+query),true);
+ const h=client({eligible:true,consent:'granted'}); h.render('/consult',query); await settle(); assert.equal(h.scripts.length,1);
+ h.render('/consult/step2',query); await settle(); assert.equal(h.scripts.length,1); assert.equal(h.reloads,0);
+ const denied=client({eligible:true,consent:null}); denied.render('/consult',query); await settle(); assert.equal(denied.scripts.length,0);
+ }
+ for(const query of ['phone=01012345678','utm_source=x&email=a%40b.com','utm_source=x&utm_source=y','utm_campaign=x01012345678','utm_source=a%40b.com','utm_source=hello%20world','utm_source=','utm_source='+ 'x'.repeat(65)]) assert.equal(clarity.clarityPageAllowed('/consult',query),false,query);
+ assert.equal(clarity.clarityPageAllowed('/admin','utm_source=naver'),false);
+ assert.equal(clarity.clarityPageAllowed('/','utm_source=naver','#private'),false);
+ });

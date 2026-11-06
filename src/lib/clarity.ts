@@ -8,8 +8,17 @@ export function clarityConsent(value?: string): ClarityConsent {
   return value === 'granted' || value === 'denied' ? value : null;
 }
 export function clarityPageAllowed(path: string, search = '', hash = '') {
-  // Never record arbitrary URLs, private screens, results or query/hash contents.
-  if (search || hash) return false;
+  // Only bounded campaign tokens may appear in recorded URLs.
+  if (hash || search.length > 512) return false;
+  const params = new URLSearchParams(search);
+  const seen = new Set<string>();
+  const allowed = new Set(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']);
+  for (const [key, value] of params) {
+    if (!allowed.has(key) || seen.has(key)
+      || !/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(value)
+      || /\d{7}/.test(value)) return false;
+    seen.add(key);
+  }
   return ['/', '/landing', '/estimate', '/estimate/scan', '/consult', '/consult/step2', '/consult/step3', '/consult/step4', '/partners', '/portfolio', '/blog'].includes(path)
     || /^\/blog\/[a-z0-9-]+(?:\/[a-z0-9-]+)?$/.test(path);
 }
