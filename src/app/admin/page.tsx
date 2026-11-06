@@ -13,6 +13,7 @@ import AdminReferralSites from "@/components/AdminReferralSites";
 import type { StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
+import { CLARITY_DASHBOARD } from '@/lib/clarity';
 
 import {
   IconLock, IconRefresh,
@@ -250,7 +251,7 @@ export default function AdminPage() {
             <span style={{ fontSize: 12, color: A.mid, marginLeft: 14 }}>관리자</span>
             <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><AdminThemeToggle /><button
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}><a href={CLARITY_DASHBOARD} target="_blank" rel="noopener noreferrer" style={{ color: A.mid, fontSize: 12, padding: '7px 10px', border: `1px solid ${A.border}`, borderRadius: 8, textDecoration: 'none' }}>방문 행동 분석 ↗</a><AdminThemeToggle /><button
             onClick={() => void fetchLeads()}
             style={{ display: "flex", alignItems: "center", gap: 6, background: A.card, border: `1px solid ${A.border}`, borderRadius: 8, padding: "7px 14px", cursor: "pointer", color: A.mid, fontSize: 13 }}
           >

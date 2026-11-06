@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { C } from '@/components/EstimateLayout';
+import { CLARITY_PREFERENCE_EVENT } from '@/lib/clarity';
 
 export default function TrafficPreference() {
   const [excluded, setExcluded] = useState<boolean | null>(null);
@@ -26,6 +27,7 @@ export default function TrafficPreference() {
       const check = await fetch('/api/analytics/preference', { cache: 'no-store' });
       if (!check.ok || (await check.json()).excluded !== saved.excluded) throw new Error();
       setExcluded(saved.excluded);
+      window.dispatchEvent(new Event(CLARITY_PREFERENCE_EVENT));
     } catch { setError('설정을 저장하지 못했어요. 쿠키 허용 여부를 확인하고 다시 시도해주세요.'); }
     finally { setBusy(false); }
   }
