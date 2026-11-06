@@ -26,7 +26,7 @@ function harness(options = {}) {
     return { auth: {
       signInWithPassword: async credentials => { calls.push(['signIn', credentials.email]); signedIn = true; if (options.rotated) currentVersion = nextVersion; return { error: options.badPassword ? {} : null, data: { user: { id, app_metadata: { formit_partner: !options.wrongRole } } } }; },
       admin: { getUserById: async () => ({ data: { user: { id, app_metadata: { formit_partner: !options.wrongRole }, ...(options.banned ? { banned_until: '2099-01-01T00:00:00Z' } : {}) } }, error: null }),
-        createUser: async v => { calls.push(['createUser', v.email]); return { data: { user: { id } }, error: options.duplicate ? {} : null }; },
+        createUser: async v => { calls.push(['createUser', v]); return { data: { user: { id } }, error: options.duplicate ? {} : null }; },
         deleteUser: async v => { calls.push(['deleteUser', v]); return {}; }, updateUserById: async v => { calls.push(['resetPassword', v]); return { error: null }; } },
     }, from: table => {
       if (signedIn) throw new Error('Never use a password-mutated Supabase client for service-role queries');
@@ -125,6 +125,8 @@ test('admin issuance returns password only once, never on list; invalid account 
   assert.equal((await h.accounts.POST(request({ email: 'bad', company: 'a' }))).status, 400);
   const issued = await h.accounts.POST(request({ email: account.email, company: account.company })); assert.equal(issued.status, 201);
   assert.ok((await issued.json()).password.length >= 24);
+  assert.equal(h.calls.find(c => c[0] === 'createUser')[1].app_metadata.formit_partner, true);
+  assert.equal(h.calls.find(c => c[0] === 'createUser')[1].email_confirm, true);
   assert.equal(JSON.stringify(await (await h.accounts.GET()).json()).includes('password'), false);
   const failed = harness({ insertFailure: true }); assert.equal((await failed.accounts.POST(request({ email: account.email, company: account.company }))).status, 503);
   assert.ok(failed.calls.some(c => c[0] === 'deleteUser' && c[1] === id));

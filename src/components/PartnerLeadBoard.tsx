@@ -15,11 +15,11 @@ export default function PartnerLeadBoard({ company, mode = 'partner', examples =
     async function load() {
       setLoading(true); setError('');
       try {
-        const response = await fetch(mode === 'admin' ? '/api/admin/partner-leads' : '/api/partner/leads', { cache: 'no-store', signal: controller.signal });
+        const response = await fetch(mode === 'admin' ? '/api/admin/partner-leads?preview=1' : '/api/partner/leads', { cache: 'no-store', signal: controller.signal });
         if (response.status === 401) { window.location.assign(mode === 'admin' ? '/admin' : '/partner/login'); return; }
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || '견적을 불러오지 못했어요.');
-        if (!controller.signal.aborted) setItems(mode === 'admin' ? result.items.filter((row: PartnerLead & { published: boolean }) => row.published) : result.items);
+        if (!controller.signal.aborted) setItems(result.items);
       } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : '다시 시도해주세요.'); }
       finally { if (!controller.signal.aborted) setLoading(false); }
     }

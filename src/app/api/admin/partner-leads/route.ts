@@ -1,11 +1,12 @@
 import { apiJson, isAdmin, sameOrigin } from '@/lib/serverAuth';
 import { serverDb } from '@/lib/serverDb';
 import { PARTNER_UUID, partnerLead } from '@/lib/partnerPortal';
-import { PARTNER_SOURCE_COLUMNS, partnerCutoff } from '@/lib/serverPartnerPortal';
+import { PARTNER_SOURCE_COLUMNS, partnerCutoff, publishedPartnerLeads } from '@/lib/serverPartnerPortal';
 export const dynamic = 'force-dynamic';
-export async function GET() {
+export async function GET(request: Request) {
   try {
     if (!await isAdmin()) return apiJson({ error: '관리자 로그인이 필요합니다.' }, 401);
+    if (new URL(request.url).searchParams.get('preview') === '1') return apiJson({ items: await publishedPartnerLeads() });
     const db = serverDb();
     const [sources, publications] = await Promise.all([
       db.from('consultations').select(PARTNER_SOURCE_COLUMNS).gte('created_at', partnerCutoff()).order('created_at', { ascending: false }).limit(500),
