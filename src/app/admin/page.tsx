@@ -13,6 +13,7 @@ import AdminReferralSites from "@/components/AdminReferralSites";
 import type { StatusCount } from "@/components/AdminStatusOverview";
 import { formatEstimateRegion } from "@/lib/estimateRegion";
 import { C } from "@/components/EstimateLayout";
+import Link from 'next/link';
 import { CLARITY_DASHBOARD } from '@/lib/clarity';
 
 import {
@@ -249,6 +250,7 @@ export default function AdminPage() {
           <div>
             <span style={{ fontWeight: 900, fontSize: 18, color: C.textDark, background: C.primary, borderRadius: 7, padding: '6px 10px' }}>폼잇.</span>
             <span style={{ fontSize: 12, color: A.mid, marginLeft: 14 }}>관리자</span>
+            <Link href="/admin/partner-portal" style={{ marginLeft: 14, color: A.mid, fontSize: 12 }}>파트너 공간 관리 ↗</Link>
             <button onClick={logout} style={{ color: A.mid, background: 'none', border: 0, cursor: 'pointer', marginLeft: 18, fontSize: 12 }}>로그아웃</button>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}><a href={CLARITY_DASHBOARD} target="_blank" rel="noopener noreferrer" style={{ color: A.mid, fontSize: 12, padding: '7px 10px', border: `1px solid ${A.border}`, borderRadius: 8, textDecoration: 'none' }}>방문 행동 분석 ↗</a><AdminThemeToggle /><button
