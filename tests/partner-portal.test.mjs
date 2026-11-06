@@ -187,3 +187,20 @@ test('production preview and lead page are server guarded; public previews use f
   assert.ok(preview.props.examples.every(row => row.code.startsWith('EX-') && row.phone === '***-****-****'));
   await assert.rejects(load('app/partner/leads/page.tsx', deps).default(), /redirect:\/partner\/login/);
 });
+test('admin session opens partner board with admin-only data access, without issuing a partner session', async () => {
+  const deps = { 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'next/navigation': { redirect: path => { throw new Error('redirect:' + path); } },
+    '@/lib/serverAuth': { isAdmin: async () => true },
+    '@/lib/serverPartnerPortal': { currentPartner: async () => { throw new Error('Admin must not require a partner account'); } },
+    '@/components/PartnerLeadBoard': { default: 'board' }, '@/components/PartnerLogin': { default: 'login' } };
+  const board = await load('app/partner/leads/page.tsx', deps).default();
+  assert.equal(board.props.mode, 'admin'); assert.equal(board.props.company, '폼잇 관리자');
+  await assert.rejects(load('app/partner/login/page.tsx', deps).default(), /redirect:\/partner\/leads/);
+  deps['@/lib/serverAuth'].isAdmin = async () => false;
+  deps['@/lib/serverPartnerPortal'].currentPartner = async () => account;
+  const partnerBoard = await load('app/partner/leads/page.tsx', deps).default();
+  assert.equal(partnerBoard.props.company, account.company); assert.equal(partnerBoard.props.mode, undefined);
+  await assert.rejects(load('app/partner/login/page.tsx', deps).default(), /redirect:\/partner\/leads/);
+  deps['@/lib/serverPartnerPortal'].currentPartner = async () => null;
+  assert.equal((await load('app/partner/login/page.tsx', deps).default()).type, 'login');
+});
