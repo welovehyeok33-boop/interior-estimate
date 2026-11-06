@@ -82,8 +82,8 @@ export default function Home() {
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gridTemplateColumns: m ? "minmax(0, 1fr)" : "0.85fr 1.15fr", gap: m ? 28 : 48, alignItems: "center" }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ color: C.home.bronze, fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", margin: "0 0 18px" }}>주거부터 상가까지 · 인테리어 무료 상담</p>
-            <h1 id="home-hero-title" style={{ fontSize: m ? "clamp(32px, 8.6vw, 40px)" : "clamp(40px, 4vw, 54px)", lineHeight: 1.25, letterSpacing: "-0.04em", margin: "0 0 22px", wordBreak: "keep-all", fontWeight: 800 }}><span style={{ fontSize: "0.78em", fontWeight: 650 }}>주거·상가 인테리어,</span><br />공사 전 무료로<br />상담하세요.</h1>
-            <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>마음에 드는 공간을 둘러보고,<br />공사 계획에 맞는 무료 상담을 시작하세요.</p>
+            <h1 id="home-hero-title" style={{ fontSize: m ? "clamp(32px, 8.6vw, 40px)" : "clamp(40px, 4vw, 54px)", lineHeight: 1.25, letterSpacing: "-0.04em", margin: "0 0 22px", wordBreak: "keep-all", fontWeight: 800 }}><span style={{ fontSize: "0.78em", fontWeight: 650 }}>인테리어 견적,</span><br />한 곳만 보고<br />결정하지 마세요.</h1>
+            <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>업체마다 다른 견적과 제안,<br />비교하고 선택하세요.</p>
             <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", gap: 16, padding: m ? "14px 22px" : "16px 26px", borderRadius: 10, background: Y, color: K, textDecoration: "none", fontSize: m ? 14 : 15, fontWeight: 800 }}>내 공간 견적 알아보기 <span aria-hidden="true">→</span></Link>
             <p style={{ margin: "16px 0 0", fontSize: 11, color: C.home.muted }}>가입 없이 · 4단계 신청 · 상담 신청 무료</p>
           </div>
