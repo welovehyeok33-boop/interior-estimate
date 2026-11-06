@@ -17,10 +17,10 @@ export default function PartnerLogin() {
       setPassword(''); window.location.assign('/partner/leads');
     } catch (e) { setError(e instanceof Error ? e.message : '다시 시도해주세요.'); setBusy(false); }
   }
-  const field = { boxSizing: 'border-box' as const, width: '100%', padding: '14px 16px', border: `1px solid ${C.home.line}`, borderRadius: 10, background: C.card, color: C.home.ink, font: 'inherit', fontSize: 14 };
+  const field = { boxSizing: 'border-box' as const, width: '100%', padding: '14px 16px', border: `1px solid ${C.home.line}`, borderRadius: 10, background: C.card, color: C.home.ink, font: 'inherit', fontSize: 16 };
   return <div data-clarity-mask="true" style={{ minHeight: '100vh', background: C.home.paper, color: C.home.ink }}>
     <header style={{ maxWidth: 1200, padding: '22px 24px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}><Link href="/" style={{ color: C.textDark, background: C.primary, padding: '7px 12px', borderRadius: 8, fontWeight: 900, fontSize: 20, textDecoration: 'none' }}>폼잇.</Link><span style={{ fontSize: 12, color: C.home.muted }}>파트너 전용 공간</span></header>
-    <main style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'stretch' }}>
+    <main style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 24px 64px', display: 'flex', flexWrap: 'wrap-reverse', gap: 24, alignItems: 'stretch' }}>
       <section style={{ flex: '1 1 320px', boxSizing: 'border-box', minWidth: 0, padding: '48px 32px', borderRadius: 24, background: C.home.ink, color: C.home.onDark, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 48 }}>
         <div><span style={{ color: C.primary, fontSize: 11, fontWeight: 750, letterSpacing: '0.14em' }}>FORMIT PARTNERS</span><h1 style={{ fontSize: 'clamp(30px, 4vw, 42px)', lineHeight: 1.3, letterSpacing: '-0.045em', margin: '24px 0 20px' }}>잘 맞는 의뢰,<br />더 나은 현장.</h1><p style={{ color: C.home.mutedOnDark, fontSize: 14, lineHeight: 1.9, margin: 0 }}>공간과 예산, 공사 일정을 한눈에.<br />폼잇과 함께 다음 공사를 준비하세요.</p></div>
         <div style={{ display: 'grid', gap: 15 }}><IconBuildingStore size={34} color={C.primary} stroke={1.5} /><strong style={{ fontSize: 15 }}>인테리어를 아는 파트너를 위한 공간</strong><span style={{ color: C.home.mutedOnDark, fontSize: 12, lineHeight: 1.8 }}>주거부터 상가까지, 공개된 견적을 확인하고<br />우리 업체에 맞는 공사를 살펴보세요.</span></div>
