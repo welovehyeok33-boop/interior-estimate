@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import VisitTracker from "@/components/VisitTracker";
+import ClarityAnalytics from '@/components/ClarityAnalytics';
 import { SITE_URL, PUBLIC_SEARCH_PAGES, pageMetadata, searchVerification, jsonLd, websiteStructuredData } from '@/lib/siteMetadata';
 
 export const metadata: Metadata = {
@@ -22,10 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body style={{ margin: 0, fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif" }}>
+      <body data-clarity-mask="true" style={{ margin: 0, fontFamily: "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif" }}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(websiteStructuredData) }} />
         {children}
         <Suspense fallback={null}><VisitTracker /></Suspense>
+        <Suspense fallback={null}><ClarityAnalytics /></Suspense>
       </body>
     </html>
   );
