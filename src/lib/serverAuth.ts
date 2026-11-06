@@ -25,7 +25,7 @@ export async function isAdmin() {
 export function sameOrigin(request: Request) {
   return request.headers.get('origin') === new URL(request.url).origin;
 }
-export async function rateLimit(request: Request, kind: 'login' | 'consult' | 'partner', limit: number) {
+export async function rateLimit(request: Request, kind: 'login' | 'consult' | 'partner' | 'partner_login', limit: number) {
   const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || 'unknown';
   const bucket = createHmac('sha256', secret()).update(`${kind}:${ip.split(',')[0].trim()}`).digest('hex');
   const { data, error } = await serverDb().rpc('consume_request_limit', { bucket, max_hits: limit, window_seconds: 900 });

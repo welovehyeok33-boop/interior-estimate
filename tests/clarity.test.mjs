@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import * as clarity from '../src/lib/clarity.ts';
 import * as preference from '../src/lib/trafficPreference.ts';
+import * as partnerPortal from '../src/lib/partnerPortal.ts';
 
 function load(file, deps, globals = {}) {
   const code = ts.transpileModule(readFileSync(new URL('../src/' + file, import.meta.url), 'utf8'), {
@@ -21,7 +22,7 @@ function api(env = 'production') {
     'next/headers': { cookies: async () => ({ get: n => values.has(n) ? { value: values.get(n) } : undefined,
       set: (name, value, options) => { values.set(name, value); writes.push({ name, value, options }); } }) },
     '@/lib/serverAuth': { ADMIN_COOKIE: 'formit_admin_session', apiJson: (b, s = 200) => Response.json(b, { status: s }), sameOrigin: r => r.headers.get('origin') === new URL(r.url).origin },
-    '@/lib/trafficPreference': preference, '@/lib/clarity': clarity,
+    '@/lib/trafficPreference': preference, '@/lib/clarity': clarity, '@/lib/partnerPortal': partnerPortal,
   }, { process: { env: { VERCEL_ENV: env, NODE_ENV: 'production' } }, URL });
   return { ...route, values, writes };
 }
@@ -31,7 +32,7 @@ const request = (body, origin = 'https://form.it.kr') => new Request('https://fo
 test('Clarity eligibility fails closed on admin, exclusion, preview and noncanonical hosts', async () => {
   const s = api(), r = new Request('https://form.it.kr/api/analytics/clarity');
   assert.deepEqual(await (await s.GET(r)).json(), { eligible: true, consent: null });
-  for (const cookie of ['formit_admin_session', preference.TRAFFIC_EXCLUSION_COOKIE]) {
+  for (const cookie of ['formit_admin_session', preference.TRAFFIC_EXCLUSION_COOKIE, partnerPortal.PARTNER_PORTAL_COOKIE]) {
     s.values.set(cookie, '1'); assert.equal((await (await s.GET(r)).json()).eligible, false); s.values.clear();
   }
   assert.equal((await (await api('preview').GET(r)).json()).eligible, false);

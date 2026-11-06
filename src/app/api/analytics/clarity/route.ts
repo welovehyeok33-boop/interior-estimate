@@ -2,12 +2,13 @@ import { cookies } from 'next/headers';
 import { ADMIN_COOKIE, apiJson, sameOrigin } from '@/lib/serverAuth';
 import { TRAFFIC_EXCLUSION_COOKIE, trafficExcluded } from '@/lib/trafficPreference';
 import { CLARITY_CONSENT_COOKIE, clarityConsent, clarityServerAllowed } from '@/lib/clarity';
+import { PARTNER_PORTAL_COOKIE } from '@/lib/partnerPortal';
 
 export async function GET(request: Request) {
   const jar = await cookies();
   return apiJson({
     eligible: clarityServerAllowed(process.env.VERCEL_ENV, new URL(request.url).hostname,
-      trafficExcluded(jar.get(TRAFFIC_EXCLUSION_COOKIE)?.value), !!jar.get(ADMIN_COOKIE)?.value),
+      trafficExcluded(jar.get(TRAFFIC_EXCLUSION_COOKIE)?.value), !!jar.get(ADMIN_COOKIE)?.value || !!jar.get(PARTNER_PORTAL_COOKIE)?.value),
     consent: clarityConsent(jar.get(CLARITY_CONSENT_COOKIE)?.value),
   });
 }
