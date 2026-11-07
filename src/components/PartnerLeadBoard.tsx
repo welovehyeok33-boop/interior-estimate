@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { IconArrowUpRight, IconMapPin, IconLock, IconRefresh, IconSearch, IconLayoutGrid } from '@tabler/icons-react';
 import { C } from './EstimateLayout';
+import PartnerCreditPromotion from './PartnerCreditPromotion';
 import { PARTNER_LEAD_CAPACITY, type PartnerLeadCard } from '@/lib/partnerPortal';
 
 export default function PartnerLeadBoard({ company, mode = 'partner', examples = [] }: { company: string; mode?: 'partner' | 'admin' | 'demo'; examples?: PartnerLeadCard[] }) {
@@ -74,6 +75,7 @@ export default function PartnerLeadBoard({ company, mode = 'partner', examples =
         </article>;
       })}</div></section>
       <p style={{ fontSize: 12, color: C.home.muted, lineHeight: 1.8, marginTop: 24 }}>비딩 참여 시 해당 견적의 2자리 중 1자리가 확정됩니다. 같은 파트너 계정의 재열람은 추가 차감되지 않습니다. 이름은 성만, 연락처는 전체 마스킹되며 견적 문의는 폼잇 담당자에게 연락해주세요.</p>
+      <div style={{ marginTop: 36 }}><PartnerCreditPromotion /></div>
     </main>
   </div>;
 }
