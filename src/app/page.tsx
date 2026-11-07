@@ -86,7 +86,7 @@ export default function Home() {
             <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>업체마다 다른 견적과 제안,<br />비교하고 선택하세요.</p>
             <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", gap: 16, padding: m ? "14px 22px" : "16px 26px", borderRadius: 10, background: Y, color: K, textDecoration: "none", fontSize: m ? 14 : 15, fontWeight: 800 }}>내 공간 견적 알아보기 <span aria-hidden="true">→</span></Link>
             <p style={{ margin: "16px 0 0", fontSize: 11, color: C.home.muted }}>가입 없이 · 4단계 신청 · 상담 신청 무료</p>
-            <a href="#partner-selection-title" style={{ display: "inline-block", marginTop: 14, color: C.home.bronze, fontSize: 13, fontWeight: 700, textUnderlineOffset: 4 }}>폼잇의 파트너 선정 기준 <span aria-hidden="true">↓</span></a>
+            <a href="#partner-selection" style={{ display: "inline-block", marginTop: 14, color: C.home.bronze, fontSize: 13, fontWeight: 700, textUnderlineOffset: 4 }}>폼잇의 파트너 선정 기준 <span aria-hidden="true">↓</span></a>
           </div>
           <HomeProjectGallery mobile={m} />
         </div>
@@ -104,7 +104,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-labelledby="partner-selection-title" style={{ background: C.home.ivory, padding: m ? "48px 20px" : "64px 32px", borderBottom: `1px solid ${C.home.line}` }}>
+      <section id="partner-selection" aria-labelledby="partner-selection-title" style={{ scrollMarginTop: 64, background: C.home.ivory, padding: m ? "48px 20px" : "64px 32px", borderBottom: `1px solid ${C.home.line}` }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <p style={{ color: C.home.bronze, fontSize: 11, fontWeight: 750, letterSpacing: "0.1em", margin: "0 0 16px" }}>폼잇의 파트너 선정 기준</p>
           <h2 id="partner-selection-title" style={{ fontSize: m ? 29 : 40, lineHeight: 1.3, letterSpacing: "-0.045em", margin: "0 0 18px", wordBreak: "keep-all" }}>견적 비교 전에,<br />업체부터 살펴봅니다.</h2>
