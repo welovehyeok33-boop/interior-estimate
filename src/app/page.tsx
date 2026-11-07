@@ -86,6 +86,7 @@ export default function Home() {
             <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>업체마다 다른 견적과 제안,<br />비교하고 선택하세요.</p>
             <Link href="/estimate" style={{ display: "inline-flex", alignItems: "center", gap: 16, padding: m ? "14px 22px" : "16px 26px", borderRadius: 10, background: Y, color: K, textDecoration: "none", fontSize: m ? 14 : 15, fontWeight: 800 }}>내 공간 견적 알아보기 <span aria-hidden="true">→</span></Link>
             <p style={{ margin: "16px 0 0", fontSize: 11, color: C.home.muted }}>가입 없이 · 4단계 신청 · 상담 신청 무료</p>
+            <a href="#partner-selection" style={{ display: "inline-block", marginTop: 14, color: C.home.bronze, fontSize: 13, fontWeight: 700, textUnderlineOffset: 4 }}>폼잇의 파트너 선정 기준 <span aria-hidden="true">↓</span></a>
           </div>
           <HomeProjectGallery mobile={m} />
         </div>
@@ -103,7 +104,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 휴대폰 미리보기는 현장 사진 다음으로 이동 ── */}
+      <section id="partner-selection" aria-labelledby="partner-selection-title" style={{ scrollMarginTop: 64, background: C.home.ivory, padding: m ? "48px 20px" : "64px 32px", borderBottom: `1px solid ${C.home.line}` }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <p style={{ color: C.home.bronze, fontSize: 11, fontWeight: 750, letterSpacing: "0.1em", margin: "0 0 16px" }}>폼잇의 파트너 선정 기준</p>
+          <h2 id="partner-selection-title" style={{ fontSize: m ? 29 : 40, lineHeight: 1.3, letterSpacing: "-0.045em", margin: "0 0 18px", wordBreak: "keep-all" }}>견적 비교 전에,<br />업체부터 살펴봅니다.</h2>
+          <p style={{ color: C.home.muted, fontSize: m ? 14 : 16, lineHeight: 1.9, margin: "0 0 30px", maxWidth: 620, wordBreak: "keep-all" }}>가격만으로 업체를 고르지 않도록.<br />파트너 선정 시 시공 이력과 포트폴리오, 고객 응대와 사후관리 체계를 검토합니다.</p>
+          <div style={{ display: "grid", gridTemplateColumns: m ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+            {[
+              ["시공 이력과 포트폴리오", "실제로 어떤 공간을 시공했는지, 공사 경험과 포트폴리오를 살펴봅니다."],
+              ["전문 분야와 시공 지역", "주거·상가의 전문 분야와 활동 지역을 확인해 고객의 공사 계획에 맞는지 검토합니다."],
+              ["소통과 사후관리", "상담 과정의 응대와 공사 후 관리 방식을 함께 확인합니다."],
+            ].map(([title, description], i) => <article key={title} style={{ minWidth: 0, background: C.card, border: `1px solid ${C.home.line}`, borderRadius: 14, padding: m ? 22 : 26 }}>
+              <span style={{ color: C.home.bronze, fontSize: 12, fontWeight: 750 }}>0{i + 1}</span>
+              <h3 style={{ fontSize: 18, letterSpacing: "-0.03em", margin: "16px 0 12px" }}>{title}</h3>
+              <p style={{ color: C.home.muted, fontSize: 13, lineHeight: 1.85, margin: 0, wordBreak: "keep-all" }}>{description}</p>
+            </article>)}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 휴대폰 미리보기는 현장·파트너 안내 다음으로 이동 ── */}
       <section aria-labelledby="home-preview-title" style={{ background: C.home.paper, padding: m ? "52px 20px" : "72px 32px", borderBottom: `1px solid ${C.home.line}` }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: m ? "minmax(0,1fr)" : "1fr 1fr", gap: m ? 32 : 64, alignItems: "center" }}>
           <div><p style={{ color: C.home.bronze, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", margin: "0 0 16px" }}>서비스 이용 미리보기</p><h2 id="home-preview-title" style={{ fontSize: m ? 30 : 40, lineHeight: 1.3, letterSpacing: "-0.045em", margin: "0 0 22px", wordBreak: "keep-all" }}>공사 준비는 차근차근,<br />상담 신청은 간단하게.</h2><p style={{ color: C.home.muted, fontSize: 14, lineHeight: 1.9, margin: "0 0 24px", wordBreak: "keep-all" }}>지역과 공간, 면적, 공사 계획을 알려주세요.<br />접수 내용을 확인한 뒤 상담을 통해 안내해드립니다.</p><Link href="/consult" style={{ color: K, textDecoration: "none", fontSize: 14, fontWeight: 750, borderBottom: `1px solid ${C.home.accentLine}`, paddingBottom: 6 }}>무료 상담 시작하기 →</Link><p style={{ color: C.home.muted, fontSize: 11, lineHeight: 1.8, marginTop: 24 }}>화면은 서비스 설명을 위한 미리보기입니다.<br />예시 금액은 실제 시공 견적이 아닙니다.</p></div>
