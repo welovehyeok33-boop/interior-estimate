@@ -1,3 +1,6 @@
+export const CONSULT_STAGE_PATHS = ['/consult', '/consult/step2', '/consult/step3', '/consult/step4'] as const;
+export type ConsultStageCounts = Record<(typeof CONSULT_STAGE_PATHS)[number], number>;
+
 export const TRACKED_PAGES: Record<string, string> = {
   '/': '홈', '/landing': '상담 안내', '/estimate': '견적 선택', '/estimate/scan': '스캔 안내', '/blog': '블로그',
   '/consult': '무료견적 1 · 공간', '/consult/step2': '무료견적 2 · 면적', '/consult/step3': '무료견적 3 · 일정/예산', '/consult/step4': '무료견적 4 · 연락처',
@@ -13,6 +16,7 @@ export type TrafficMetadata = { country: string | null; region: string | null; c
 export type TrafficSegment = { label: string; visitors: number; converted: number };
 export type TrafficDetails = {
   enabled: boolean; ipEnabled: boolean; startedAt: string; visitors: number;
+  consultStages?: ConsultStageCounts | null;
   regions: (TrafficMetadata & { visitors: number; converted: number })[];
   devices: TrafficSegment[]; browsers: TrafficSegment[]; systems: TrafficSegment[];
   pages: { path: string; visitors: number; converted: number }[];
