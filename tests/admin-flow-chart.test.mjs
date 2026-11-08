@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import * as trafficDetails from '../src/lib/trafficDetails.ts';
 
 function render(props, detailed = false) {
   const jsx=(type,props)=>({type,props}),exports={};
   const source=readFileSync(new URL('../src/components/AdminFlowChart.tsx',import.meta.url),'utf8');
   const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
   const deps={'react/jsx-runtime':{jsx,jsxs:jsx},'@/lib/features':{DETAIL_ESTIMATE_ENABLED:detailed},
+    '@/lib/trafficDetails':trafficDetails,
     './EstimateLayout':{C:{primary:'gold',admin:{bg:'background',raised:'track',muted:'muted',chartAlt:'alternate'}}},'./adminStyles':{muted:{}}};
   runInNewContext(output,{exports,require:name=>deps[name]});
   return exports.default(props);
@@ -18,7 +20,8 @@ function all(node,predicate) {
   return[...(predicate(node)?[node]:[]),...[node.props?.children].flat(Infinity).flatMap(child=>all(child,predicate))];
 }
 function text(node){if(typeof node==='string'||typeof node==='number')return String(node);return[node?.props?.children].flat(Infinity).map(child=>child&&typeof child==='object'?text(child):typeof child==='string'||typeof child==='number'?String(child):'').join('');}
-const details={pages:['/consult','/consult/step2','/consult/step3','/consult/step4'].map((path,i)=>({path,visitors:[100,50,20,10][i],converted:99}))};
+const counts = (...values) => Object.fromEntries(trafficDetails.CONSULT_STAGE_PATHS.map((path, i) => [path, values[i] ?? 0]));
+const details = { pages: [{ path: '/consult', visitors: 200 }], consultStages: counts(100, 50, 20, 10) };
 const bars=tree=>all(tree,n=>n.props?.['aria-hidden']==='true');
 
 test('consultation flow appends actual applications as a fifth gold bar, separate from visit conversions',()=>{
@@ -28,11 +31,11 @@ test('consultation flow appends actual applications as a fifth gold bar, separat
   assert.deepEqual(all(tree,n=>n.type==='strong').map(text),['100회','50회','20회','10회','4건']);
   assert.equal(bars(tree).length,5);assert.equal(bars(tree)[4].props.children.props.style.height,'4%');
   assert.ok(bars(tree).every(node=>node.props.children.props.style.background==='gold'));
-  assert.match(text(tree),/5단계는 선택 기간의 실제 접수 건수/);
+  assert.match(text(tree),/5단계는 선택 기간의 전체 실제 접수 건수/);
 });
 
 test('zero applications draw an empty fifth track with 0건, not a minimum positive bar',()=>{
-  const tree=render({details:{pages:[]},requests:0});
+  const tree=render({details:{pages:[],consultStages:counts()},requests:0});
   assert.equal(text(all(tree,n=>n.type==='strong').at(-1)),'0건');
   assert.ok(bars(tree).every(node=>node.props.children.props.style.height==='0%'));
 });
@@ -48,7 +51,7 @@ test('missing stage data stays unknown without hiding known application counts',
 });
 
 test('the shared bar scale includes applications even when their count exceeds tracked stages',()=>{
-  const tree=render({details:{pages:[{path:'/consult/step4',visitors:1}]},requests:4});
+  const tree=render({details:{pages:[],consultStages:counts(0,0,0,1)},requests:4});
   assert.equal(bars(tree)[3].props.children.props.style.height,'25%');
   assert.equal(bars(tree)[4].props.children.props.style.height,'100%');
 });
@@ -63,7 +66,7 @@ test('five flexible columns align tracks below wrapped mobile labels without a f
 
 test('disabled detail preview remains hidden; enabling it retains its five visit-only bars',()=>{
   assert.doesNotMatch(text(render({details,requests:1})),/상세견적/);
-  const tree=render({details:{pages:[...details.pages,{path:'/estimate/detail/step5',visitors:2}]},requests:1},true);
+  const tree=render({details:{...details,pages:[...details.pages,{path:'/estimate/detail/step5',visitors:2}]},requests:1},true);
   assert.equal(bars(tree).length,10);assert.match(text(tree),/상세견적/);
   assert.equal(text(all(tree,n=>n.type==='strong').at(-1)),'2회');
   assert.ok(bars(tree).slice(5).every(node=>node.props.children.props.style.background==='alternate'));

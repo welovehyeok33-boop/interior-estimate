@@ -1,6 +1,17 @@
 import { apiJson, isAdmin, sameOrigin } from "@/lib/serverAuth";
 import { serverDb } from "@/lib/serverDb";
 import { parseStatsPeriod } from '@/lib/adminStatsPeriod';
+import { CONSULT_STAGE_PATHS, type ConsultStageCounts } from '@/lib/trafficDetails';
+
+async function countConsultStages(db: ReturnType<typeof serverDb>, from: string | null, to: string | null) {
+  if (!from || !to) return null;
+  const results = await Promise.all(CONSULT_STAGE_PATHS.map(path => db.from('traffic_details')
+    .select('traffic_daily!inner(source)', { count: 'exact', head: true })
+    .gte('day', from).lte('day', to).contains('pages', [path])
+    .not('traffic_daily.source', 'in', '(direct,unknown)').neq('traffic_daily.source', '')));
+  if (results.some(result => result.error || result.count === null)) return null;
+  return Object.fromEntries(CONSULT_STAGE_PATHS.map((path, i) => [path, results[i].count])) as ConsultStageCounts;
+}
 
 export async function GET(request: Request) {
   try {
@@ -10,12 +21,13 @@ export async function GET(request: Request) {
     const monthly = period.range === 'month';
     const args = monthly ? { p_from: period.from, p_to: period.to } : { p_days: period.dates.length, p_offset: period.range === 'yesterday' ? 1 : 0 };
     const db = serverDb();
-    const [summary, details] = await Promise.all([
+    const [summary, details, consultStages] = await Promise.all([
       db.rpc(monthly ? 'admin_dashboard_range' : 'admin_dashboard', args),
       db.rpc(monthly ? 'admin_traffic_details_range' : 'admin_traffic_details', args),
+      countConsultStages(db, period.detailCoverage.from, period.detailCoverage.to),
     ]);
     if (summary.error || details.error) throw new Error('Stats unavailable');
-    return apiJson({ ...summary.data, details: details.data, detailCoverage: period.detailCoverage });
+    return apiJson({ ...summary.data, details: { ...details.data, consultStages }, detailCoverage: period.detailCoverage });
   } catch { return apiJson({ error: "통계를 불러오지 못했어요. 집계 DB 설정과 연결을 확인해주세요." }, 503); }
 }
 

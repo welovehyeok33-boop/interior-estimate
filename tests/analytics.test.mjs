@@ -3,14 +3,10 @@ import assert from 'node:assert/strict';
 import { koreaDay, trafficKind, conversionRate, consultContactVisitors } from '../src/lib/analytics.ts';
 
 test('contact metric uses only the final phone page and includes unsubmitted visits', () => {
-  assert.equal(consultContactVisitors({ pages: [
-    { path: '/consult', visitors: 20, converted: 2 },
-    { path: '/consult/step2', visitors: 15, converted: 2 },
-    { path: '/consult/step3', visitors: 10, converted: 2 },
-    { path: '/consult/step4', visitors: 6, converted: 2 },
-  ] }), 6);
-  assert.equal(consultContactVisitors({ pages: [{ path: '/consult', visitors: 20 }] }), 0);
-  assert.equal(consultContactVisitors({ pages: [] }), 0);
+  const consultStages = { '/consult': 20, '/consult/step2': 15, '/consult/step3': 10, '/consult/step4': 6 };
+  assert.equal(consultContactVisitors({ consultStages }), 6);
+  assert.equal(consultContactVisitors({ consultStages: { ...consultStages, '/consult/step4': 0 } }), 0);
+  assert.equal(consultContactVisitors({ consultStages: null }), null);
   assert.equal(consultContactVisitors(undefined), null);
   assert.equal(consultContactVisitors(null), null);
 });
