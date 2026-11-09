@@ -97,7 +97,7 @@ export default function ClarityAnalytics() {
 
   const privacy = pathname === '/privacy';
   if (!clarityBrowserAllowed(typeof navigator === 'undefined' ? {} : navigator)) return null;
-  if (!settings?.eligible || (!allowed && !privacy) || (!privacy && settings.consent !== null)) return null;
+  if (pathname === '/' || !settings?.eligible || (!allowed && !privacy) || (!privacy && settings.consent !== null)) return null;
   return <aside aria-label="선택적 방문 행동 분석 설정" data-clarity-mask="true" style={privacy
     ? { margin: '20px 24px', padding: 18, background: C.bg, color: C.textDark, borderRadius: 12 }
     : { position: 'fixed', bottom: 12, left: 12, right: 12, margin: '0 auto', maxWidth: 520, padding: '14px 16px', zIndex: 1000, background: C.card, color: C.textDark, border: `1px solid ${C.border}`, borderRadius: 14 }}>

@@ -133,7 +133,11 @@ function buttons(tree) {
 test('visitor choice persists before loading; rejection never loads; privacy withdrawal unloads', async () => {
   for (const consent of ['granted', 'denied']) {
     const h = client(); h.render(); await settle();
-    const tree = h.render(); await settle();
+    assert.equal(h.render(), null);
+    assert.equal(h.render('/', 'utm_source=naver'), null);
+    await settle();
+    assert.equal(h.scripts.length, 0);
+    const tree = h.render('/consult', ''); await settle();
     const choice = buttons(tree).find(b => b.props.children === (consent === 'granted' ? '분석 허용' : '거부'));
     assert.ok(choice); choice.props.onClick(); await settle();
     assert.equal(JSON.parse(h.calls.find(c => c?.method === 'POST').body).consent, consent);

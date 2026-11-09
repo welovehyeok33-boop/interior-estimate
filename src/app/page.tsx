@@ -454,6 +454,7 @@ export default function Home() {
             {[{ label: "AI 자동 견적", href: "/estimate" }, { label: "AI 견적 스캔", href: "/estimate/scan" }, { label: "가이드", href: "/blog" }, { label: "파트너 모집", href: "/partners" }].map(l => (
               <Link key={l.href} href={l.href} style={{ fontSize: 13, color: C.home.muted, textDecoration: "none" }}>{l.label}</Link>
             ))}
+            <Link href="/privacy#clarity" style={{ fontSize: 13, color: C.home.muted, textDecoration: "none" }}>개인정보 안내</Link>
           </div>
         </div>
       </footer>
