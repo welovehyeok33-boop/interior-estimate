@@ -10,13 +10,15 @@ import { IconChevronDown, IconSearch, IconBuildingStore, IconRulerMeasure, IconC
 
 const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '미정';
 const grades: Record<string, string> = { economy: '실속형', budget: '실속형', standard: '스탠다드', premium: '하이앤드', highend: '하이앤드' };
-function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?: boolean; onSaved: (updated: Consultation) => void }) {
+function Editor({ item, hidden = false, onSaved, onDeleted }: { item: Consultation; hidden?: boolean; onSaved: (updated: Consultation) => void; onDeleted: () => void }) {
   const [status, setStatus] = useState(item.status || 'new');
   const [note, setNote] = useState(item.admin_note || '');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [composing, setComposing] = useState(false);
   const [meeting, setMeeting] = useState<boolean | null>(item.meeting_completed ?? null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const dirty = status !== (item.status || 'new') || note !== (item.admin_note || '') || meeting !== (item.meeting_completed ?? null);
   useEffect(() => {
     if (!dirty && !busy) return;
@@ -25,7 +27,7 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty, busy]);
   async function save() {
-    if (busy || composing) return;
+    if (busy || deleting || composing) return;
     setBusy(true); setError(''); setSaved(false);
     try {
       const r = await fetch('/api/admin/consultations', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -40,6 +42,25 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
       setSaved(true);
     } catch (e) { setError(e instanceof Error ? e.message : '저장하지 못했어요.'); }
     finally { setBusy(false); }
+  }
+  async function remove() {
+    if (busy || deleting || composing) return;
+    if (!window.confirm(`${item.name}님의 상담을 삭제할까요?\n접수 ${dateLabel(item.created_at)}\n삭제한 상담은 복구할 수 없습니다.`)) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      const response = await fetch('/api/admin/records', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'consultations', id: item.id }),
+      });
+      if (!response.ok && response.status !== 404) {
+        setDeleteError(response.status === 401 ? '로그인이 만료됐어요. 다시 로그인해주세요.' : '상담을 삭제하지 못했어요. 다시 시도해주세요.');
+        return;
+      }
+      onDeleted();
+    } catch {
+      setDeleteError('삭제 결과를 확인하지 못했어요. 다시 시도해주세요.');
+    } finally { setDeleting(false); }
   }
   return <div hidden={hidden} style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${C.admin.line}`, lineHeight: 1.8, overflowWrap: 'anywhere', fontSize: 14 }}>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 24, alignItems: 'start' }}>
@@ -67,7 +88,7 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
     <section aria-label="상담 기록 편집" style={{ background: C.admin.bg, border: `1px solid ${C.admin.line}`, borderRadius: 14, padding: 20, minWidth: 0 }}>
     <h3 style={{ fontSize: 16, margin: '0 0 4px' }}>상담 기록</h3>
     <p style={{ ...muted, fontSize: 12, margin: '0 0 20px' }}>진행 상황과 상담 내용을 기록하세요.</p>
-    <fieldset disabled={busy} onChange={() => { setSaved(false); setError(''); }} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+    <fieldset disabled={busy || deleting} onChange={() => { setSaved(false); setError(''); }} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <legend style={{ ...muted, fontSize: 11, marginBottom: 10 }}>관리자 전용 · 고객에게 공개되지 않음</legend>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
         <label style={{ fontSize: 12, fontWeight: 650 }}>상담 상태<select value={status} onChange={e => setStatus(e.target.value)} style={{ ...field, ...consultStatusStyle(status), width: '100%', display: 'block', marginTop: 6 }}>
@@ -89,9 +110,13 @@ function Editor({ item, hidden = false, onSaved }: { item: Consultation; hidden?
     </fieldset>
     </section>
     </div>
+    <button type="button" onClick={remove} disabled={busy || deleting || composing} style={{ ...action, marginTop: 16, color: C.consultStatus.lost.color }}>
+      {deleting ? '삭제 중…' : '상담 삭제'}
+    </button>
+    {deleteError && <p role="alert" style={{ ...muted, color: C.consultStatus.lost.color }}>{deleteError}</p>}
   </div>;
 }
-export default function AdminConsultations({ refresh, onSaved, initialStatus = 'all' }: { refresh: number; onSaved: (before: Consultation, after: Consultation) => void; initialStatus?: string }) {
+export default function AdminConsultations({ refresh, onSaved, onDeleted, initialStatus = 'all' }: { refresh: number; onSaved: (before: Consultation, after: Consultation) => void; onDeleted: () => void; initialStatus?: string }) {
   const [items, setItems] = useState<Consultation[]>([]), [total, setTotal] = useState(0);
   const [summary, setSummary] = useState<{ status: string; count: number }[]>([]);
   const consultationTotal = summary.find(row => row.status === 'all')?.count ?? 0;
@@ -109,7 +134,13 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
         const r = await fetch(`/api/admin/consultations?${params}`, { cache: 'no-store', signal: controller.signal });
         const body = await r.json();
         if (!r.ok) throw new Error(body.error || '조회 실패');
-        if (!controller.signal.aborted) { setItems(body.items); setTotal(body.total); setSummary(body.summary || []); }
+        if (controller.signal.aborted) return;
+        const lastPage = Math.max(1, Math.ceil(body.total / 25));
+        if (filter.page > lastPage) {
+          setFilter(current => ({ ...current, page: lastPage }));
+          return;
+        }
+        setItems(body.items); setTotal(body.total); setSummary(body.summary || []);
       } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : '조회 실패'); }
       finally { if (!controller.signal.aborted) setLoading(false); }
     }
@@ -171,7 +202,11 @@ export default function AdminConsultations({ refresh, onSaved, initialStatus = '
           <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}><span><span style={consultStatusBadge(item.status)}>{CONSULT_STATUSES[item.status] || item.status || '미정'}</span></span><IconChevronDown aria-hidden="true" size={18} style={{ color: C.admin.muted, transform: open === item.id ? 'rotate(180deg)' : undefined }} /></span>
         </button>
         {/* Keep each editor mounted so collapsing or opening another card preserves its draft and pending save. */}
-        <Editor key={item.id} item={item} hidden={open !== item.id} onSaved={updated => {
+        <Editor key={item.id} item={item} hidden={open !== item.id} onDeleted={() => {
+          setOpen(current => current === item.id ? null : current);
+          setItems(current => current.filter(row => row.id !== item.id));
+          onDeleted();
+        }} onSaved={updated => {
           setItems(current => current.map(row => row.id === updated.id ? updated : row));
           setSummary(current => updateConsultationCounts(current, item.status, updated.status));
           onSaved(item, updated);

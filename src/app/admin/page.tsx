@@ -292,7 +292,7 @@ export default function AdminPage() {
 
         <div id="admin-partners" hidden={flow !== 'partners'}><AdminPartners active={flow === 'partners'} refresh={trafficRefresh} /></div>
         <div id="admin-consult" hidden={flow !== 'consult'}>
-          {consultOpened && <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} />}
+          {consultOpened && <AdminConsultations refresh={trafficRefresh} onSaved={() => {}} onDeleted={() => void fetchLeads()} />}
         </div>
         {DETAIL_ESTIMATE_ENABLED && <section id="admin-engine" hidden={flow !== 'engine'} aria-label="상세 견적 미리보기 신청 목록">
         <h1 style={{ color: A.text, fontSize: 20, margin: "0 0 6px" }}>상세 견적 미리보기 신청</h1>

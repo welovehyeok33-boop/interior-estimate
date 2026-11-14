@@ -141,6 +141,30 @@ function text(node) {
   return [node?.props?.children].flat(Infinity).map(child => text(child)).join('');
 }
 
+test('consultation deletion requires confirmation and retries an already removed record safely', async () => {
+  const requests = [];
+  let confirmed = false, deleted = 0, status = 503;
+  const render = editorHarness(async (url, options) => {
+    requests.push({ url, method: options.method, body: JSON.parse(options.body) });
+    return { ok: false, status };
+  }, [], false, { globals: { window: { confirm: message => {
+    assert.match(message, /테스트 고객/);
+    return confirmed;
+  } } } });
+  const props = { item: { id: 'test', name: '테스트 고객', phone: '' }, onDeleted: () => { deleted++; } };
+  const remove = () => find(render(props), node => node.type === 'button' && text(node) === '상담 삭제').props.onClick();
+  await remove();
+  assert.equal(requests.length, 0);
+  confirmed = true;
+  await remove();
+  assert.deepEqual(requests[0], { url: '/api/admin/records', method: 'DELETE', body: { table: 'consultations', id: 'test' } });
+  assert.equal(deleted, 0);
+  assert.match(text(find(render(props), node => node.props?.role === 'alert')), /다시 시도/);
+  status = 404;
+  await remove();
+  assert.equal(deleted, 1);
+});
+
 test('compact cards retain readable content, yellow borders, wrapping and the same expandable editor', () => {
   const item = { id: 'compact-fixture', name: '테스트 고객', region: '서울', building_type: 'commercial', commercial_type: 'unknown', area: 28, created_at: '2026-10-20T01:02:37Z', status: 'consulting', phone: '', admin_note: '', admin_version: 1 };
   const render = editorHarness(() => {}, [[item], 1, [{ status: 'all', count: 1 }], '', { status: 'all', page: 1, month: '', q: '' }, null, 0, false, ''], true);
