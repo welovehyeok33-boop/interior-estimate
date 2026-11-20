@@ -37,7 +37,7 @@ export const C = {
     lost: { color: "#B03750", background: "#FDECF0" },
     contracted: { color: "#28734C", background: "#E7F5ED" },
     closed: { color: "#626B79", background: "#EDF0F4" },
-    passed: { color: "#626B79", background: "#EDF0F4" },
+    passed: { color: "#B54747", background: "#FFF0F0" },
   },
   phone: {
     frame: "#20221F",
