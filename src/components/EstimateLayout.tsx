@@ -34,10 +34,10 @@ export const C = {
     contacted: { color: "#086B76", background: "#E3F6F8" },
     consulting: { color: "#265DB0", background: "#EAF1FD" },
     quoted: { color: "#7444AB", background: "#F1EAFB" },
-    lost: { color: "#B03750", background: "#FDECF0" },
-    contracted: { color: "#28734C", background: "#E7F5ED" },
+    lost: { color: "#A52D46", background: "#FADDE4" },
+    contracted: { color: "#226843", background: "#D8EDDF" },
     closed: { color: "#626B79", background: "#EDF0F4" },
-    passed: { color: "#B54747", background: "#FFF0F0" },
+    passed: { color: "#B86B6B", background: "#FFF7F7" },
   },
   phone: {
     frame: "#20221F",
