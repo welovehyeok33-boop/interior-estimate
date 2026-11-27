@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     if (error && error.code !== '23505') throw error;
     if (!error) {
       const smsSummary = { buildingType: commercial ? 'commercial' : 'residential',
+        region: body.region,
         commercialType: commercial ? body.commercialType : undefined,
         commercialSub: commercial ? body.commercialSub : undefined, area: body.area, budget: body.budget };
       // Only the successful INSERT schedules an alert, never an idempotent duplicate.

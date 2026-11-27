@@ -16,7 +16,7 @@ function load(path, deps, globals = {}) {
   return exports;
 }
 const formatter = load('src/lib/consultationSms.ts', { './intakeValidation': validation, './consultStore': consultFormat });
-const smsSummary = { buildingType: 'commercial', commercialType: 'office', commercialSub: '일반 오피스', area: 28, budget: '3000' };
+const smsSummary = { buildingType: 'commercial', commercialType: 'office', commercialSub: '일반 오피스', region: 'seoul', area: 28, budget: '3000' };
 const env = { FORMIT_SMS_ENABLED: 'true', NODE_ENV: 'production', VERCEL_ENV: 'production',
   SOLAPI_API_KEY: 'fixture-key', SOLAPI_API_SECRET: 'fixture-secret-not-real-1234567890',
   SOLAPI_FROM_NUMBER: '01012345678', SOLAPI_ADMIN_NUMBER: '01098765432', FORMIT_SMS_DAILY_LIMIT: '20' };
@@ -89,21 +89,21 @@ test('summary and test texts fit SMS without names, phone numbers or long-messag
   const s = sms();
   for (const text of [formatter.buildConsultationSms(smsSummary), s.TEST_SMS]) {
     assert.ok(formatter.fitsShortSms(text));
-    assert.match(text, /https:\/\/form\.it\.kr\/admin$/);
+    assert.match(text, /서울/);
     assert.doesNotMatch(text, /010|고객명|#{|\$\{/);
   }
   assert.notEqual(formatter.buildConsultationSms(smsSummary), s.TEST_SMS);
 });
 
 test('message includes the selected sub-industry, exact area and formatted requested budget', () => {
-  assert.equal(formatter.buildConsultationSms(smsSummary), '[폼잇] 새 견적\n일반 오피스 · 28평\n희망예산 3,000만원\nhttps://form.it.kr/admin');
-  assert.match(formatter.buildConsultationSms({ ...smsSummary, buildingType: 'residential', area: 24.5, budget: 'unknown' }), /주거 · 24\.5평\n희망예산 미정/);
+  assert.equal(formatter.buildConsultationSms(smsSummary), '[폼잇] 새 견적\n일반 오피스 · 서울 · 28평\n희망예산 3,000만원');
+  assert.match(formatter.buildConsultationSms({ ...smsSummary, buildingType: 'residential', area: 24.5, budget: 'unknown' }), /주거 · 서울 · 24\.5평\n희망예산 미정/);
   assert.match(formatter.buildConsultationSms({ ...smsSummary, budget: '10000' }), /희망예산 1억원 이상/);
 });
 
 test('test SMS uses the same summary formatter and a clearly marked synthetic example', async () => {
   const s = sms();
-  assert.equal(s.TEST_SMS, '[폼잇] 견적 테스트\n일반 오피스 · 28평\n희망예산 3,000만원\nhttps://form.it.kr/admin');
+  assert.equal(s.TEST_SMS, '[폼잇] 견적 테스트\n일반 오피스 · 서울 · 28평\n희망예산 3,000만원');
   assert.equal(s.TEST_SMS, formatter.buildConsultationSms(smsSummary, 'test'));
   assert.ok(formatter.fitsShortSms(s.TEST_SMS));
   assert.equal((await s.sendAdminSms('test')).status, 'accepted');
@@ -120,7 +120,7 @@ test('all allowed industries, budget choices and extreme areas remain a single 9
           assert.ok(text && formatter.fitsShortSms(text), JSON.stringify({ commercialType, commercialSub, area, budget }));
           assert.ok(text.includes(`${area}평`));
           assert.ok(text.includes(budget === 'unknown' ? '미정' : consultFormat.formatConsultBudget(budget)));
-          assert.match(text, /https:\/\/form\.it\.kr\/admin$/);
+          assert.match(text, /서울/);
         }
       }
     }
@@ -251,9 +251,9 @@ test('successful insert acknowledges before notification and passes only the fiv
   const s = intake(); const result = await s.POST(request());
   assert.equal(result.status, 200); assert.equal(s.inserts.length, 1); assert.equal(s.scheduled.length, 1); assert.equal(s.sends.length, 0);
   await s.scheduled[0](); assert.equal(s.sends.length, 1);
-  assert.deepEqual(Object.keys(s.sends[0]).sort(), ['area', 'budget', 'buildingType', 'commercialSub', 'commercialType']);
+  assert.deepEqual(Object.keys(s.sends[0]).sort(), ['area', 'budget', 'buildingType', 'commercialSub', 'commercialType', 'region']);
   assert.equal(s.sends[0].buildingType, 'residential'); assert.equal(s.sends[0].area, application.area); assert.equal(s.sends[0].budget, application.budget);
-  assert.doesNotMatch(JSON.stringify(s.sends[0]), /01012345678|검증용|submissionId|consent|region|memo/);
+  assert.doesNotMatch(JSON.stringify(s.sends[0]), /01012345678|검증용|submissionId|consent|regionDetail|memo/);
   const commercial = intake(); assert.equal((await commercial.POST(request({ ...application, ...smsSummary }))).status, 200);
   await commercial.scheduled[0]();
   assert.equal(formatter.buildConsultationSms(commercial.sends[0]), formatter.buildConsultationSms(smsSummary));

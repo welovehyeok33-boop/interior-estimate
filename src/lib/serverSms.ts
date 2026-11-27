@@ -7,7 +7,7 @@ const API_ORIGIN = 'https://api.solapi.com';
 const REQUEST_TIMEOUT = 7000;
 const MAX_UNIT_COST = 20;
 export const TEST_SMS = buildConsultationSms({ buildingType: 'commercial', commercialType: 'office',
-  commercialSub: '일반 오피스', area: 28, budget: '3000' }, 'test') ?? '';
+  commercialSub: '일반 오피스', region: 'seoul', area: 28, budget: '3000' }, 'test') ?? '';
 
 type SmsConfig = { key: string; secret: string; from: string; to: string; dailyLimit: number };
 type SkipReason = 'disabled' | 'not_production' | 'invalid_config' | 'daily_limit' | 'test_limit' | 'quota_unavailable';
