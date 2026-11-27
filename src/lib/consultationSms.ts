@@ -4,6 +4,7 @@ import { formatConsultBudget } from './consultStore';
 // Only these approved summary fields may cross the notification boundary.
 export type ConsultationSmsSummary = {
   buildingType: string;
+  region?: string;
   commercialType?: string;
   commercialSub?: string;
   area: number;
@@ -33,9 +34,11 @@ export function buildConsultationSms(summary: ConsultationSmsSummary, mode: 'con
   } else return null;
   const budget = summary.budget === 'unknown' ? '미정' : formatConsultBudget(summary.budget);
   const title = mode === 'test' ? '견적 테스트' : '새 견적';
+  const regions: Record<string, string> = { seoul: '서울', metro: '수도권', local: '지방' };
+  const region = regions[summary.region || ''] || '지역 미정';
   const render = (label: string, budgetLabel = '희망예산') =>
-    `[폼잇] ${title}\n${label} · ${summary.area}평\n${budgetLabel} ${budget}\nhttps://form.it.kr/admin`;
+    `[폼잇] ${title}\n${label} · ${region} · ${summary.area}평\n${budgetLabel} ${budget}`;
   // Prefer the selected sub-industry. If needed, shorten only its category label,
-  // never silently truncate the area, budget, or admin link and never use LMS.
+  // never silently truncate the region, area or budget and never use LMS.
   return [render(industry), render(category), render(category, '예산')].find(fitsShortSms) ?? null;
 }
